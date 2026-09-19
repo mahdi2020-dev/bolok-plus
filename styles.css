@@ -119,11 +119,11 @@ a {
 .brand-logo {
   width: 40px;
   height: 40px;
-  border-radius: 12px;
+  border-radius: 0;
   object-fit: contain;
-  background: #fff;
-  padding: 4px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  background: transparent;
+  padding: 0;
+  box-shadow: none;
 }
 
 .nav {
@@ -220,11 +220,11 @@ a {
 .hero-logo {
   width: 96px;
   height: 96px;
-  border-radius: 22px;
+  border-radius: 0;
   object-fit: contain;
-  background: #fff;
-  padding: 10px;
-  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.12);
+  background: transparent;
+  padding: 0;
+  box-shadow: none;
   transform-style: preserve-3d;
   will-change: transform;
 }
@@ -998,11 +998,11 @@ a {
   width: 72px;
   height: 72px;
   margin: 0 auto 0.45rem;
-  border-radius: 18px;
+  border-radius: 0;
   object-fit: contain;
-  background: #fff;
-  padding: 8px;
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
+  background: transparent;
+  padding: 0;
+  box-shadow: none;
 }
 
 .trust-kicker {
