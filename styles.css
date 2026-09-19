@@ -210,23 +210,22 @@ a {
 }
 
 .hero-logo-wrap {
-  width: 132px;
-  height: 132px;
-  margin: 0 auto 1.25rem;
+  width: 96px;
+  height: 96px;
+  margin: 0 auto 1.1rem;
   perspective: 800px;
   transform-style: preserve-3d;
 }
 
 .hero-logo {
-  width: 132px;
-  height: 132px;
-  border-radius: 28px;
+  width: 96px;
+  height: 96px;
+  border-radius: 22px;
   object-fit: contain;
   background: #fff;
-  padding: 14px;
-  box-shadow: var(--shadow);
+  padding: 10px;
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.12);
   transform-style: preserve-3d;
-  transition: box-shadow 0.3s ease;
   will-change: transform;
 }
 
@@ -335,15 +334,12 @@ a {
   will-change: transform;
 }
 
-/* Reveal */
+/* Reveal — always visible without JS; GSAP enhances from current state */
 .reveal,
 .reveal-blur {
-  opacity: 0;
-  transform: translateY(18px);
-}
-
-.reveal-blur {
-  filter: blur(8px);
+  opacity: 1;
+  transform: none;
+  filter: none;
 }
 
 /* Showcase */
@@ -372,51 +368,57 @@ a {
 .showcase-stage {
   position: relative;
   display: grid;
-  gap: 1.5rem;
+  gap: 1.75rem;
   align-items: center;
-  padding: 1.5rem 1rem 1.75rem;
+  padding: 1.5rem 1.1rem 1.75rem;
   border-radius: calc(var(--radius) + 8px);
-  background: rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.72);
   border: 1px solid var(--line);
   box-shadow: var(--shadow);
-  backdrop-filter: blur(12px);
 }
 
 @media (min-width: 860px) {
   .showcase-stage {
-    grid-template-columns: 1.05fr 1fr;
-    padding: 2.2rem 2rem;
-    gap: 2rem;
+    grid-template-columns: minmax(240px, 280px) 1fr;
+    padding: 2rem 2rem;
+    gap: 2.25rem;
   }
+}
+
+.phone-col {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  padding: 0.5rem 0;
 }
 
 .float-chip {
   position: absolute;
   z-index: 3;
-  padding: 0.45rem 0.75rem;
+  padding: 0.4rem 0.7rem;
   border-radius: 999px;
-  background: rgba(10, 10, 10, 0.9);
+  background: rgba(10, 10, 10, 0.92);
   color: #fff;
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 800;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.2);
   pointer-events: none;
   white-space: nowrap;
 }
 
 .chip-a {
-  top: 12%;
-  right: 6%;
+  top: 6%;
+  inset-inline-end: -6%;
 }
 
 .chip-b {
-  top: 42%;
-  left: 4%;
+  top: 48%;
+  inset-inline-start: -10%;
 }
 
 .chip-c {
-  bottom: 18%;
-  right: 8%;
+  bottom: 10%;
+  inset-inline-end: -4%;
 }
 
 @media (max-width: 859px) {
@@ -430,14 +432,11 @@ a {
   display: flex;
   justify-content: center;
   transform-style: preserve-3d;
-  will-change: transform;
   transition: transform 0.15s ease-out;
 }
 
 .phone {
-  width: min(250px, 70vw);
-  transform-style: preserve-3d;
-  will-change: transform;
+  width: min(240px, 68vw);
   animation: phone-float 5.5s ease-in-out infinite;
 }
 
@@ -447,80 +446,84 @@ a {
     transform: translateY(0);
   }
   50% {
-    transform: translateY(-10px);
+    transform: translateY(-8px);
   }
 }
 
 .phone-bezel {
   position: relative;
-  aspect-ratio: 9 / 19.2;
-  border-radius: 36px;
-  padding: 10px;
+  width: 100%;
+  border-radius: 34px;
+  padding: 11px;
   background: linear-gradient(160deg, #1a1a1a, #0a0a0a 45%, #2a2a2a);
   box-shadow:
-    0 30px 60px rgba(0, 0, 0, 0.35),
+    0 28px 55px rgba(0, 0, 0, 0.32),
     inset 0 0 0 1px rgba(255, 255, 255, 0.12);
 }
 
 .phone-notch {
   position: absolute;
-  top: 16px;
+  top: 17px;
   left: 50%;
   transform: translateX(-50%);
-  width: 32%;
-  height: 18px;
+  width: 34%;
+  height: 16px;
   border-radius: 999px;
   background: #050505;
   z-index: 4;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 
 .phone-notch::after {
   content: "";
   position: absolute;
   top: 50%;
-  right: 10px;
-  width: 7px;
-  height: 7px;
+  right: 9px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  background: #1f2937;
+  background: #374151;
   transform: translateY(-50%);
-  box-shadow: 0 0 0 2px #0a0a0a;
 }
 
 .phone-screen {
-  height: 100%;
-  border-radius: 28px;
+  position: relative;
+  width: 100%;
+  aspect-ratio: 9 / 17.5;
+  border-radius: 26px;
   overflow: hidden;
   background: #fafafa;
-  position: relative;
 }
 
 .slides {
   position: relative;
+  width: 100%;
   height: 100%;
 }
 
 .slide {
   position: absolute;
   inset: 0;
-  padding: 2.4rem 0.85rem 1rem;
+  padding: 2.35rem 0.8rem 0.9rem;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.7rem;
   opacity: 0;
   visibility: hidden;
-  transform: translateY(12px) scale(0.98);
+  pointer-events: none;
+  transform: translateY(8px);
   transition:
-    opacity 0.45s ease,
-    transform 0.45s ease,
-    visibility 0.45s;
+    opacity 0.35s ease,
+    transform 0.35s ease,
+    visibility 0.35s;
 }
 
 .slide.is-active {
+  position: relative;
   opacity: 1;
   visibility: visible;
-  transform: translateY(0) scale(1);
+  pointer-events: auto;
+  transform: none;
+  height: 100%;
 }
 
 .ui-top {
@@ -975,23 +978,26 @@ a {
 
 /* Centered trust footer */
 .site-trust {
-  padding: 2.5rem 0 2.75rem;
+  padding: 2.75rem 0 2.75rem;
   border-top: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.55);
+  background: #fff;
 }
 
 .trust-center {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   text-align: center;
-  gap: 0.35rem;
+  gap: 0.4rem;
+  margin-inline: auto;
+  max-width: 420px;
 }
 
 .trust-logo {
   width: 72px;
   height: 72px;
-  margin-bottom: 0.55rem;
+  margin: 0 auto 0.45rem;
   border-radius: 18px;
   object-fit: contain;
   background: #fff;
@@ -1005,19 +1011,25 @@ a {
   font-weight: 800;
   letter-spacing: 0.06em;
   color: var(--muted);
+  text-align: center;
+  width: 100%;
 }
 
 .trust-name {
-  margin: 0.15rem 0 0;
+  margin: 0.1rem 0 0;
   font-size: clamp(1.8rem, 4vw, 2.3rem);
   font-weight: 900;
   letter-spacing: -0.04em;
+  text-align: center;
+  width: 100%;
 }
 
 .trust-tagline {
   margin: 0.25rem 0 0.75rem;
   color: var(--ink-soft);
   font-weight: 600;
+  text-align: center;
+  width: 100%;
 }
 
 .trust-mail {
@@ -1028,21 +1040,21 @@ a {
   color: #fff;
   font-weight: 800;
   font-size: 0.9rem;
-  margin-bottom: 1.25rem;
+  margin: 0 auto 1.25rem;
 }
 
 .enamad-label {
-  margin-top: 0.5rem;
+  margin-top: 0.35rem;
 }
 
 .enamad-frame {
   width: 140px;
   min-height: 140px;
-  margin: 0.5rem 0 1.25rem;
+  margin: 0.55rem auto 1.35rem;
   display: grid;
   place-items: center;
   border-radius: 18px;
-  background: #fff;
+  background: #fafafa;
   border: 1px solid var(--line);
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.06);
   padding: 0.65rem;
@@ -1056,7 +1068,8 @@ a {
   font-weight: 800;
   font-size: 0.9rem;
   color: var(--ink-soft);
-  margin-bottom: 0.75rem;
+  margin: 0 auto 0.75rem;
+  width: 100%;
 }
 
 .footer-links a:hover {
@@ -1068,6 +1081,8 @@ a {
   color: var(--muted);
   font-size: 0.8rem;
   font-weight: 600;
+  text-align: center;
+  width: 100%;
 }
 
 /* Inner pages */

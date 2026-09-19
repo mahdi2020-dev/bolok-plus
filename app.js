@@ -12,66 +12,24 @@
     });
   }
 
-  // Lenis
-  let lenis = null;
-  if (!reduceMotion && window.Lenis) {
-    lenis = new Lenis({
-      duration: 1.1,
-      smoothWheel: true,
-    });
-    if (!window.gsap) {
-      const raf = (time) => {
-        lenis.raf(time);
-        requestAnimationFrame(raf);
-      };
-      requestAnimationFrame(raf);
-    }
-  }
-
-  // GSAP reveals
-  const runReveals = () => {
-    const els = document.querySelectorAll(".reveal, .reveal-blur");
-    if (!els.length) return;
-
-    if (reduceMotion || !window.gsap) {
-      els.forEach((el) => {
-        el.style.opacity = "1";
-        el.style.transform = "none";
-        el.style.filter = "none";
-      });
-      return;
-    }
+  // Progressive reveal: only hide when GSAP is actually available
+  const enableMotionReveals = () => {
+    if (reduceMotion || !window.gsap || !window.ScrollTrigger) return;
 
     gsap.registerPlugin(ScrollTrigger);
-    if (lenis) {
-      lenis.on("scroll", ScrollTrigger.update);
-      gsap.ticker.add((time) => lenis.raf(time * 1000));
-      gsap.ticker.lagSmoothing(0);
-    }
 
-    gsap.utils.toArray(".reveal").forEach((el) => {
-      gsap.to(el, {
-        opacity: 1,
-        y: 0,
-        duration: 0.8,
+    gsap.utils.toArray(".reveal, .reveal-blur").forEach((el) => {
+      const blur = el.classList.contains("reveal-blur");
+      gsap.from(el, {
+        opacity: 0,
+        y: 14,
+        filter: blur ? "blur(6px)" : "none",
+        duration: blur ? 0.85 : 0.65,
         ease: "power3.out",
         scrollTrigger: {
           trigger: el,
-          start: "top 88%",
-        },
-      });
-    });
-
-    gsap.utils.toArray(".reveal-blur").forEach((el) => {
-      gsap.to(el, {
-        opacity: 1,
-        y: 0,
-        filter: "blur(0px)",
-        duration: 1,
-        ease: "power3.out",
-        scrollTrigger: {
-          trigger: el,
-          start: "top 90%",
+          start: "top 92%",
+          once: true,
         },
       });
     });
@@ -85,7 +43,7 @@
       const r = tiltWrap.getBoundingClientRect();
       const x = (e.clientX - r.left) / r.width - 0.5;
       const y = (e.clientY - r.top) / r.height - 0.5;
-      tiltImg.style.transform = `rotateY(${x * 18}deg) rotateX(${-y * 14}deg)`;
+      tiltImg.style.transform = `rotateY(${x * 16}deg) rotateX(${-y * 12}deg)`;
     });
     tiltWrap.addEventListener("pointerleave", () => {
       tiltImg.style.transform = "rotateY(0) rotateX(0)";
@@ -99,7 +57,7 @@
         const r = btn.getBoundingClientRect();
         const x = e.clientX - (r.left + r.width / 2);
         const y = e.clientY - (r.top + r.height / 2);
-        btn.style.transform = `translate(${x * 0.18}px, ${y * 0.22}px)`;
+        btn.style.transform = `translate(${x * 0.16}px, ${y * 0.2}px)`;
       });
       btn.addEventListener("pointerleave", () => {
         btn.style.transform = "";
@@ -116,24 +74,23 @@
     });
   });
 
-  // Phone tilt + parallax chips
+  // Phone tilt + parallax chips (scoped to phone column)
   const phoneTilt = document.querySelector("[data-phone-tilt]");
-  const phone = phoneTilt?.querySelector(".phone");
-  const stage = document.querySelector(".showcase-stage");
-  if (phoneTilt && stage && finePointer && !reduceMotion) {
-    stage.addEventListener("pointermove", (e) => {
-      const r = stage.getBoundingClientRect();
+  const phoneCol = document.querySelector(".phone-col");
+  if (phoneTilt && phoneCol && finePointer && !reduceMotion) {
+    phoneCol.addEventListener("pointermove", (e) => {
+      const r = phoneCol.getBoundingClientRect();
       const x = (e.clientX - r.left) / r.width - 0.5;
       const y = (e.clientY - r.top) / r.height - 0.5;
-      phoneTilt.style.transform = `rotateY(${x * 12}deg) rotateX(${-y * 10}deg)`;
-      stage.querySelectorAll("[data-parallax]").forEach((chip) => {
+      phoneTilt.style.transform = `rotateY(${x * 10}deg) rotateX(${-y * 8}deg)`;
+      phoneCol.querySelectorAll("[data-parallax]").forEach((chip) => {
         const amount = Number(chip.getAttribute("data-parallax") || 0);
-        chip.style.transform = `translate(${x * amount}px, ${y * amount * 0.6}px)`;
+        chip.style.transform = `translate(${x * amount}px, ${y * amount * 0.5}px)`;
       });
     });
-    stage.addEventListener("pointerleave", () => {
+    phoneCol.addEventListener("pointerleave", () => {
       phoneTilt.style.transform = "";
-      stage.querySelectorAll("[data-parallax]").forEach((chip) => {
+      phoneCol.querySelectorAll("[data-parallax]").forEach((chip) => {
         chip.style.transform = "";
       });
     });
@@ -247,7 +204,22 @@
     });
   }
 
-  const boot = () => runReveals();
+  const boot = () => {
+    // Wait briefly for deferred CDN scripts; never leave content hidden
+    let tries = 0;
+    const tick = () => {
+      tries += 1;
+      if (window.gsap && window.ScrollTrigger) {
+        enableMotionReveals();
+        return;
+      }
+      if (tries < 20) {
+        setTimeout(tick, 100);
+      }
+    };
+    tick();
+  };
+
   if (document.readyState === "complete") boot();
   else window.addEventListener("load", boot);
 })();
