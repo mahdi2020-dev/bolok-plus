@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#eef4f9" />
-  <meta name="description" content="بلوک پلاس — برنامه‌ریز مطالعه فارسی برای کنکور، امتحان و یادگیری جدی" />
+  <meta name="theme-color" content="#0B1220" />
+  <meta name="description" content="بلوک — برنامه‌ریز مطالعه فارسی برای کنکور، امتحان و یادگیری جدی" />
   <meta name="enamad" content="5130850" />
   <title>بلوک پلاس</title>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
@@ -14,6 +14,8 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <div class="bg-grid" aria-hidden="true"></div>
+
   <header class="site-header">
     <div class="container inner">
       <a class="brand" href="index.html">
@@ -41,8 +43,14 @@
 
   <main>
     <section class="hero container">
+      <div class="hero-blocks" aria-hidden="true">
+        <span class="hb hb1"></span>
+        <span class="hb hb2"></span>
+        <span class="hb hb3"></span>
+        <span class="hb hb4"></span>
+      </div>
       <div class="hero-eyebrow">برنامه‌ریز مطالعه · فارسی · اندروید</div>
-      <h1><span>بلوک پلاس</span></h1>
+      <h1><span>بلوک</span></h1>
       <p>برنامه روزانه‌ات را بچین، منابع را وصل کن، مطالعه واقعی را ثبت کن — شفاف و هدفمند.</p>
       <div class="cta-row">
         <a class="btn btn-primary" href="#download" id="download">دانلود اپ</a>
@@ -180,21 +188,24 @@
 
     <section class="benefits container">
       <div class="section-title">
-        <h2>چرا بلوک پلاس</h2>
+        <h2>چرا بلوک</h2>
         <p>ساده، دقیق، برای مطالعه جدی</p>
       </div>
       <ul class="benefit-list">
         <li>
+          <span class="benefit-mark m1" aria-hidden="true"></span>
           <strong>برنامه شفاف</strong>
           <span>روز را به بلوک‌های مشخص تقسیم کن؛ چیزی گم نمی‌شود.</span>
         </li>
         <li>
+          <span class="benefit-mark m2" aria-hidden="true"></span>
           <strong>منبع و پیشرفت</strong>
           <span>صفحه و تست را روی منبع واقعی ثبت کن.</span>
         </li>
         <li>
+          <span class="benefit-mark m3" aria-hidden="true"></span>
           <strong>همگام با تو</strong>
-          <span>آماده برای اینماد، پرداخت امن و پشتیبانی فارسی.</span>
+          <span>اینماد، پرداخت امن و پشتیبانی فارسی.</span>
         </li>
       </ul>
     </section>
@@ -214,10 +225,14 @@
             <a href="privacy.html">حریم خصوصی</a>
           </nav>
         </div>
-        <div class="trust-seal" id="enamad">
-          <p class="trust-kicker">نماد اعتماد</p>
-          <a referrerpolicy='origin' target='_blank' href='https://trustseal.enamad.ir/?id=7806432&Code=UkmiQCpizBsL3zKeePhPJGmhKEhW7NtH'><img referrerpolicy='origin' src='https://trustseal.enamad.ir/logo.aspx?id=7806432&Code=UkmiQCpizBsL3zKeePhPJGmhKEhW7NtH' alt='' style='cursor:pointer' code='UkmiQCpizBsL3zKeePhPJGmhKEhW7NtH'></a>
-        </div>
+
+        <aside class="enamad-card" aria-label="نماد اعتماد الکترونیکی">
+          <p class="trust-kicker">نماد اعتماد الکترونیکی</p>
+          <div class="enamad-frame" id="enamad">
+            <a referrerpolicy='origin' target='_blank' href='https://trustseal.enamad.ir/?id=7806432&Code=UkmiQCpizBsL3zKeePhPJGmhKEhW7NtH'><img referrerpolicy='origin' src='https://trustseal.enamad.ir/logo.aspx?id=7806432&Code=UkmiQCpizBsL3zKeePhPJGmhKEhW7NtH' alt='' style='cursor:pointer' code='UkmiQCpizBsL3zKeePhPJGmhKEhW7NtH'></a>
+          </div>
+          <p class="enamad-hint">معتبر · بدون ستاره</p>
+        </aside>
       </div>
     </div>
   </section>
