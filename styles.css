@@ -582,6 +582,22 @@ a {
   font-weight: 700;
 }
 
+.badge-slot:has(a[href*="enamad"]) {
+  border-style: solid;
+  border-color: var(--line);
+  color: inherit;
+}
+
+.badge-slot a {
+  display: inline-block;
+  line-height: 0;
+}
+
+.badge-slot img {
+  max-width: 125px;
+  height: auto;
+}
+
 .badge-slot small {
   display: block;
   margin-top: 0.35rem;
