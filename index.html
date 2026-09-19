@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#0B1220" />
+  <meta name="theme-color" content="#0a0a0a" />
   <meta name="description" content="بلوک — برنامه‌ریز مطالعه فارسی برای کنکور، امتحان و یادگیری جدی" />
   <meta name="enamad" content="5130850" />
   <meta name="referrer" content="origin" />
@@ -14,9 +14,14 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@500;600;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.18/dist/lenis.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
+  <script src="app.js" defer></script>
 </head>
 <body>
-  <div class="bg-grid" aria-hidden="true"></div>
+  <div class="aurora" aria-hidden="true"></div>
+  <div class="dot-grid" aria-hidden="true"></div>
 
   <header class="site-header">
     <div class="container inner">
@@ -30,9 +35,7 @@
         <a href="terms.html">شرایط</a>
         <a href="privacy.html">حریم خصوصی</a>
       </nav>
-      <button class="nav-toggle" type="button" data-nav-toggle aria-label="منو">
-        <span></span>
-      </button>
+      <button class="nav-toggle" type="button" data-nav-toggle aria-label="منو"><span></span></button>
     </div>
     <div class="nav-drawer" data-nav-drawer>
       <a href="#showcase">معرفی</a>
@@ -45,208 +48,161 @@
 
   <main>
     <section class="hero container">
-      <div class="hero-blocks" aria-hidden="true">
-        <span class="hb hb1"></span>
-        <span class="hb hb2"></span>
-        <span class="hb hb3"></span>
-        <span class="hb hb4"></span>
+      <div class="hero-logo-wrap" data-tilt>
+        <img class="hero-logo" src="assets/bolok-logo.png" alt="لوگوی بلوک" width="128" height="128" />
       </div>
-      <img class="hero-logo" src="assets/bolok-logo.png" alt="لوگوی بلوک" width="96" height="96" />
-      <div class="hero-eyebrow">برنامه‌ریز مطالعه · فارسی · اندروید</div>
-      <h1><span>بلوک</span></h1>
-      <p>برنامه روزانه‌ات را بچین، منابع را وصل کن، مطالعه واقعی را ثبت کن — شفاف و هدفمند.</p>
-      <div class="cta-row">
-        <a class="btn btn-primary" href="#download" id="download">دانلود اپ</a>
+      <p class="hero-eyebrow reveal">برنامه‌ریز مطالعه · فارسی · اندروید</p>
+      <h1 class="reveal-blur">بلوک</h1>
+      <p class="hero-lead reveal">برنامه روزانه‌ات را بچین، منابع را وصل کن، مطالعه واقعی را ثبت کن — شفاف و هدفمند.</p>
+      <div class="cta-row reveal">
+        <a class="btn btn-primary btn-magnetic btn-shimmer" href="#download" id="download" data-magnetic>دانلود اپ</a>
         <a class="btn btn-ghost" href="#showcase">ببین چطور کار می‌کند</a>
       </div>
     </section>
 
     <section class="showcase container" id="showcase">
       <div class="section-title">
-        <h2>اپ در چند نگاه</h2>
-        <p>اسلاید بزن — هر بخش یک کار مشخص</p>
+        <h2 class="reveal">اپ در چند نگاه</h2>
+        <p class="reveal">اسلاید بزن — هر بخش یک کار مشخص</p>
       </div>
 
-      <div class="slider" data-slider>
-        <div class="slides" dir="ltr">
-          <article class="slide" dir="rtl">
-            <div class="phone" aria-hidden="true">
-              <div class="phone-screen">
-                <div class="phone-bar">شنبه · برنامه‌سازی</div>
-                <div class="phone-body">
-                  <div class="grid-14">
-                    <div class="cell on"></div><div class="cell soft"></div>
-                    <div class="cell on"></div><div class="cell"></div>
-                    <div class="cell soft"></div><div class="cell on"></div>
-                    <div class="cell"></div><div class="cell on"></div>
-                    <div class="cell soft"></div><div class="cell"></div>
-                    <div class="cell on"></div><div class="cell soft"></div>
-                    <div class="cell"></div><div class="cell on"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="slide-copy">
-              <span class="slide-index">۰۱ / ۰۵</span>
-              <h3>جدول روز — ۱۴ خانه</h3>
-              <p>از ۵ صبح تا ۵ صبح فردا برنامه‌ات را مثل یک جدول کاری می‌چینی؛ هر خانه یک بلوک تمرکز است.</p>
-            </div>
-          </article>
+      <div class="showcase-stage" data-slider>
+        <div class="float-chip chip-a" data-parallax="-18">۴۵ دقیقه بلوک</div>
+        <div class="float-chip chip-b" data-parallax="22">استریک ۷ روزه</div>
+        <div class="float-chip chip-c" data-parallax="-12">+۲ ساعت فیزیک</div>
 
-          <article class="slide" dir="rtl">
-            <div class="phone" aria-hidden="true">
+        <div class="phone-tilt" data-phone-tilt>
+          <div class="phone">
+            <div class="phone-bezel">
+              <div class="phone-notch" aria-hidden="true"></div>
               <div class="phone-screen">
-                <div class="phone-bar">بانک منابع</div>
-                <div class="phone-body">
-                  <div class="pill-row">
-                    <div class="pill accent"></div>
-                    <div class="pill"></div>
-                  </div>
-                  <div class="pill-row">
-                    <div class="pill"></div>
-                    <div class="pill accent"></div>
-                  </div>
-                  <div class="pill-row">
-                    <div class="pill accent"></div>
-                    <div class="pill"></div>
-                  </div>
-                  <div class="ai-bubble">کتاب · جزوه · ویدیو · فلش‌کارت</div>
+                <div class="slides" dir="ltr">
+                  <article class="slide is-active" dir="rtl" data-slide="0">
+                    <div class="ui-top">شنبه · برنامه‌سازی</div>
+                    <div class="ui-grid">
+                      <span class="ui-cell on"></span><span class="ui-cell"></span>
+                      <span class="ui-cell soft"></span><span class="ui-cell on"></span>
+                      <span class="ui-cell on"></span><span class="ui-cell"></span>
+                      <span class="ui-cell soft"></span><span class="ui-cell on"></span>
+                      <span class="ui-cell"></span><span class="ui-cell soft"></span>
+                      <span class="ui-cell on"></span><span class="ui-cell"></span>
+                      <span class="ui-cell soft"></span><span class="ui-cell on"></span>
+                    </div>
+                    <p class="ui-caption">جدول روز — ۱۴ خانه تمرکز</p>
+                  </article>
+                  <article class="slide" dir="rtl" data-slide="1">
+                    <div class="ui-top">بانک منابع</div>
+                    <div class="ui-list">
+                      <div class="ui-row"><span class="dot-mark"></span>کتاب کمک‌درسی</div>
+                      <div class="ui-row active"><span class="dot-mark"></span>جزوه دانشگاه</div>
+                      <div class="ui-row"><span class="dot-mark"></span>ویدیو آموزشی</div>
+                    </div>
+                    <p class="ui-caption">منبع واقعی · صفحه و تست</p>
+                  </article>
+                  <article class="slide" dir="rtl" data-slide="2">
+                    <div class="ui-top">ثبت و انجام</div>
+                    <div class="ui-timer"><span></span></div>
+                    <p class="ui-caption">کرنومتر یا ثبت دستی</p>
+                  </article>
+                  <article class="slide" dir="rtl" data-slide="3">
+                    <div class="ui-top">هوش بلوک</div>
+                    <div class="ui-ai">هدف کوتاه‌مدت · ظرفیت روزانه · برنامه تا آزمون</div>
+                    <p class="ui-caption">پیشنهاد می‌دهد — تو تأیید می‌کنی</p>
+                  </article>
+                  <article class="slide" dir="rtl" data-slide="4">
+                    <div class="ui-top">پرمیوم</div>
+                    <div class="ui-premium">منابع نامحدود · ارز هدیه · VIP</div>
+                    <p class="ui-caption">شروع رایگان · ارتقا وقتی لازم شد</p>
+                  </article>
                 </div>
               </div>
             </div>
-            <div class="slide-copy">
-              <span class="slide-index">۰۲ / ۰۵</span>
-              <h3>بانک منابع</h3>
-              <p>کتاب، جزوه و ویدیو را یک‌بار بساز؛ فصل و بازهٔ صفحه/تست را وصل کن تا پیشرفت دقیق بماند.</p>
-            </div>
-          </article>
-
-          <article class="slide" dir="rtl">
-            <div class="phone" aria-hidden="true">
-              <div class="phone-screen">
-                <div class="phone-bar">انجام و ثبت</div>
-                <div class="phone-body">
-                  <div class="timer-ring"></div>
-                  <div class="ai-bubble">کرنومتر یا ثبت دستی · وضعیت خانه</div>
-                  <div class="pill-row">
-                    <div class="pill accent"></div>
-                    <div class="pill"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="slide-copy">
-              <span class="slide-index">۰۳ / ۰۵</span>
-              <h3>ثبت و انجام</h3>
-              <p>بعد از مطالعه واقعی، زمان را با کرنومتر یا دستی ثبت کن و وضعیت خانه را به‌روز کن.</p>
-            </div>
-          </article>
-
-          <article class="slide" dir="rtl">
-            <div class="phone" aria-hidden="true">
-              <div class="phone-screen">
-                <div class="phone-bar">هوش بلوک</div>
-                <div class="phone-body">
-                  <div class="ai-bubble">هدف کوتاه‌مدت · ظرفیت · برنامهٔ زمانی</div>
-                  <div class="grid-14">
-                    <div class="cell soft"></div><div class="cell on"></div>
-                    <div class="cell on"></div><div class="cell soft"></div>
-                    <div class="cell"></div><div class="cell on"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="slide-copy">
-              <span class="slide-index">۰۴ / ۰۵</span>
-              <h3>اهداف و هوش بلوک</h3>
-              <p>هدف کوتاه و بلند بساز؛ هوش بلوک کمک می‌کند برنامهٔ زمانی تا آزمون را بچینی — تو تأیید می‌کنی.</p>
-            </div>
-          </article>
-
-          <article class="slide" dir="rtl">
-            <div class="phone" aria-hidden="true">
-              <div class="phone-screen">
-                <div class="phone-bar">پرمیوم</div>
-                <div class="phone-body">
-                  <div class="premium-bar">منابع نامحدود · ۱ ارز هدیه</div>
-                  <div class="ai-bubble" style="margin-top:0.7rem">حفظ داده · خودآزمون · نام نمایش VIP</div>
-                </div>
-              </div>
-            </div>
-            <div class="slide-copy">
-              <span class="slide-index">۰۵ / ۰۵</span>
-              <h3>پرمیوم و ارز</h3>
-              <p>نسخه رایگان برای شروع کافی است؛ پرمیوم منابع نامحدود و امکانات بیشتر می‌دهد.</p>
-            </div>
-          </article>
+          </div>
         </div>
 
-        <div class="slider-controls">
-          <button type="button" class="slider-btn" data-next aria-label="بعدی">←</button>
-          <div class="dots" aria-hidden="true"></div>
-          <button type="button" class="slider-btn" data-prev aria-label="قبلی">→</button>
+        <div class="slide-copy-panel">
+          <span class="slide-index" data-slide-index>۰۱ / ۰۵</span>
+          <h3 data-slide-title>جدول روز — ۱۴ خانه</h3>
+          <p data-slide-text>از ۵ صبح تا ۵ صبح فردا برنامه‌ات را مثل یک جدول کاری می‌چینی؛ هر خانه یک بلوک تمرکز است.</p>
+          <div class="slider-controls">
+            <button type="button" class="slider-btn" data-next aria-label="بعدی">←</button>
+            <div class="dots" aria-hidden="true"></div>
+            <button type="button" class="slider-btn" data-prev aria-label="قبلی">→</button>
+          </div>
         </div>
       </div>
     </section>
 
-    <section class="benefits container">
+    <section class="benefits container" id="why">
       <div class="section-title">
-        <h2>چرا بلوک</h2>
-        <p>ساده، دقیق، برای مطالعه جدی</p>
+        <h2 class="reveal">چرا بلوک</h2>
+        <p class="reveal">ساده، دقیق، برای مطالعه جدی</p>
       </div>
-      <ul class="benefit-list">
-        <li>
-          <span class="benefit-mark m1" aria-hidden="true"></span>
-          <strong>برنامه شفاف</strong>
-          <span>روز را به بلوک‌های مشخص تقسیم کن؛ چیزی گم نمی‌شود.</span>
-        </li>
-        <li>
-          <span class="benefit-mark m2" aria-hidden="true"></span>
-          <strong>منبع و پیشرفت</strong>
-          <span>صفحه و تست را روی منبع واقعی ثبت کن.</span>
-        </li>
-        <li>
-          <span class="benefit-mark m3" aria-hidden="true"></span>
-          <strong>همگام با تو</strong>
-          <span>اینماد، پرداخت امن و پشتیبانی فارسی.</span>
-        </li>
-      </ul>
+      <div class="bento">
+        <article class="bento-card reveal" data-spotlight>
+          <div class="bento-glow" aria-hidden="true"></div>
+          <div class="mini-timeline" aria-hidden="true">
+            <span class="mt-item done"></span>
+            <span class="mt-item done"></span>
+            <span class="mt-item run"></span>
+            <span class="mt-item"></span>
+          </div>
+          <h3>برنامه شفاف</h3>
+          <p>روز را به بلوک‌های مشخص تقسیم کن؛ چیزی گم نمی‌شود.</p>
+        </article>
+        <article class="bento-card reveal" data-spotlight>
+          <div class="bento-glow" aria-hidden="true"></div>
+          <div class="mini-ring" aria-hidden="true"><span></span></div>
+          <h3>منبع و پیشرفت</h3>
+          <p>صفحه و تست را روی منبع واقعی ثبت کن و پیشرفتت را ببین.</p>
+        </article>
+        <article class="bento-card bento-wide reveal" data-spotlight>
+          <div class="bento-glow" aria-hidden="true"></div>
+          <div class="mini-pulse" aria-hidden="true">
+            <i></i><i></i><i></i>
+          </div>
+          <h3>همگام با تو</h3>
+          <p>اینماد، پرداخت امن و پشتیبانی فارسی — برای مطالعه جدی در ایران.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="final-cta container">
+      <div class="cta-band reveal">
+        <div class="cta-copy">
+          <h2>آمادهٔ ساختن روزت؟</h2>
+          <p>اپ بلوک را نصب کن و اولین بلوک مطالعه‌ات را بچین.</p>
+          <a class="btn btn-light btn-magnetic" href="#download" data-magnetic>دانلود اپ</a>
+        </div>
+        <div class="qr-box" aria-label="کد QR به‌زودی">
+          <div class="qr-pattern" aria-hidden="true"></div>
+          <span class="qr-scan" aria-hidden="true"></span>
+          <p>QR · به‌زودی</p>
+        </div>
+      </div>
     </section>
   </main>
 
-  <section class="trust" id="trust">
-    <div class="container">
-      <div class="trust-panel">
-        <div class="trust-brand">
-          <img class="trust-logo" src="assets/bolok-logo.png" alt="بلوک" width="72" height="72" />
-          <p class="trust-kicker">کسب‌وکار</p>
-          <h2 class="trust-name">بلوک</h2>
-          <p class="trust-tagline">برنامه‌ریز مطالعه · فارسی · اندروید</p>
-          <a class="trust-mail" href="mailto:support@bolok.ir">support@bolok.ir</a>
-          <nav class="footer-links" aria-label="پیوندهای حقوقی">
-            <a href="about.html">درباره</a>
-            <a href="terms.html">شرایط</a>
-            <a href="privacy.html">حریم خصوصی</a>
-          </nav>
-        </div>
+  <footer class="site-trust" id="trust">
+    <div class="container trust-center">
+      <img class="trust-logo" src="assets/bolok-logo.png" alt="بلوک" width="72" height="72" />
+      <p class="trust-kicker">کسب‌وکار</p>
+      <h2 class="trust-name">بلوک</h2>
+      <p class="trust-tagline">برنامه‌ریز مطالعه · فارسی · اندروید</p>
+      <a class="trust-mail" href="mailto:support@bolok.ir">support@bolok.ir</a>
 
-        <aside class="enamad-card">
-          <p class="trust-kicker">نماد اعتماد الکترونیکی</p>
-          <!-- کد رسمی اینماد — بدون هیچ تغییری -->
-          <div id="enamad">
+      <p class="trust-kicker enamad-label">نماد اعتماد الکترونیکی</p>
+      <div class="enamad-frame" id="enamad">
 <a referrerpolicy='origin' target='_blank' href='https://trustseal.enamad.ir/?id=7806432&Code=UkmiQCpizBsL3zKeePhPJGmhKEhW7NtH'><img referrerpolicy='origin' src='https://trustseal.enamad.ir/logo.aspx?id=7806432&Code=UkmiQCpizBsL3zKeePhPJGmhKEhW7NtH' alt='' style='cursor:pointer' code='UkmiQCpizBsL3zKeePhPJGmhKEhW7NtH'></a>
-          </div>
-        </aside>
       </div>
-    </div>
-  </section>
 
-  <footer class="site-footer">
-    <div class="container">
-      © بلوک · bolokapp.ir
+      <nav class="footer-links" aria-label="پیوندهای حقوقی">
+        <a href="about.html">درباره</a>
+        <a href="terms.html">شرایط</a>
+        <a href="privacy.html">حریم خصوصی</a>
+      </nav>
+      <p class="copyright">© بلوک · bolokapp.ir</p>
     </div>
   </footer>
-
-  <script src="app.js"></script>
 </body>
 </html>
