@@ -20,19 +20,42 @@
 
     gsap.utils.toArray(".reveal, .reveal-blur").forEach((el) => {
       const blur = el.classList.contains("reveal-blur");
-      gsap.from(el, {
-        opacity: 0,
-        y: 14,
-        filter: blur ? "blur(6px)" : "none",
-        duration: blur ? 0.85 : 0.65,
-        ease: "power3.out",
-        scrollTrigger: {
-          trigger: el,
-          start: "top 92%",
-          once: true,
+      // fromTo + immediateRender:false avoids leaving content stuck at opacity 0
+      // when ScrollTrigger's initial from-state would hide above-the-fold text.
+      gsap.fromTo(
+        el,
+        {
+          opacity: 0,
+          y: 14,
+          filter: blur ? "blur(6px)" : "none",
         },
-      });
+        {
+          opacity: 1,
+          y: 0,
+          filter: "none",
+          duration: blur ? 0.85 : 0.65,
+          ease: "power3.out",
+          immediateRender: false,
+          scrollTrigger: {
+            trigger: el,
+            start: "top 95%",
+            once: true,
+            // Play immediately if already in view (hero, headless screenshots)
+            toggleActions: "play none none none",
+          },
+        },
+      );
     });
+
+    // Safety: never leave reveal nodes invisible if a trigger misfires
+    window.setTimeout(() => {
+      document.querySelectorAll(".reveal, .reveal-blur").forEach((el) => {
+        const style = window.getComputedStyle(el);
+        if (parseFloat(style.opacity) < 0.05) {
+          gsap.set(el, { opacity: 1, y: 0, filter: "none" });
+        }
+      });
+    }, 1200);
   };
 
   // Hero tilt
