@@ -8,15 +8,15 @@
   <meta name="enamad" content="5130850" />
   <meta name="referrer" content="origin" />
   <title>بلوک</title>
-  <link rel="icon" href="assets/bolok-logo.svg?v=9" type="image/svg+xml" />
-  <link rel="apple-touch-icon" href="assets/bolok-logo.png?v=9" />
+  <link rel="icon" href="assets/bolok-logo.svg?v=10" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="assets/bolok-logo.png?v=10" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=9" />
+  <link rel="stylesheet" href="styles.css?v=10" />
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
-  <script src="app.js?v=9" defer></script>
+  <script src="app.js?v=10" defer></script>
 </head>
 <body>
   <div class="aurora" aria-hidden="true"></div>
@@ -26,17 +26,18 @@
   <header class="site-header">
     <div class="container inner">
       <a class="brand" href="index.html">
-        <img class="brand-logo" src="assets/bolok-logo.svg?v=9" alt="بلوک" width="36" height="36" />
+        <img class="brand-logo" src="assets/bolok-logo.svg?v=10" alt="بلوک" width="36" height="36" />
         <span>بلوک</span>
       </a>
+
       <nav class="nav" aria-label="اصلی">
-                <div class="nav-item--has-sub" data-edu-nav>
-          <button class="nav-trigger" type="button" data-edu-trigger aria-expanded="false" aria-haspopup="true">
+        <div class="nav-item--has-sub" data-edu-nav>
+          <a class="nav-trigger" href="#education" data-edu-trigger aria-expanded="false" aria-haspopup="true">
             مطالب آموزشی <span class="nav-trigger-caret" aria-hidden="true"></span>
-          </button>
+          </a>
           <div class="nav-panel" role="menu">
             <div class="nav-panel-head">
-              <a href="education/konkour/index.html">کنکور سراسری — همه مطالب</a>
+              <a href="#education">کنکور سراسری روی همین صفحه</a>
             </div>
             <div class="nav-panel-group">
               <h4>ثبت نام کنکور سراسری</h4>
@@ -64,39 +65,35 @@
             </div>
           </div>
         </div>
-<a href="#showcase">معرفی</a>
+        <a href="#showcase">معرفی</a>
         <a href="about.html">درباره</a>
         <a href="terms.html">شرایط</a>
         <a href="privacy.html">حریم خصوصی</a>
       </nav>
-      <button class="nav-toggle" type="button" data-nav-toggle aria-label="منو"><span></span></button>
+
+      <div class="header-actions">
+        <a class="btn btn-primary header-cta" href="#download">دانلود اپ</a>
+        <button class="nav-toggle" type="button" data-nav-toggle aria-label="منو"><span></span></button>
+      </div>
     </div>
     <div class="nav-drawer" data-nav-drawer>
-            <div class="drawer-sub" data-drawer-sub>
+      <a href="#education">مطالب آموزشی</a>
+      <div class="drawer-sub" data-drawer-sub>
         <button class="drawer-sub-toggle" type="button" data-drawer-sub-toggle aria-expanded="false">
-          مطالب آموزشی <span aria-hidden="true">+</span>
+          زیرمنوی کنکور <span aria-hidden="true">+</span>
         </button>
         <div class="drawer-sub-panel">
-          <a href="education/konkour/index.html">کنکور سراسری</a>
-          <p class="drawer-sub-label">ثبت نام</p>
           <a href="education/konkour/sabt-nam.html">ثبت نام کنکور سراسری</a>
           <a href="education/konkour/zaman-sabt-nam.html">زمان ثبت نام</a>
           <a href="education/konkour/nahve-sabt-nam.html">نحوه ثبت نام</a>
-          <p class="drawer-sub-label">انتخاب رشته</p>
           <a href="education/konkour/elam-natayej-1405.html">نتایج نهایی ۱۴۰۵</a>
-          <a href="education/konkour/narmafzar-entekhab-reshte.html">نرم‌افزار انتخاب رشته</a>
           <a href="education/konkour/entekhab-reshte-1405.html">انتخاب رشته ۱۴۰۵</a>
-          <p class="drawer-sub-label">مشاوره</p>
-          <a href="education/konkour/tasir-moadel-1405.html">تاثیر معدل</a>
           <a href="education/konkour/barname-1406.html">برنامه ۱۴۰۶</a>
-          <a href="education/konkour/shahriye-pardis.html">شهریه پردیس</a>
-          <p class="drawer-sub-label">دانشگاه آزاد</p>
-          <a href="education/konkour/azad-1405.html">انتخاب رشته آزاد ۱۴۰۵</a>
-          <a href="education/konkour/azad-nahve.html">نحوه انتخاب رشته آزاد</a>
-          <a href="education/konkour/azad-shenase.html">شناسه انتخاب رشته</a>
+          <a href="education/konkour/azad-1405.html">انتخاب رشته آزاد</a>
+          <a href="education/konkour/index.html">همه مطالب کنکور</a>
         </div>
       </div>
-<a href="#showcase">معرفی</a>
+      <a href="#showcase">معرفی</a>
       <a href="about.html">درباره</a>
       <a href="terms.html">شرایط</a>
       <a href="privacy.html">حریم خصوصی</a>
@@ -107,14 +104,14 @@
   <main>
     <section class="hero container">
       <div class="hero-logo-wrap" data-tilt>
-        <img class="hero-logo" src="assets/bolok-logo.svg?v=9" alt="لوگوی بلوک" width="112" height="112" />
+        <img class="hero-logo" src="assets/bolok-logo.svg?v=10" alt="لوگوی بلوک" width="112" height="112" />
       </div>
       <p class="hero-eyebrow reveal">برنامه‌ریز مطالعه · فارسی · اندروید</p>
       <h1 class="reveal-blur">بلوک</h1>
       <p class="hero-lead reveal">برنامه روزانه‌ات را بچین، منابع را وصل کن، مطالعه واقعی را ثبت کن — شفاف و هدفمند.</p>
       <div class="cta-row reveal">
         <a class="btn btn-primary btn-magnetic btn-shimmer" href="#download" id="download" data-magnetic>دانلود اپ</a>
-        <a class="btn btn-ghost" href="#showcase">ببین چطور کار می‌کند</a>
+        <a class="btn btn-ghost" href="#education">مطالب آموزشی</a>
       </div>
     </section>
 
@@ -193,6 +190,63 @@
       </div>
     </section>
 
+    <section class="home-edu container" id="education">
+      <div class="section-title">
+        <h2 class="reveal">مطالب آموزشی</h2>
+        <p class="reveal">کنکور سراسری — ثبت‌نام، انتخاب رشته، مشاوره</p>
+      </div>
+      <p class="edu-lead reveal">اگر می‌خواهید وارد بهترین دانشگاه‌های ایران شوید باید از سد کنکور سراسری رد شوید. برای گذر از این راه باید با برنامه‌ریزی مناسب برای کنکور سراسری، شیوه‌های تست‌زنی صحیح، شرایط و ضوابط اختصاصی کنکور سراسری، نحوه ثبت نام در کنکور سراسری، زمان‌بندی مناسب برای موفقیت در کنکور سراسری و در نهایت انتخاب رشته کنکور سراسری آشنا شویم.</p>
+      <div class="edu-grid">
+        <section class="edu-card edu-card--blue reveal">
+          <div class="edu-card-head">ثبت نام کنکور سراسری</div>
+          <ul class="edu-card-list">
+            <li><a href="education/konkour/sabt-nam.html">ثبت نام کنکور سراسری</a></li>
+            <li><a href="education/konkour/zaman-sabt-nam.html">زمان ثبت نام کنکور سراسری</a></li>
+            <li><a href="education/konkour/nahve-sabt-nam.html">نحوه ثبت نام کنکور سراسری</a></li>
+          </ul>
+          <div class="edu-card-foot">
+            <a class="btn btn-primary" href="education/konkour/sabt-nam.html">راهنمای کامل ثبت‌نام</a>
+          </div>
+        </section>
+        <section class="edu-card edu-card--red reveal">
+          <div class="edu-card-head">انتخاب رشته کنکور سراسری</div>
+          <ul class="edu-card-list">
+            <li><a href="education/konkour/elam-natayej-1405.html">اعلام نتایج نهایی کنکور ۱۴۰۵</a></li>
+            <li><a href="education/konkour/narmafzar-entekhab-reshte.html">نرم‌افزار انتخاب رشته کنکور</a></li>
+            <li><a href="education/konkour/entekhab-reshte-1405.html">انتخاب رشته کنکور ۱۴۰۵</a></li>
+          </ul>
+          <div class="edu-card-foot">
+            <a class="btn btn-ghost" href="education/konkour/entekhab-reshte-1405.html">سایر مقالات</a>
+          </div>
+        </section>
+        <section class="edu-card edu-card--ink reveal">
+          <div class="edu-card-head">مشاوره کنکور سراسری</div>
+          <ul class="edu-card-list">
+            <li><a href="education/konkour/tasir-moadel-1405.html">تاثیر معدل در کنکور ۱۴۰۵ — ۱۴۰۶</a></li>
+            <li><a href="education/konkour/barname-1406.html">برنامه‌ریزی برای کنکور ۱۴۰۶</a></li>
+            <li><a href="education/konkour/shahriye-pardis.html">شهریه پردیس خودگردان</a></li>
+          </ul>
+          <div class="edu-card-foot">
+            <a class="btn btn-ghost" href="education/konkour/barname-1406.html">سایر مقالات</a>
+          </div>
+        </section>
+        <section class="edu-card edu-card--slate reveal">
+          <div class="edu-card-head">انتخاب رشته دانشگاه آزاد</div>
+          <ul class="edu-card-list">
+            <li><a href="education/konkour/azad-1405.html">انتخاب رشته دانشگاه آزاد ۱۴۰۵</a></li>
+            <li><a href="education/konkour/azad-nahve.html">نحوه انتخاب رشته دانشگاه آزاد</a></li>
+            <li><a href="education/konkour/azad-shenase.html">شناسه انتخاب رشته دانشگاه آزاد</a></li>
+          </ul>
+          <div class="edu-card-foot">
+            <a class="btn btn-ghost" href="education/konkour/azad-nahve.html">سایر مقالات</a>
+          </div>
+        </section>
+      </div>
+      <p class="home-edu-more reveal">
+        <a class="btn btn-ghost" href="education/konkour/index.html">صفحهٔ کامل مطالب کنکور</a>
+      </p>
+    </section>
+
     <section class="benefits container" id="why">
       <div class="section-title">
         <h2 class="reveal">چرا بلوک</h2>
@@ -245,7 +299,7 @@
 
   <footer class="site-trust" id="trust">
     <div class="container trust-center">
-      <img class="trust-logo" src="assets/bolok-logo.svg?v=9" alt="بلوک" width="72" height="72" />
+      <img class="trust-logo" src="assets/bolok-logo.svg?v=10" alt="بلوک" width="72" height="72" />
       <p class="trust-kicker">کسب‌وکار</p>
       <h2 class="trust-name">بلوک</h2>
       <p class="trust-tagline">برنامه‌ریز مطالعه · فارسی · اندروید</p>

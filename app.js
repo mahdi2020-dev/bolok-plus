@@ -12,7 +12,7 @@
     });
   }
 
-  // Desktop education submenu
+  // Desktop education submenu (hover/CSS + click toggle; anchor may scroll to #education)
   const eduNav = document.querySelector("[data-edu-nav]");
   const eduTrigger = eduNav?.querySelector("[data-edu-trigger]");
   const closeEduNav = () => {
@@ -22,6 +22,15 @@
   };
   if (eduNav && eduTrigger) {
     eduTrigger.addEventListener("click", (e) => {
+      const href = eduTrigger.getAttribute("href") || "";
+      const isHash = href.startsWith("#");
+      const desktop = window.matchMedia("(min-width: 760px)").matches;
+      // On desktop, allow hash navigation; panel opens via :hover
+      if (desktop && isHash) {
+        eduNav.classList.remove("is-open");
+        eduTrigger.setAttribute("aria-expanded", "false");
+        return;
+      }
       e.preventDefault();
       const open = !eduNav.classList.contains("is-open");
       eduNav.classList.toggle("is-open", open);
