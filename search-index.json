@@ -1,0 +1,410 @@
+[
+  {
+    "title": "۴۰۴",
+    "desc": "",
+    "url": "/404.html",
+    "path": "404.html"
+  },
+  {
+    "title": "درباره بلوک",
+    "desc": "درباره بلوک؛ تیم و مأموریت برنامه‌ریز مطالعه فارسی و راهنمای کنکور سراسری برای دانش‌آموزان و داوطلبان.",
+    "url": "/about.html",
+    "path": "about.html"
+  },
+  {
+    "title": "بلوک",
+    "desc": "بلوک؛ برنامه‌ریز مطالعه فارسی + راهنمای کامل کنکور سراسری: ثبت‌نام، زمان‌بندی، انتخاب رشته، مشاوره و سوابق تحصیلی.",
+    "url": "/",
+    "path": "index.html"
+  },
+  {
+    "title": "سیاست حریم خصوصی",
+    "desc": "",
+    "url": "/privacy.html",
+    "path": "privacy.html"
+  },
+  {
+    "title": "جستجو در بلوک",
+    "desc": "جستجو در مطالب آموزشی بلوک؛ کنکور، ثبت‌نام، مشاوره و راهنماهای مطالعه.",
+    "url": "/search.html",
+    "path": "search.html"
+  },
+  {
+    "title": "شرایط استفاده",
+    "desc": "",
+    "url": "/terms.html",
+    "path": "terms.html"
+  },
+  {
+    "title": "مطالب آموزشی",
+    "desc": "راهنمای کنکور سراسری، ثبت‌نام، انتخاب رشته و مشاوره — بلوک",
+    "url": "/education/index.html",
+    "path": "education/index.html"
+  },
+  {
+    "title": "انتخاب رشته دانشگاه آزاد ۱۴۰۵",
+    "desc": "انتخاب رشته دانشگاه آزاد مسیر و سامانه جداگانه‌ای دارد؛ شناسه و زمان‌بندی مخصوص خود را دنبال کنید.",
+    "url": "/education/konkour/azad-1405.html",
+    "path": "education/konkour/azad-1405.html"
+  },
+  {
+    "title": "نحوه انتخاب رشته دانشگاه آزاد",
+    "desc": "گام‌های عملی انتخاب رشته در سامانه آزاد: ورود، وارد کردن شناسه، چیدن اولویت‌ها و تأیید نهایی.",
+    "url": "/education/konkour/azad-nahve.html",
+    "path": "education/konkour/azad-nahve.html"
+  },
+  {
+    "title": "شناسه انتخاب رشته دانشگاه آزاد",
+    "desc": "شناسه انتخاب رشته کلید ورود به سامانه است؛ آن را از کارنامه/سامانه مربوطه بردارید و محرمانه نگه دارید.",
+    "url": "/education/konkour/azad-shenase.html",
+    "path": "education/konkour/azad-shenase.html"
+  },
+  {
+    "title": "برنامه‌ریزی برای کنکور ۱۴۰۶",
+    "desc": "برنامه واقع‌بینانه روزانه، مرور منظم و ثبت مطالعه واقعی، ستون فقرات آمادگی برای کنکور ۱۴۰۶ است.",
+    "url": "/education/konkour/barname-1406.html",
+    "path": "education/konkour/barname-1406.html"
+  },
+  {
+    "title": "بهترین رشته‌های انسانی",
+    "desc": "بهترین رشته‌های علوم انسانی را با معیار علاقه، بازار کار، شانس قبولی و نمودار تصمیم‌گیری انتخاب کنید — راهنمای بلوک",
+    "url": "/education/konkour/behtarin-reshte-ensani.html",
+    "path": "education/konkour/behtarin-reshte-ensani.html"
+  },
+  {
+    "title": "اعلام نتایج نهایی کنکور ۱۴۰۵",
+    "desc": "زمان و نحوه مشاهده نتایج نهایی کنکور را از طریق سایت سنجش پیگیری کنید و برای انتخاب رشته آماده شوید.",
+    "url": "/education/konkour/elam-natayej-1405.html",
+    "path": "education/konkour/elam-natayej-1405.html"
+  },
+  {
+    "title": "انتخاب رشته کنکور ۱۴۰۵",
+    "desc": "پس از مجاز شدن، اولویت‌بندی رشته‌محل‌ها را با دقت و بر اساس علاقه، شانس قبولی و شرایط ادامه تحصیل بچینید.",
+    "url": "/education/konkour/entekhab-reshte-1405.html",
+    "path": "education/konkour/entekhab-reshte-1405.html"
+  },
+  {
+    "title": "اصلاحیه دفترچه انتخاب رشته کنکور",
+    "desc": "اصلاحیه دفترچه انتخاب رشته کنکور چیست، چرا مهم است و قبل از ارسال انتخاب‌ها چه چک‌لیستی را رعایت کنید",
+    "url": "/education/konkour/eslahiye-daftarche.html",
+    "path": "education/konkour/eslahiye-daftarche.html"
+  },
+  {
+    "title": "کنکور سراسری",
+    "desc": "راهنمای کامل کنکور سراسری: ثبت‌نام، زمان‌بندی، شرایط اختصاصی، انتخاب رشته، راد مدیو و دانشگاه آزاد",
+    "url": "/education/konkour/index.html",
+    "path": "education/konkour/index.html"
+  },
+  {
+    "title": "نحوه ثبت نام کنکور سراسری",
+    "desc": "مسیر اینترنتی ثبت‌نام در سایت سنجش: از ساخت حساب تا پرداخت و دریافت کد رهگیری.",
+    "url": "/education/konkour/nahve-sabt-nam.html",
+    "path": "education/konkour/nahve-sabt-nam.html"
+  },
+  {
+    "title": "نرم‌افزار انتخاب رشته کنکور",
+    "desc": "ابزارهای کمکی انتخاب رشته می‌توانند تخمین بزنند؛ تصمیم نهایی باید با کارنامه، دفترچه و منطق شخصی شما باشد.",
+    "url": "/education/konkour/narmafzar-entekhab-reshte.html",
+    "path": "education/konkour/narmafzar-entekhab-reshte.html"
+  },
+  {
+    "title": "سامانه راد مدیو (rad.medu.ir)",
+    "desc": "سامانه راد مدیو چیست، چه ربطی به سوابق تحصیلی و کنکور دارد و چطور امن از rad.medu.ir استفاده کنید",
+    "url": "/education/konkour/rad-medu.html",
+    "path": "education/konkour/rad-medu.html"
+  },
+  {
+    "title": "ثبت نام کنکور سراسری",
+    "desc": "راهنمای کامل ثبت نام کنکور سراسری: شرایط، مدارک، کدها، هزینه، مراحل سایت سنجش و چک‌لیست نهایی",
+    "url": "/education/konkour/sabt-nam.html",
+    "path": "education/konkour/sabt-nam.html"
+  },
+  {
+    "title": "شهریه پردیس خودگردان",
+    "desc": "رشته‌محل‌های پردیس/شهریه‌پرداز هزینه دارند؛ قبل از انتخاب، توان مالی و قوانین همان دانشگاه را بررسی کنید.",
+    "url": "/education/konkour/shahriye-pardis.html",
+    "path": "education/konkour/shahriye-pardis.html"
+  },
+  {
+    "title": "شرایط اختصاصی کنکور سراسری",
+    "desc": "شرایط اختصاصی کنکور سراسری، ضوابط شرکت در آزمون و لینک راهنماهای ثبت‌نام، زمان‌بندی و انتخاب رشته",
+    "url": "/education/konkour/sharayet-ekhtesasi.html",
+    "path": "education/konkour/sharayet-ekhtesasi.html"
+  },
+  {
+    "title": "تاثیر معدل در کنکور ۱۴۰۵ — ۱۴۰۶",
+    "desc": "با قطعی شدن تاثیر سوابق تحصیلی، معدل و ایجاد سابقه برای مشمولان اهمیت بیشتری پیدا کرده است.",
+    "url": "/education/konkour/tasir-moadel-1405.html",
+    "path": "education/konkour/tasir-moadel-1405.html"
+  },
+  {
+    "title": "زمان ثبت نام کنکور سراسری",
+    "desc": "زمان و تاریخ ثبت نام کنکور سراسری ۱۴۰۶، تمدید مهلت، نمونه بازه ۱۴۰۵ و نمودار مسیر تا انتخاب رشته — راهنمای بلوک",
+    "url": "/education/konkour/zaman-sabt-nam.html",
+    "path": "education/konkour/zaman-sabt-nam.html"
+  },
+  {
+    "title": "اگر پرستاری قبول نشم",
+    "desc": "اگر پرستاری قبول نشوید، گزینه‌هایی مثل پشت‌کنکور، پیراپزشکی‌های نزدیک، یا مسیرهای دیگر دانشگاهی مطرح می‌شود.",
+    "url": "/education/konkour/moshavere/agar-parastari-ghabool-nasham.html",
+    "path": "education/konkour/moshavere/agar-parastari-ghabool-nasham.html"
+  },
+  {
+    "title": "دانشگاه آزاد برم یا پشت کنکور بمونم",
+    "desc": "انتخاب بین رفتن به آزاد و پشت‌کنکور ماندن را با مزایا/معایب، شهریه، و احتمال جهش رتبه بسنجید.",
+    "url": "/education/konkour/moshavere/azad-ya-posht-konkour.html",
+    "path": "education/konkour/moshavere/azad-ya-posht-konkour.html"
+  },
+  {
+    "title": "طرح آزمون جامع جایگزین کنکور",
+    "desc": "طرح آزمون جامع جایگزین کنکور ایده‌ای برای اصلاح نظام سنجش و پوشش دروس متوسطه دوم است که با هدف عدالت آموزشی مطرح شده؛ هنوز به تصویب قطعی عمومی نرسیده …",
+    "url": "/education/konkour/moshavere/azmoon-jame-jaygozin.html",
+    "path": "education/konkour/moshavere/azmoon-jame-jaygozin.html"
+  },
+  {
+    "title": "لیست بهترین دانشگاه‌های داروسازی در ایران",
+    "desc": "بهترین دانشگاه‌های داروسازی با معیارهای آموزشی، پژوهشی و امکانات آزمایشگاهی مقایسه می‌شوند؛ رتبه‌بندی مطلق نیست.",
+    "url": "/education/konkour/moshavere/behtarin-daneshgah-daroosazi.html",
+    "path": "education/konkour/moshavere/behtarin-daneshgah-daroosazi.html"
+  },
+  {
+    "title": "چارت درسی رشته حقوق",
+    "desc": "چارت درسی حقوق ساختار واحدها و ترم‌بندی را نشان می‌دهد و به داوطلب برای تصور مسیر تحصیل کمک می‌کند.",
+    "url": "/education/konkour/moshavere/chart-darsi-hoghugh.html",
+    "path": "education/konkour/moshavere/chart-darsi-hoghugh.html"
+  },
+  {
+    "title": "دلایل افت رتبه در کنکور سراسری",
+    "desc": "یکی از دلایل افت رتبه، برنامه‌ریزی و مدیریت زمان ضعیف و تثبیت‌نشدن یادگیری است؛ استرس و افت انگیزه هم نقش دارند.",
+    "url": "/education/konkour/moshavere/dalayel-oft-rotbe.html",
+    "path": "education/konkour/moshavere/dalayel-oft-rotbe.html"
+  },
+  {
+    "title": "تفاوت دیپلم بزرگسالان با روزانه",
+    "desc": "تفاوت دیپلم بزرگسالان و روزانه در شیوه آموزش، زمان‌بندی و هزینه دیده می‌شود.",
+    "url": "/education/konkour/moshavere/diplom-bozorgsalan-ya-roozane.html",
+    "path": "education/konkour/moshavere/diplom-bozorgsalan-ya-roozane.html"
+  },
+  {
+    "title": "اشتباه در ثبت‌نام اینترنتی دانشگاه‌ها",
+    "desc": "اشتباه در ثبت‌نام اینترنتی می‌تواند پذیرش را مختل کند؛ بی‌دقتی در ورود اطلاعات خطرناک است.",
+    "url": "/education/konkour/moshavere/eshtebah-sabtnam-internet.html",
+    "path": "education/konkour/moshavere/eshtebah-sabtnam-internet.html"
+  },
+  {
+    "title": "اگر کارت ورود به جلسه را گم کنیم چه می‌شود",
+    "desc": "اگر کارت ورود به جلسه را گم کنید، اول وسایل را دقیق بگردید؛ اگر پیدا نشد، فوراً به سامانه رسمی برگزارکننده آزمون (سنجش) مراجعه کنید.",
+    "url": "/education/konkour/moshavere/gom-shodan-kart-vorod.html",
+    "path": "education/konkour/moshavere/gom-shodan-kart-vorod.html"
+  },
+  {
+    "title": "رشته حقوق دانشگاه آزاد بهتره یا پیام نور",
+    "desc": "مقایسه حقوق آزاد و پیام نور به سبک آموزش، شهریه، حضور، و هدف شغلی (وکالت/قضاوت/اداری) بستگی دارد.",
+    "url": "/education/konkour/moshavere/hoghugh-azad-ya-payamnoor.html",
+    "path": "education/konkour/moshavere/hoghugh-azad-ya-payamnoor.html"
+  },
+  {
+    "title": "مشاوره کنکور سراسری",
+    "desc": "برای موفقیت در کنکور سراسری به ابزار متنوعی مثل منابع کنکور سراسری، کتاب‌های کمک‌آموزشی و آزمون‌های آزمایشی خوب برای رشته ریاضی، تجربی، انسانی، هنر و زبان،",
+    "url": "/education/konkour/moshavere/index.html",
+    "path": "education/konkour/moshavere/index.html"
+  },
+  {
+    "title": "جایگزین کنکور چیست",
+    "desc": "جایگزین کنکور به مسیرهایی گفته می‌شود که بدون آزمون سراسری بتوان آینده تحصیلی/شغلی ساخت؛ از پذیرش با سوابق تا مهارت‌آموزی.",
+    "url": "/education/konkour/moshavere/jaygozin-konkour.html",
+    "path": "education/konkour/moshavere/jaygozin-konkour.html"
+  },
+  {
+    "title": "شرکت در کنکور دانش‌آموزان بزرگسال",
+    "desc": "شرکت در کنکور برای دانش‌آموزان بزرگسال از مسیر sanjesh.org و با شرایط دفترچه همان سال است.",
+    "url": "/education/konkour/moshavere/konkour-bozorgsalan.html",
+    "path": "education/konkour/moshavere/konkour-bozorgsalan.html"
+  },
+  {
+    "title": "مدارک لازم برای ثبت نام کنکور فرهنگیان ۱۴۰۵",
+    "desc": "بر اساس اعلام رسمی، ارائه مدارک لازم هنگام ثبت‌نام اینترنتی الزامی است؛ معمولاً شامل تصویر شناسنامه، کارت ملی و عکس جدید است.",
+    "url": "/education/konkour/moshavere/madarek-farhangian-1405.html",
+    "path": "education/konkour/moshavere/madarek-farhangian-1405.html"
+  },
+  {
+    "title": "شرایط معلم شدن در هنرستان",
+    "desc": "شرایط معلمی هنرستان عموماً شبیه مسیر معلمی متوسطه است و برای فارغ‌التحصیلان فنی‌وحرفه‌ای/کاردانش مسیرهای مشخصی دارد.",
+    "url": "/education/konkour/moshavere/moallem-honarestan.html",
+    "path": "education/konkour/moshavere/moallem-honarestan.html"
+  },
+  {
+    "title": "نفرات برتر آزمون قلم‌چی",
+    "desc": "نفرات برتر آزمون‌های آزمایشی مثل قلم‌چی با عملکرد پایدار در آزمون‌ها شناخته می‌شوند؛ نتایج هر دوره جداگانه منتشر می‌شود.",
+    "url": "/education/konkour/moshavere/nafarat-bartar-ghalamchi.html",
+    "path": "education/konkour/moshavere/nafarat-bartar-ghalamchi.html"
+  },
+  {
+    "title": "نتایج ارزیابی شایستگی دانشگاه فرهنگیان",
+    "desc": "نتایج ارزیابی شایستگی دانشگاه فرهنگیان معمولاً به‌صورت نمره مستقل اعلام نمی‌شود؛ عملکرد در ارزیابی و مصاحبه در کنار سایر معیارهای پذیرش بررسی می‌شود.",
+    "url": "/education/konkour/moshavere/natayej-arzyabi-farhangian.html",
+    "path": "education/konkour/moshavere/natayej-arzyabi-farhangian.html"
+  },
+  {
+    "title": "مشاوره کنکور سراسری",
+    "desc": "برای موفقیت در کنکور سراسری به ابزار متنوعی مثل منابع کنکور سراسری، کتاب‌های کمک‌آموزشی و آزمون‌های آزمایشی خوب برای رشته ریاضی، تجربی، انسانی، هنر و زبان،",
+    "url": "/education/konkour/moshavere/page-2.html",
+    "path": "education/konkour/moshavere/page-2.html"
+  },
+  {
+    "title": "مشاوره کنکور سراسری",
+    "desc": "برای موفقیت در کنکور سراسری به ابزار متنوعی مثل منابع کنکور سراسری، کتاب‌های کمک‌آموزشی و آزمون‌های آزمایشی خوب برای رشته ریاضی، تجربی، انسانی، هنر و زبان،",
+    "url": "/education/konkour/moshavere/page-3.html",
+    "path": "education/konkour/moshavere/page-3.html"
+  },
+  {
+    "title": "مشاوره کنکور سراسری",
+    "desc": "برای موفقیت در کنکور سراسری به ابزار متنوعی مثل منابع کنکور سراسری، کتاب‌های کمک‌آموزشی و آزمون‌های آزمایشی خوب برای رشته ریاضی، تجربی، انسانی، هنر و زبان،",
+    "url": "/education/konkour/moshavere/page-4.html",
+    "path": "education/konkour/moshavere/page-4.html"
+  },
+  {
+    "title": "پرستاری بهتر است یا اتاق عمل",
+    "desc": "هر دو رشته مهم‌اند اما محیط کار، وظایف، استخدام و مسیر ارتقا فرق دارد.",
+    "url": "/education/konkour/moshavere/parastari-ya-otagh-amal.html",
+    "path": "education/konkour/moshavere/parastari-ya-otagh-amal.html"
+  },
+  {
+    "title": "پاسخنامه کنکور انسانی ۱۴۰۵",
+    "desc": "پاسخنامه کنکور انسانی ۱۴۰۵ حدود ۱ شهریور در سایت سنجش منتشر شده است.",
+    "url": "/education/konkour/moshavere/pasokhname-ensani-1405.html",
+    "path": "education/konkour/moshavere/pasokhname-ensani-1405.html"
+  },
+  {
+    "title": "پاسخنامه کنکور فرهنگیان ۱۴۰۵",
+    "desc": "پاسخنامه کنکور فرهنگیان ۱۴۰۵ حدود ۱ شهریور در سایت سنجش منتشر شده و امکان مقایسه با کلید و درصد تقریبی را می‌دهد.",
+    "url": "/education/konkour/moshavere/pasokhname-farhangian-1405.html",
+    "path": "education/konkour/moshavere/pasokhname-farhangian-1405.html"
+  },
+  {
+    "title": "پاسخنامه کنکور هنر ۱۴۰۵",
+    "desc": "پاسخنامه کنکور هنر ۱۴۰۵ حدود ۱ شهریور در سایت سنجش منتشر شده و امکان بررسی پاسخ‌ها و ارزیابی اولیه عملکرد را می‌دهد.",
+    "url": "/education/konkour/moshavere/pasokhname-honar-1405.html",
+    "path": "education/konkour/moshavere/pasokhname-honar-1405.html"
+  },
+  {
+    "title": "پاسخنامه کنکور ریاضی ۱۴۰۵",
+    "desc": "پاسخنامه کنکور ریاضی ۱۴۰۵ حدود ۱ شهریور در سایت سنجش منتشر شده است.",
+    "url": "/education/konkour/moshavere/pasokhname-riazi-1405.html",
+    "path": "education/konkour/moshavere/pasokhname-riazi-1405.html"
+  },
+  {
+    "title": "پاسخنامه کنکور سراسری ۱۴۰۵",
+    "desc": "پاسخنامه کنکور سراسری ۱۴۰۵ حدود ۱ شهریور در سایت سنجش منتشر می‌شود و امکان بررسی جواب‌های صحیح را می‌دهد.",
+    "url": "/education/konkour/moshavere/pasokhname-sarasari-1405.html",
+    "path": "education/konkour/moshavere/pasokhname-sarasari-1405.html"
+  },
+  {
+    "title": "پاسخنامه کنکور تجربی ۱۴۰۵",
+    "desc": "پاسخنامه کنکور تجربی ۱۴۰۵ حدود ۱ شهریور در سایت سنجش منتشر شده است.",
+    "url": "/education/konkour/moshavere/pasokhname-tajrobi-1405.html",
+    "path": "education/konkour/moshavere/pasokhname-tajrobi-1405.html"
+  },
+  {
+    "title": "پاسخنامه کنکور زبان ۱۴۰۵",
+    "desc": "پاسخنامه کنکور زبان ۱۴۰۵ حدود ۱ شهریور در سایت سنجش منتشر شده است.",
+    "url": "/education/konkour/moshavere/pasokhname-zaban-1405.html",
+    "path": "education/konkour/moshavere/pasokhname-zaban-1405.html"
+  },
+  {
+    "title": "ماندن در پشت کنکور یا مهاجرت",
+    "desc": "انتخاب بین پشت‌کنکور ماندن و مهاجرت تحصیلی تصمیم سنگینی است؛ هر مسیر هزینه روانی، مالی و زمانی خودش را دارد.",
+    "url": "/education/konkour/moshavere/posht-konkour-ya-mohajerat.html",
+    "path": "education/konkour/moshavere/posht-konkour-ya-mohajerat.html"
+  },
+  {
+    "title": "رادیولوژی بهتره یا علوم آزمایشگاهی",
+    "desc": "پاسخ به علاقه، توانایی و هدف شغلی بستگی دارد. رادیولوژی بیشتر با تصویربرداری و تجهیزات تخصصی است؛ علوم آزمایشگاهی با کار آزمایشگاهی و آنالیز نمونه‌ها.",
+    "url": "/education/konkour/moshavere/radiology-ya-oloum-azmayeshgahi.html",
+    "path": "education/konkour/moshavere/radiology-ya-oloum-azmayeshgahi.html"
+  },
+  {
+    "title": "سهمیه دهک‌بندی خانوار در کنکور",
+    "desc": "سهمیه دهک‌بندی خانوار با هدف عدالت آموزشی و بر اساس وضعیت اقتصادی خانوار و ملاحظات استانی مطرح شده است؛ اجرا منوط به مصوبه و ابلاغ رسمی است.",
+    "url": "/education/konkour/moshavere/sahmiye-dahak-khanebar.html",
+    "path": "education/konkour/moshavere/sahmiye-dahak-khanebar.html"
+  },
+  {
+    "title": "سامانه رسیدگی به شکایات دانشگاه آزاد",
+    "desc": "سامانه رسیدگی به شکایات دانشگاه آزاد (bazresicis.iau.ir) بستری برای ثبت و پیگیری شکایات آموزشی و اداری است.",
+    "url": "/education/konkour/moshavere/shekayat-azad-bazresi.html",
+    "path": "education/konkour/moshavere/shekayat-azad-bazresi.html"
+  },
+  {
+    "title": "شروع کنکور از تابستان",
+    "desc": "شروع از تابستان فرصت جلو افتادن و تقویت پایه دهم/یازدهم است؛ با هدف‌گذاری درست.",
+    "url": "/education/konkour/moshavere/shoroo-az-tabestan.html",
+    "path": "education/konkour/moshavere/shoroo-az-tabestan.html"
+  },
+  {
+    "title": "سوالات کنکور انسانی ۱۴۰۵",
+    "desc": "سوالات کنکور انسانی ۱۴۰۵ حدود ۳۰ مرداد از سایت سنجش منتشر شده است.",
+    "url": "/education/konkour/moshavere/soalat-ensani-1405.html",
+    "path": "education/konkour/moshavere/soalat-ensani-1405.html"
+  },
+  {
+    "title": "سوالات کنکور فرهنگیان ۱۴۰۵",
+    "desc": "سوالات کنکور فرهنگیان ۱۴۰۵ حدود ۳۰ مرداد از سایت سنجش منتشر شده است.",
+    "url": "/education/konkour/moshavere/soalat-farhangian-1405.html",
+    "path": "education/konkour/moshavere/soalat-farhangian-1405.html"
+  },
+  {
+    "title": "سوالات کنکور هنر ۱۴۰۵",
+    "desc": "سوالات کنکور هنر ۱۴۰۵ پس از آزمون (حدود ۲۹ مرداد) از منابع رسمی منتشر شده است.",
+    "url": "/education/konkour/moshavere/soalat-honar-1405.html",
+    "path": "education/konkour/moshavere/soalat-honar-1405.html"
+  },
+  {
+    "title": "سوالات کنکور ریاضی ۱۴۰۵",
+    "desc": "سوالات کنکور ریاضی ۱۴۰۵ حدود ۳۰ مرداد از سایت سنجش منتشر شد.",
+    "url": "/education/konkour/moshavere/soalat-riazi-1405.html",
+    "path": "education/konkour/moshavere/soalat-riazi-1405.html"
+  },
+  {
+    "title": "سوالات کنکور سراسری ۱۴۰۵",
+    "desc": "سوالات کنکور تیر ۱۴۰۵ پس از برگزاری و انتشار رسمی در ۲۹ و ۳۰ مرداد از طریق سنجش در دسترس است.",
+    "url": "/education/konkour/moshavere/soalat-sarasari-1405.html",
+    "path": "education/konkour/moshavere/soalat-sarasari-1405.html"
+  },
+  {
+    "title": "سوالات کنکور تجربی ۱۴۰۵",
+    "desc": "سوالات کنکور تجربی ۱۴۰۵ حدود ۲۹ مرداد در سایت سنجش منتشر شد.",
+    "url": "/education/konkour/moshavere/soalat-tajrobi-1405.html",
+    "path": "education/konkour/moshavere/soalat-tajrobi-1405.html"
+  },
+  {
+    "title": "سوالات کنکور زبان ۱۴۰۵",
+    "desc": "سوالات کنکور زبان ۱۴۰۵ حدود ۲۹ مرداد از سایت سنجش منتشر شده است.",
+    "url": "/education/konkour/moshavere/soalat-zaban-1405.html",
+    "path": "education/konkour/moshavere/soalat-zaban-1405.html"
+  },
+  {
+    "title": "تفاوت مدرک بدون کنکور و با کنکور",
+    "desc": "تفاوت مدرک بدون کنکور و با کنکور بیشتر در نحوه پذیرش است؛ در هر دو مسیر، تحصیل در دانشگاه معتبر می‌تواند به مدرک دانشگاهی منجر شود.",
+    "url": "/education/konkour/moshavere/tafavot-madrak-bedoon-ba-konkour.html",
+    "path": "education/konkour/moshavere/tafavot-madrak-bedoon-ba-konkour.html"
+  },
+  {
+    "title": "تجربه پشت‌کنکوری‌ها",
+    "desc": "تجربه پشت‌کنکوری مسیری پرفشار اما می‌تواند سازنده باشد؛ با اصلاح روش مطالعه و مدیریت روان.",
+    "url": "/education/konkour/moshavere/tajrobe-posht-konkouri.html",
+    "path": "education/konkour/moshavere/tajrobe-posht-konkouri.html"
+  },
+  {
+    "title": "تاثیر معدل یازدهم در کنکور",
+    "desc": "تاثیر معدل یازدهم در کنکور ۱۴۰۵ به‌صورت مثبت و در ۱۴۰۶ به‌صورت قطعی‌تر در چارچوب مصوبات اعمال می‌شود؛ نمرات نهایی پایه یازدهم بخشی از سوابق‌اند.",
+    "url": "/education/konkour/moshavere/tasir-moadel-yazdahom.html",
+    "path": "education/konkour/moshavere/tasir-moadel-yazdahom.html"
+  },
+  {
+    "title": "تحصیل در رشته طب سنتی بدون کنکور",
+    "desc": "تحصیل طب سنتی بدون کنکور عمدتاً در مقاطع تکمیلی و با مدرک مرتبط (مثل پزشکی) مطرح است؛ جزئیات از دانشگاه مجری است.",
+    "url": "/education/konkour/moshavere/teb-sonnati-bedoon-konkour.html",
+    "path": "education/konkour/moshavere/teb-sonnati-bedoon-konkour.html"
+  }
+]

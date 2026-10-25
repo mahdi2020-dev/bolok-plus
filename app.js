@@ -269,6 +269,130 @@
     });
   }
 
+  // Reading progress bar
+  const progressEl = document.querySelector("[data-read-progress]");
+  if (progressEl) {
+    const updateProgress = () => {
+      const doc = document.documentElement;
+      const max = doc.scrollHeight - window.innerHeight;
+      const p = max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0;
+      progressEl.style.transform = `scaleX(${p})`;
+    };
+    updateProgress();
+    window.addEventListener("scroll", updateProgress, { passive: true });
+    window.addEventListener("resize", updateProgress);
+  }
+
+  // Back to top
+  const backTop = document.querySelector("[data-back-top]");
+  if (backTop) {
+    const syncBackTop = () => {
+      backTop.classList.toggle("is-visible", window.scrollY > 480);
+    };
+    syncBackTop();
+    window.addEventListener("scroll", syncBackTop, { passive: true });
+    backTop.addEventListener("click", () => {
+      window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
+    });
+  }
+
+  // Site search (search.html)
+  const searchForm = document.querySelector("[data-site-search]");
+  if (searchForm) {
+    const input = searchForm.querySelector('input[name="q"]');
+    const resultsEl = document.querySelector("[data-search-results]");
+    const metaEl = document.querySelector("[data-search-meta]");
+    let indexCache = null;
+
+    const normalize = (s) =>
+      String(s || "")
+        .toLowerCase()
+        .replace(/ي/g, "ی")
+        .replace(/ك/g, "ک")
+        .replace(/\s+/g, " ")
+        .trim();
+
+    const render = (items, q) => {
+      if (!resultsEl) return;
+      if (!q) {
+        resultsEl.innerHTML = "";
+        if (metaEl) metaEl.textContent = "عبارت را بنویسید تا نتایج نشان داده شود.";
+        return;
+      }
+      if (!items.length) {
+        resultsEl.innerHTML = "";
+        if (metaEl) metaEl.textContent = `نتیجه‌ای برای «${q}» پیدا نشد.`;
+        return;
+      }
+      if (metaEl) metaEl.textContent = `${items.length} نتیجه برای «${q}»`;
+      resultsEl.innerHTML = items
+        .map(
+          (it) => `<li class="feed-item">
+            <a href="${it.url}">
+              <strong>${it.title}</strong>
+              <span>${it.desc || ""}</span>
+            </a>
+          </li>`,
+        )
+        .join("");
+    };
+
+    const runSearch = async (raw) => {
+      const q = normalize(raw);
+      if (!indexCache) {
+        try {
+          const res = await fetch("search-index.json", { cache: "no-store" });
+          indexCache = await res.json();
+        } catch {
+          if (metaEl) metaEl.textContent = "بارگذاری فهرست جستجو ناموفق بود.";
+          return;
+        }
+      }
+      if (!q) {
+        render([], "");
+        return;
+      }
+      const tokens = q.split(" ").filter(Boolean);
+      const scored = [];
+      for (const it of indexCache) {
+        const hay = normalize(`${it.title} ${it.desc} ${it.path}`);
+        let score = 0;
+        for (const t of tokens) {
+          if (hay.includes(t)) score += t.length >= 3 ? 3 : 1;
+          if (normalize(it.title).includes(t)) score += 4;
+        }
+        if (score > 0) scored.push({ ...it, score });
+      }
+      scored.sort((a, b) => b.score - a.score || a.title.localeCompare(b.title, "fa"));
+      render(scored.slice(0, 40), raw.trim());
+    };
+
+    const params = new URLSearchParams(window.location.search);
+    const initial = params.get("q") || "";
+    if (input && initial) {
+      input.value = initial;
+      runSearch(initial);
+    } else if (metaEl) {
+      metaEl.textContent = "عبارت را بنویسید تا نتایج نشان داده شود.";
+    }
+
+    searchForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const q = input?.value || "";
+      const url = new URL(window.location.href);
+      if (q.trim()) url.searchParams.set("q", q.trim());
+      else url.searchParams.delete("q");
+      history.replaceState(null, "", url);
+      runSearch(q);
+    });
+
+    let debounce;
+    input?.addEventListener("input", () => {
+      clearTimeout(debounce);
+      debounce = setTimeout(() => runSearch(input.value), 180);
+    });
+  }
+
   const boot = () => {
     // Wait briefly for deferred CDN scripts; never leave content hidden
     let tries = 0;

@@ -1,0 +1,17 @@
+{
+  "name": "بلوک",
+  "short_name": "بلوک",
+  "lang": "fa-IR",
+  "dir": "rtl",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#e8eaee",
+  "theme_color": "#0c0e12",
+  "icons": [
+    {
+      "src": "/assets/bolok-logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}

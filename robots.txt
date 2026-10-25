@@ -1,3 +1,5 @@
 User-agent: *
 Allow: /
+Disallow: /_deploy_proof/
 Sitemap: https://bolokapp.ir/sitemap.xml
+Host: https://bolokapp.ir
