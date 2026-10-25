@@ -269,6 +269,20 @@
     });
   }
 
+  // Portal intro media (static poster → CTA)
+  const portalPlay = document.querySelector("[data-portal-play]");
+  if (portalPlay) {
+    portalPlay.addEventListener("click", () => {
+      const note = document.querySelector(".portal-media-note");
+      if (note) {
+        note.textContent =
+          "نسخه ویدیویی کامل در اپ بلوک است؛ از دکمه دانلود اپ در هدر استفاده کنید.";
+        note.style.color = "var(--ink)";
+      }
+      portalPlay.setAttribute("aria-pressed", "true");
+    });
+  }
+
   // Reading progress bar
   const progressEl = document.querySelector("[data-read-progress]");
   if (progressEl) {
