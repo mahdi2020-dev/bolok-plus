@@ -19,7 +19,7 @@
   },
   {
     "title": "سیاست حریم خصوصی",
-    "desc": "",
+    "desc": "سیاست حریم خصوصی بلوک؛ نحوه جمع‌آوری، استفاده و محافظت از اطلاعات کاربران اپ و سایت.",
     "url": "/privacy.html",
     "path": "privacy.html"
   },
@@ -31,7 +31,7 @@
   },
   {
     "title": "شرایط استفاده",
-    "desc": "",
+    "desc": "شرایط استفاده از سرویس بلوک؛ قوانین اپ، سایت آموزشی و مسئولیت‌های کاربران.",
     "url": "/terms.html",
     "path": "terms.html"
   },
@@ -144,6 +144,156 @@
     "path": "education/konkour/zaman-sabt-nam.html"
   },
   {
+    "title": "مشاهده برنامه کلاسی دانشگاه غیرانتفاعی",
+    "desc": "برنامه کلاسی دانشگاه‌های غیرانتفاعی از سامانه‌های آموزشی واحد قابل مشاهده است.",
+    "url": "/education/konkour/gheyr-entefaee/barname-kelasi.html",
+    "path": "education/konkour/gheyr-entefaee/barname-kelasi.html"
+  },
+  {
+    "title": "دفترچه انتخاب رشته دانشگاه غیرانتفاعی",
+    "desc": "دفترچه انتخاب رشته هم‌زمان با ثبت‌نام بدون آزمون برای ورودی مهر و بهمن منتشر می‌شود.",
+    "url": "/education/konkour/gheyr-entefaee/daftarche-entekhab-reshte.html",
+    "path": "education/konkour/gheyr-entefaee/daftarche-entekhab-reshte.html"
+  },
+  {
+    "title": "سامانه درسا دانشگاه امام رضا",
+    "desc": "سامانه درسا (darsa.imamreza.ac.ir) بستر آموزش الکترونیکی و امور تحصیلی دانشگاه امام رضاست؛ ورود، کلاس مجازی و خدمات دانشجویی.",
+    "url": "/education/konkour/gheyr-entefaee/darsa-imamreza.html",
+    "path": "education/konkour/gheyr-entefaee/darsa-imamreza.html"
+  },
+  {
+    "title": "اعلام نتایج بدون کنکور دانشگاه غیرانتفاعی",
+    "desc": "نتایج پس از پایان مهلت ثبت‌نام و بررسی مدارک از سوی سنجش منتشر می‌شود.",
+    "url": "/education/konkour/gheyr-entefaee/elam-natayej-bedoon-konkour.html",
+    "path": "education/konkour/gheyr-entefaee/elam-natayej-bedoon-konkour.html"
+  },
+  {
+    "title": "اعلام نتایج تکمیل ظرفیت دانشگاه غیرانتفاعی",
+    "desc": "نتایج تکمیل ظرفیت معمولاً کوتاه‌مدت پس از پایان مهلت ثبت‌نام اعلام می‌شود.",
+    "url": "/education/konkour/gheyr-entefaee/elam-natayej-takmil-zarfiat.html",
+    "path": "education/konkour/gheyr-entefaee/elam-natayej-takmil-zarfiat.html"
+  },
+  {
+    "title": "فارغ‌التحصیلی دانشگاه غیرانتفاعی",
+    "desc": "پس از گذراندن واحدها و کسب نمرات قبولی، مراحل فارغ‌التحصیلی غیرانتفاعی شامل تسویه، درخواست و دریافت مدارک است.",
+    "url": "/education/konkour/gheyr-entefaee/faregh-tahsili.html",
+    "path": "education/konkour/gheyr-entefaee/faregh-tahsili.html"
+  },
+  {
+    "title": "هزینه ثبت‌نام بدون کنکور دانشگاه غیرانتفاعی ۱۴۰۵",
+    "desc": "هزینه ثبت‌نام سنجش و شهریه دانشگاه دو موضوع جداست؛ مبالغ را از درگاه رسمی بپردازید.",
+    "url": "/education/konkour/gheyr-entefaee/hazine-sabt-nam-1405.html",
+    "path": "education/konkour/gheyr-entefaee/hazine-sabt-nam-1405.html"
+  },
+  {
+    "title": "بدون آزمون دانشگاه غیرانتفاعی",
+    "desc": "پذیرش بدون آزمون دانشگاه‌های غیرانتفاعی بر اساس سوابق تحصیلی انجام می‌شود و مسیر جداگانه‌ای از کنکور سراسری دارد. در این بخش، زمان و نحوه ثبت‌نام، دفترچه و لیست",
+    "url": "/education/konkour/gheyr-entefaee/index.html",
+    "path": "education/konkour/gheyr-entefaee/index.html"
+  },
+  {
+    "title": "لیست رشته‌های دانشگاه غیرانتفاعی",
+    "desc": "سازمان سنجش لیست رشته‌های غیرانتفاعی را در نوبت‌های مختلف منتشر می‌کند.",
+    "url": "/education/konkour/gheyr-entefaee/list-reshteha.html",
+    "path": "education/konkour/gheyr-entefaee/list-reshteha.html"
+  },
+  {
+    "title": "مدارک لازم برای ثبت‌نام بدون کنکور دانشگاه غیرانتفاعی ۱۴۰۵",
+    "desc": "مدارک شامل هویت، تحصیلی و عکس است؛ چک‌لیست نهایی را از اطلاعیه واحد بگیرید.",
+    "url": "/education/konkour/gheyr-entefaee/madarek-sabt-nam-1405.html",
+    "path": "education/konkour/gheyr-entefaee/madarek-sabt-nam-1405.html"
+  },
+  {
+    "title": "نحوه پرداخت شهریه دانشگاه غیرانتفاعی",
+    "desc": "پرداخت شهریه از سامانه واحد انجام می‌شود؛ مبلغ را پس از ورود ببینید و از درگاه رسمی بپردازید.",
+    "url": "/education/konkour/gheyr-entefaee/nahve-pardakht-shahriye.html",
+    "path": "education/konkour/gheyr-entefaee/nahve-pardakht-shahriye.html"
+  },
+  {
+    "title": "نحوه ثبت‌نام دانشگاه غیرانتفاعی ۱۴۰۵",
+    "desc": "نحوه ثبت‌نام ۱۴۰۵ را از اطلاعیه‌های رسمی سنجش دنبال کنید؛ شامل زمان، درگاه و مدارک است.",
+    "url": "/education/konkour/gheyr-entefaee/nahve-sabt-nam-1405.html",
+    "path": "education/konkour/gheyr-entefaee/nahve-sabt-nam-1405.html"
+  },
+  {
+    "title": "نحوه ثبت‌نام بدون کنکور دانشگاه سراسری ۱۴۰۵",
+    "desc": "ثبت‌نام رشته‌های بدون آزمون سراسری نیازمند بررسی لیست رشته‌محل و ضوابط سنجش است.",
+    "url": "/education/konkour/gheyr-entefaee/nahve-sabt-nam-sarasari-bedoon-1405.html",
+    "path": "education/konkour/gheyr-entefaee/nahve-sabt-nam-sarasari-bedoon-1405.html"
+  },
+  {
+    "title": "بدون آزمون دانشگاه غیرانتفاعی",
+    "desc": "پذیرش بدون آزمون دانشگاه‌های غیرانتفاعی بر اساس سوابق تحصیلی انجام می‌شود و مسیر جداگانه‌ای از کنکور سراسری دارد. در این بخش، زمان و نحوه ثبت‌نام، دفترچه و لیست",
+    "url": "/education/konkour/gheyr-entefaee/page-2.html",
+    "path": "education/konkour/gheyr-entefaee/page-2.html"
+  },
+  {
+    "title": "ثبت‌نام دانشگاه غیرانتفاعی ۱۴۰۵",
+    "desc": "ثبت‌نام ۱۴۰۵ در دو نوبت مهر و بهمن ممکن است؛ پس از آماده‌سازی مدارک در مهلت سنجش اقدام کنید.",
+    "url": "/education/konkour/gheyr-entefaee/sabt-nam-1405.html",
+    "path": "education/konkour/gheyr-entefaee/sabt-nam-1405.html"
+  },
+  {
+    "title": "ثبت‌نام پذیرفته‌شدگان بدون کنکور دانشگاه‌های غیرانتفاعی",
+    "desc": "ثبت‌نام پذیرفته‌شدگان در بازه اعلامی هر دانشگاه و از طریق سایت رسمی همان واحد انجام می‌شود.",
+    "url": "/education/konkour/gheyr-entefaee/sabt-nam-paziroftegan.html",
+    "path": "education/konkour/gheyr-entefaee/sabt-nam-paziroftegan.html"
+  },
+  {
+    "title": "ثبت‌نام دانشگاه غیرانتفاعی",
+    "desc": "راهنمای کلی: از پذیرش بدون آزمون تا ثبت‌نام قطعی در واحد قبول‌شده.",
+    "url": "/education/konkour/gheyr-entefaee/sabt-nam.html",
+    "path": "education/konkour/gheyr-entefaee/sabt-nam.html"
+  },
+  {
+    "title": "شهریه دانشگاه غیرانتفاعی ۱۴۰۵–۱۴۰۶",
+    "desc": "شهریه ۱۴۰۵–۱۴۰۶ بر اساس مقطع، رشته و نوع واحد تعیین می‌شود و بین واحدها متفاوت است.",
+    "url": "/education/konkour/gheyr-entefaee/shahriye-1405-1406.html",
+    "path": "education/konkour/gheyr-entefaee/shahriye-1405-1406.html"
+  },
+  {
+    "title": "شهریه دانشگاه غیرانتفاعی",
+    "desc": "شهریه معمولاً ثابت + متغیر است و با مقطع، رشته و تعداد واحد تغییر می‌کند.",
+    "url": "/education/konkour/gheyr-entefaee/shahriye.html",
+    "path": "education/konkour/gheyr-entefaee/shahriye.html"
+  },
+  {
+    "title": "شرایط و هزینه انصراف از دانشگاه غیرانتفاعی",
+    "desc": "انصراف معمولاً با درخواست و پرداخت هزینه طبق آیین‌نامه همان واحد انجام می‌شود.",
+    "url": "/education/konkour/gheyr-entefaee/sharayet-hazine-ensraf.html",
+    "path": "education/konkour/gheyr-entefaee/sharayet-hazine-ensraf.html"
+  },
+  {
+    "title": "تمدید مهلت ثبت‌نام بدون کنکور دانشگاه غیرانتفاعی",
+    "desc": "گاهی سنجش مهلت ثبت‌نام بدون کنکور غیرانتفاعی را تمدید می‌کند؛ فقط اطلاعیه رسمی را ملاک بگیرید.",
+    "url": "/education/konkour/gheyr-entefaee/tamdid-mohlat.html",
+    "path": "education/konkour/gheyr-entefaee/tamdid-mohlat.html"
+  },
+  {
+    "title": "تأثیر سهمیه در پذیرش بدون کنکور دانشگاه غیرانتفاعی",
+    "desc": "سهمیه‌هایی مانند مناطق و ایثارگران طبق ضوابط سنجش در پذیرش بدون کنکور اعمال می‌شود.",
+    "url": "/education/konkour/gheyr-entefaee/tasir-sahmiye.html",
+    "path": "education/konkour/gheyr-entefaee/tasir-sahmiye.html"
+  },
+  {
+    "title": "تسویه حساب دانشگاه غیرانتفاعی",
+    "desc": "تسویه حساب برای فارغ‌التحصیلی، انتقال یا انصراف لازم است و از طریق سامانه مالی واحد انجام می‌شود.",
+    "url": "/education/konkour/gheyr-entefaee/tasvie-hesab.html",
+    "path": "education/konkour/gheyr-entefaee/tasvie-hesab.html"
+  },
+  {
+    "title": "زمان اعلام نتایج بدون آزمون دانشگاه غیرانتفاعی ۱۴۰۵",
+    "desc": "نتایج معمولاً چند هفته پس از پایان مهلت ثبت‌نام برای مهر و بهمن اعلام می‌شود.",
+    "url": "/education/konkour/gheyr-entefaee/zaman-elam-natayej-1405.html",
+    "path": "education/konkour/gheyr-entefaee/zaman-elam-natayej-1405.html"
+  },
+  {
+    "title": "زمان ثبت‌نام دانشگاه غیرانتفاعی ۱۴۰۵",
+    "desc": "زمان ثبت‌نام ۱۴۰۵ را سازمان سنجش اعلام می‌کند؛ برای مهر و گاه بهمن بازه جدا دارد.",
+    "url": "/education/konkour/gheyr-entefaee/zaman-sabt-nam-1405.html",
+    "path": "education/konkour/gheyr-entefaee/zaman-sabt-nam-1405.html"
+  },
+  {
     "title": "اگر پرستاری قبول نشم",
     "desc": "اگر پرستاری قبول نشوید، گزینه‌هایی مثل پشت‌کنکور، پیراپزشکی‌های نزدیک، یا مسیرهای دیگر دانشگاهی مطرح می‌شود.",
     "url": "/education/konkour/moshavere/agar-parastari-ghabool-nasham.html",
@@ -205,7 +355,7 @@
   },
   {
     "title": "مشاوره کنکور سراسری",
-    "desc": "برای موفقیت در کنکور سراسری به ابزار متنوعی مثل منابع کنکور سراسری، کتاب‌های کمک‌آموزشی و آزمون‌های آزمایشی خوب برای رشته ریاضی، تجربی، انسانی، هنر و زبان،",
+    "desc": "برای موفقیت در کنکور سراسری به ابزار متنوعی مثل منابع کنکور، کتاب‌های کمک‌آموزشی، آزمون‌های آزمایشی خوب برای رشته‌های ریاضی، تجربی، انسانی، هنر و زبان، مشا",
     "url": "/education/konkour/moshavere/index.html",
     "path": "education/konkour/moshavere/index.html"
   },
@@ -247,19 +397,19 @@
   },
   {
     "title": "مشاوره کنکور سراسری",
-    "desc": "برای موفقیت در کنکور سراسری به ابزار متنوعی مثل منابع کنکور سراسری، کتاب‌های کمک‌آموزشی و آزمون‌های آزمایشی خوب برای رشته ریاضی، تجربی، انسانی، هنر و زبان،",
+    "desc": "برای موفقیت در کنکور سراسری به ابزار متنوعی مثل منابع کنکور، کتاب‌های کمک‌آموزشی، آزمون‌های آزمایشی خوب برای رشته‌های ریاضی، تجربی، انسانی، هنر و زبان، مشا",
     "url": "/education/konkour/moshavere/page-2.html",
     "path": "education/konkour/moshavere/page-2.html"
   },
   {
     "title": "مشاوره کنکور سراسری",
-    "desc": "برای موفقیت در کنکور سراسری به ابزار متنوعی مثل منابع کنکور سراسری، کتاب‌های کمک‌آموزشی و آزمون‌های آزمایشی خوب برای رشته ریاضی، تجربی، انسانی، هنر و زبان،",
+    "desc": "برای موفقیت در کنکور سراسری به ابزار متنوعی مثل منابع کنکور، کتاب‌های کمک‌آموزشی، آزمون‌های آزمایشی خوب برای رشته‌های ریاضی، تجربی، انسانی، هنر و زبان، مشا",
     "url": "/education/konkour/moshavere/page-3.html",
     "path": "education/konkour/moshavere/page-3.html"
   },
   {
     "title": "مشاوره کنکور سراسری",
-    "desc": "برای موفقیت در کنکور سراسری به ابزار متنوعی مثل منابع کنکور سراسری، کتاب‌های کمک‌آموزشی و آزمون‌های آزمایشی خوب برای رشته ریاضی، تجربی، انسانی، هنر و زبان،",
+    "desc": "برای موفقیت در کنکور سراسری به ابزار متنوعی مثل منابع کنکور، کتاب‌های کمک‌آموزشی، آزمون‌های آزمایشی خوب برای رشته‌های ریاضی، تجربی، انسانی، هنر و زبان، مشا",
     "url": "/education/konkour/moshavere/page-4.html",
     "path": "education/konkour/moshavere/page-4.html"
   },
