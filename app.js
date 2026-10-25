@@ -6,11 +6,98 @@
   const drawer = document.querySelector("[data-nav-drawer]");
   const toggle = document.querySelector("[data-nav-toggle]");
   if (toggle && drawer) {
-    toggle.addEventListener("click", () => drawer.classList.toggle("open"));
+    toggle.setAttribute("aria-expanded", "false");
+    const closeDrawer = () => {
+      drawer.classList.remove("open");
+      toggle.setAttribute("aria-expanded", "false");
+    };
+    toggle.addEventListener("click", () => {
+      const open = !drawer.classList.contains("open");
+      drawer.classList.toggle("open", open);
+      toggle.setAttribute("aria-expanded", open ? "true" : "false");
+    });
     drawer.querySelectorAll("a").forEach((a) => {
-      a.addEventListener("click", () => drawer.classList.remove("open"));
+      a.addEventListener("click", closeDrawer);
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeDrawer();
+    });
+    document.addEventListener("click", (e) => {
+      if (
+        drawer.classList.contains("open") &&
+        !drawer.contains(e.target) &&
+        !toggle.contains(e.target)
+      ) {
+        closeDrawer();
+      }
     });
   }
+
+  // Header shadow on scroll
+  const siteHeader = document.querySelector(".site-header");
+  if (siteHeader) {
+    let ticking = false;
+    const syncHeader = () => {
+      siteHeader.classList.toggle("is-scrolled", window.scrollY > 8);
+      ticking = false;
+    };
+    syncHeader();
+    window.addEventListener(
+      "scroll",
+      () => {
+        if (!ticking) {
+          ticking = true;
+          requestAnimationFrame(syncHeader);
+        }
+      },
+      { passive: true },
+    );
+  }
+
+  // Article TOC active state
+  const tocLinks = Array.from(document.querySelectorAll(".article-toc a[href^='#']"));
+  if (tocLinks.length && "IntersectionObserver" in window) {
+    const byId = new Map(
+      tocLinks
+        .map((a) => [a.getAttribute("href").slice(1), a])
+        .filter(([id]) => document.getElementById(id)),
+    );
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          tocLinks.forEach((a) => a.classList.remove("is-active"));
+          byId.get(entry.target.id)?.classList.add("is-active");
+        });
+      },
+      { rootMargin: "-20% 0px -70% 0px" },
+    );
+    byId.forEach((_, id) => observer.observe(document.getElementById(id)));
+  }
+
+  // Copy share link
+  document.querySelectorAll("[data-copy-link]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const url = btn.getAttribute("data-copy-link");
+      try {
+        await navigator.clipboard.writeText(url);
+      } catch {
+        const ta = document.createElement("textarea");
+        ta.value = url;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        ta.remove();
+      }
+      const old = btn.textContent;
+      btn.textContent = "کپی شد ✓";
+      btn.classList.add("is-copied");
+      setTimeout(() => {
+        btn.textContent = old;
+        btn.classList.remove("is-copied");
+      }, 1800);
+    });
+  });
 
   // Desktop education submenu (hover/CSS + click toggle; anchor may scroll to #education)
   const eduNav = document.querySelector("[data-edu-nav]");
@@ -343,6 +430,7 @@
         .map(
           (it) => `<li class="feed-item">
             <a href="${it.url}">
+              ${it.category ? `<em class="result-cat">${it.category}</em>` : ""}
               <strong>${it.title}</strong>
               <span>${it.desc || ""}</span>
             </a>
@@ -350,6 +438,25 @@
         )
         .join("");
     };
+
+    document.querySelectorAll("[data-search-chip]").forEach((chip) => {
+      chip.addEventListener("click", () => {
+        if (input) input.value = chip.getAttribute("data-search-chip") || "";
+        runSearch(input?.value || "");
+        input?.focus();
+      });
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (
+        e.key === "/" &&
+        input &&
+        !/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName || "")
+      ) {
+        e.preventDefault();
+        input.focus();
+      }
+    });
 
     const runSearch = async (raw) => {
       const q = normalize(raw);

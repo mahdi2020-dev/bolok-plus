@@ -7,12 +7,11 @@
   <meta name="description" content="جستجو در مطالب آموزشی بلوک؛ کنکور، ثبت‌نام، مشاوره و راهنماهای مطالعه." />
   <link rel="canonical" href="https://bolokapp.ir/search.html" />
   <title>جستجو · بلوک</title>
-  <link rel="preload" href="assets/bolok-logo.svg?v=15" as="image" type="image/svg+xml" />
-  <link rel="icon" href="assets/bolok-logo.svg?v=15" type="image/svg+xml" />
+  <link rel="icon" href="assets/bolok-logo.svg?v=19" type="image/svg+xml" />
   <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=15" />
+  <link rel="stylesheet" href="styles.css?v=19" />
   <link rel="manifest" href="site.webmanifest" />
-  <script src="app.js?v=15" defer></script>
+  <script src="app.js?v=19" defer></script>
   <meta property="og:type" content="website" />
   <meta property="og:locale" content="fa_IR" />
   <meta property="og:site_name" content="بلوک" />
@@ -21,10 +20,11 @@
   <meta property="og:url" content="https://bolokapp.ir/search.html" />
   <meta property="og:image" content="https://bolokapp.ir/assets/bolok-logo.png" />
   <meta name="twitter:card" content="summary" />
+  <meta name="twitter:image" content="https://bolokapp.ir/assets/bolok-logo.png" />
   <meta name="twitter:title" content="جستجو · بلوک" />
   <meta name="twitter:description" content="جستجو در مطالب آموزشی بلوک؛ کنکور، ثبت‌نام، مشاوره و راهنماهای مطالعه." />
-  <meta name="robots" content="index,follow,max-snippet:-1,max-image-preview:large" />
-  <link rel="manifest" href="site.webmanifest" />
+  <meta name="robots" content="noindex,follow" />
+  
   <link rel="alternate" href="https://bolokapp.ir/search.html" hreflang="fa-IR" />
 </head>
 <body>
@@ -35,13 +35,15 @@
   <header class="site-header">
     <div class="container inner">
       <a class="brand" href="index.html">
-        <img class="brand-logo" src="assets/bolok-logo.svg?v=15" alt="بلوک" width="36" height="36" />
+        <img class="brand-logo" src="assets/bolok-logo.svg?v=19" alt="بلوک" width="36" height="36" />
         <span>بلوک</span>
       </a>
       <nav class="nav" aria-label="اصلی">
         <a href="index.html#education">مطالب آموزشی</a>
         <a href="education/konkour/index.html">کنکور</a>
         <a href="education/konkour/moshavere/index.html">مشاوره</a>
+          <a href="education/konkour/gheyr-entefaee/index.html">بدون‌آزمون غیرانتفاعی</a>
+          <a href="education/konkour/arshad/index.html">مشاوره ارشد</a>
         <a href="about.html">درباره</a>
       </nav>
       <div class="header-actions">
@@ -58,15 +60,22 @@
   <main id="main" class="container edu-wrap">
     <div class="edu-hero">
       <h1>جستجو در بلوک</h1>
-      <p class="edu-lead">بین 66 صفحه راهنما و مطالب آموزشی جستجو کنید.</p>
+      <p class="edu-lead">در همه راهنماها و مطالب آموزشی جستجو کنید.</p>
       <form class="search-box" data-site-search role="search">
         <label class="sr-only" for="q">عبارت جستجو</label>
         <input id="q" name="q" type="search" placeholder="مثلاً: ثبت نام کنکور، پاسخنامه تجربی، راد مدیو" autocomplete="off" />
         <button class="btn btn-primary" type="submit">جستجو</button>
       </form>
-      <p class="search-meta" data-search-meta></p>
+      <p class="search-meta" data-search-meta aria-live="polite"></p>
+      <div class="search-chips" aria-label="جستجوهای پرتکرار">
+        <button type="button" data-search-chip="ثبت نام کنکور">ثبت‌نام کنکور</button>
+        <button type="button" data-search-chip="پاسخنامه">پاسخنامه</button>
+        <button type="button" data-search-chip="شهریه غیرانتفاعی">شهریه غیرانتفاعی</button>
+        <button type="button" data-search-chip="پروپوزال ارشد">پروپوزال ارشد</button>
+        <button type="button" data-search-chip="برنامه مطالعه">برنامه مطالعه</button>
+      </div>
     </div>
-    <ul class="feed-list" data-search-results></ul>
+    <ul class="feed-list" data-search-results aria-live="polite"></ul>
   </main>
     <footer class="site-mega" id="trust" role="contentinfo">
     <div class="container">
@@ -85,7 +94,7 @@
       <div class="site-mega-grid">
         <div class="mega-brand">
           <a class="mega-logo" href="index.html">
-            <img src="assets/bolok-logo.svg?v=15" alt="بلوک" width="48" height="48" loading="lazy" decoding="async" />
+            <img src="assets/bolok-logo.svg?v=19" alt="بلوک" width="48" height="48" loading="lazy" decoding="async" />
             <span>بلوک</span>
           </a>
           <p class="mega-tagline">برنامه‌ریز مطالعه فارسی برای کنکور، امتحان و یادگیری جدی.</p>

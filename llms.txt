@@ -1,0 +1,14 @@
+# بلوک (Bolok)
+
+> برنامه‌ریز مطالعه فارسی برای اندروید + راهنمای آموزشی کنکور سراسری، بدون‌آزمون غیرانتفاعی و کارشناسی ارشد.
+
+## صفحات اصلی
+- [خانه](https://bolokapp.ir/)
+- [هاب کنکور](https://bolokapp.ir/education/konkour/index.html)
+- [مشاوره کنکور](https://bolokapp.ir/education/konkour/moshavere/index.html)
+- [بدون آزمون غیرانتفاعی](https://bolokapp.ir/education/konkour/gheyr-entefaee/index.html)
+- [مشاوره کارشناسی ارشد](https://bolokapp.ir/education/konkour/arshad/index.html)
+- [جستجو](https://bolokapp.ir/search.html)
+
+## منبع رسمی زمان‌بندی
+- سازمان سنجش: https://www.sanjesh.org

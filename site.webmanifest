@@ -1,16 +1,23 @@
 {
   "name": "بلوک",
   "short_name": "بلوک",
+  "description": "برنامه‌ریز مطالعه فارسی و راهنمای کنکور و ارشد",
   "lang": "fa-IR",
   "dir": "rtl",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#e8eaee",
   "theme_color": "#0c0e12",
   "icons": [
     {
-      "src": "/assets/bolok-logo.png",
+      "src": "/assets/app-icon.png",
       "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/bolok-logo.png",
+      "sizes": "521x521",
       "type": "image/png"
     }
   ]
