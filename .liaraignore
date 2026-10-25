@@ -10,4 +10,6 @@ _deploy_proof
 .DS_Store
 Thumbs.db
 *.md
+_gen_education.py
+_patch_root_nav.py
 !5130850.txt

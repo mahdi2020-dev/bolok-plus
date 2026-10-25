@@ -12,6 +12,39 @@
     });
   }
 
+  // Desktop education submenu
+  const eduNav = document.querySelector("[data-edu-nav]");
+  const eduTrigger = eduNav?.querySelector("[data-edu-trigger]");
+  const closeEduNav = () => {
+    if (!eduNav || !eduTrigger) return;
+    eduNav.classList.remove("is-open");
+    eduTrigger.setAttribute("aria-expanded", "false");
+  };
+  if (eduNav && eduTrigger) {
+    eduTrigger.addEventListener("click", (e) => {
+      e.preventDefault();
+      const open = !eduNav.classList.contains("is-open");
+      eduNav.classList.toggle("is-open", open);
+      eduTrigger.setAttribute("aria-expanded", open ? "true" : "false");
+    });
+    document.addEventListener("click", (e) => {
+      if (!eduNav.contains(e.target)) closeEduNav();
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeEduNav();
+    });
+  }
+
+  // Mobile drawer accordion for education
+  document.querySelectorAll("[data-drawer-sub]").forEach((block) => {
+    const btn = block.querySelector("[data-drawer-sub-toggle]");
+    btn?.addEventListener("click", () => {
+      const open = !block.classList.contains("is-open");
+      block.classList.toggle("is-open", open);
+      btn.setAttribute("aria-expanded", open ? "true" : "false");
+    });
+  });
+
   // Progressive reveal: only hide when GSAP is actually available
   const enableMotionReveals = () => {
     if (reduceMotion || !window.gsap || !window.ScrollTrigger) return;
