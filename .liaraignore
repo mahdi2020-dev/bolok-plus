@@ -1,0 +1,13 @@
+.git
+.gitignore
+.liaraignore
+node_modules
+.env
+.env.*
+*.log
+README.md
+_deploy_proof
+.DS_Store
+Thumbs.db
+*.md
+!5130850.txt
