@@ -2772,6 +2772,17 @@ a {
   font-size: 0.88rem;
 }
 
+.field-groups {
+  margin: 0 0 1.5rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--line);
+}
+@media (min-width: 900px) {
+  .field-groups.icon-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
 .pager {
   display: flex;
   flex-wrap: wrap;
