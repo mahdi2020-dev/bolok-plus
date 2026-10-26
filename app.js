@@ -521,6 +521,51 @@
     });
   }
 
+
+  // Animate charts, timelines, and table polish on scroll
+  const motionIO =
+    "IntersectionObserver" in window
+      ? new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              if (!entry.isIntersecting) return;
+              entry.target.classList.add("is-inview");
+              motionIO.unobserve(entry.target);
+            });
+          },
+          { rootMargin: "0px 0px -8% 0px", threshold: 0.2 },
+        )
+      : null;
+
+  document.querySelectorAll(".chart-bars").forEach((box) => {
+    box.querySelectorAll(".chart-fill").forEach((fill) => {
+      const inline = fill.getAttribute("style") || "";
+      const m = inline.match(/width\s*:\s*([\d.]+)%/i);
+      if (m) {
+        fill.style.setProperty("--w", `${m[1]}%`);
+        fill.style.width = reduceMotion ? `${m[1]}%` : "0%";
+      }
+    });
+    if (reduceMotion) box.classList.add("is-inview");
+    else if (motionIO) motionIO.observe(box);
+    else box.classList.add("is-inview");
+  });
+
+  document.querySelectorAll(".timeline").forEach((tl) => {
+    if (reduceMotion) tl.classList.add("is-inview");
+    else if (motionIO) motionIO.observe(tl);
+    else tl.classList.add("is-inview");
+  });
+
+  // Wrap naked steps-tables for mobile scroll polish
+  document.querySelectorAll("table.steps-table").forEach((table) => {
+    if (table.parentElement?.classList.contains("table-wrap")) return;
+    const wrap = document.createElement("div");
+    wrap.className = "table-wrap";
+    table.parentNode.insertBefore(wrap, table);
+    wrap.appendChild(table);
+  });
+
   const boot = () => {
     // Wait briefly for deferred CDN scripts; never leave content hidden
     let tries = 0;

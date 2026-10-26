@@ -295,7 +295,7 @@ def main() -> None:
     sync_nav_with_tajrobi()
     html = seo.build_page(**PAGE)
     # force v26 in built page assets
-    html = html.replace("?v=25", f"?v={V_NEW}")
+    html = html.replace("?v=27", f"?v={V_NEW}")
     out = ROOT / "education" / "konkour" / PAGE["slug"]
     out.write_text(html, encoding="utf-8")
     print("wrote", out.relative_to(ROOT))
@@ -305,7 +305,7 @@ def main() -> None:
     rebuild_search_and_sitemap()
     bump()
     # rewrite page once more so header/cache consistent after bump+header refresh
-    html = seo.build_page(**PAGE).replace("?v=25", f"?v={V_NEW}").replace("?v=24", f"?v={V_NEW}")
+    html = seo.build_page(**PAGE).replace("?v=27", f"?v={V_NEW}").replace("?v=27", f"?v={V_NEW}")
     # header from latest mosahab
     header = mosahab.build_header(Path("education/konkour") / PAGE["slug"])
     html2, _ = re.subn(
@@ -315,7 +315,7 @@ def main() -> None:
         count=1,
         flags=re.S,
     )
-    html2 = html2.replace("?v=25", f"?v={V_NEW}")
+    html2 = html2.replace("?v=27", f"?v={V_NEW}")
     out.write_text(html2, encoding="utf-8")
     print("finalized tajrobi page")
 
