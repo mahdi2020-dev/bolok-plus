@@ -9,7 +9,7 @@ from urllib.parse import quote, urljoin
 
 ROOT = Path(__file__).resolve().parent
 BASE = "https://bolokapp.ir"
-V = "19"
+V = "20"
 TODAY = "2026-10-25"
 
 SECTION_NAMES = {
