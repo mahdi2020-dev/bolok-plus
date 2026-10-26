@@ -2,19 +2,21 @@
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const finePointer = window.matchMedia("(pointer: fine)").matches;
 
-  // Nav drawer
+  // Nav drawer (mobile) — body lock, header state, resize close
   const drawer = document.querySelector("[data-nav-drawer]");
   const toggle = document.querySelector("[data-nav-toggle]");
+  const siteHeaderEl = document.querySelector(".site-header");
   if (toggle && drawer) {
     toggle.setAttribute("aria-expanded", "false");
-    const closeDrawer = () => {
-      drawer.classList.remove("open");
-      toggle.setAttribute("aria-expanded", "false");
-    };
-    toggle.addEventListener("click", () => {
-      const open = !drawer.classList.contains("open");
+    const setDrawer = (open) => {
       drawer.classList.toggle("open", open);
       toggle.setAttribute("aria-expanded", open ? "true" : "false");
+      document.body.classList.toggle("nav-open", open);
+      siteHeaderEl?.classList.toggle("is-open", open);
+    };
+    const closeDrawer = () => setDrawer(false);
+    toggle.addEventListener("click", () => {
+      setDrawer(!drawer.classList.contains("open"));
     });
     drawer.querySelectorAll("a").forEach((a) => {
       a.addEventListener("click", closeDrawer);
@@ -31,6 +33,13 @@
         closeDrawer();
       }
     });
+    window.addEventListener(
+      "resize",
+      () => {
+        if (window.matchMedia("(min-width: 760px)").matches) closeDrawer();
+      },
+      { passive: true },
+    );
   }
 
   // Header shadow on scroll
