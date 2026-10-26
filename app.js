@@ -108,37 +108,35 @@
     });
   });
 
-  // Desktop education submenu (hover/CSS + click toggle; anchor may scroll to #education)
-  const eduNav = document.querySelector("[data-edu-nav]");
-  const eduTrigger = eduNav?.querySelector("[data-edu-trigger]");
-  const closeEduNav = () => {
-    if (!eduNav || !eduTrigger) return;
-    eduNav.classList.remove("is-open");
-    eduTrigger.setAttribute("aria-expanded", "false");
+  // Desktop category dropdowns (mosahab-style; hover on fine pointer, click toggle)
+  const navItems = Array.from(document.querySelectorAll("[data-nav-item]"));
+  const closeAllNav = () => {
+    navItems.forEach((item) => {
+      item.classList.remove("is-open");
+      item.querySelector("[data-nav-trigger]")?.setAttribute("aria-expanded", "false");
+    });
   };
-  if (eduNav && eduTrigger) {
-    eduTrigger.addEventListener("click", (e) => {
-      const href = eduTrigger.getAttribute("href") || "";
-      const isHash = href.startsWith("#");
+  navItems.forEach((item) => {
+    const trigger = item.querySelector("[data-nav-trigger]");
+    if (!trigger) return;
+    trigger.addEventListener("click", (e) => {
       const desktop = window.matchMedia("(min-width: 760px)").matches;
-      // On desktop, allow hash navigation; panel opens via :hover
-      if (desktop && isHash) {
-        eduNav.classList.remove("is-open");
-        eduTrigger.setAttribute("aria-expanded", "false");
-        return;
-      }
+      const fine = window.matchMedia("(pointer: fine)").matches;
+      // Desktop + mouse: let CSS :hover open the menu; allow navigation
+      if (desktop && fine) return;
       e.preventDefault();
-      const open = !eduNav.classList.contains("is-open");
-      eduNav.classList.toggle("is-open", open);
-      eduTrigger.setAttribute("aria-expanded", open ? "true" : "false");
+      const open = !item.classList.contains("is-open");
+      closeAllNav();
+      item.classList.toggle("is-open", open);
+      trigger.setAttribute("aria-expanded", open ? "true" : "false");
     });
-    document.addEventListener("click", (e) => {
-      if (!eduNav.contains(e.target)) closeEduNav();
-    });
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") closeEduNav();
-    });
-  }
+  });
+  document.addEventListener("click", (e) => {
+    if (!navItems.some((item) => item.contains(e.target))) closeAllNav();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeAllNav();
+  });
 
   // Mobile drawer accordion for education
   document.querySelectorAll("[data-drawer-sub]").forEach((block) => {
