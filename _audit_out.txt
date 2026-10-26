@@ -1,0 +1,17 @@
+﻿ 1246  education/konkour/sabt-nam.html  | ╪½╪¿╪¬ ┘å╪º┘à ┌⌐┘å┌⌐┘ê╪▒ ╪│╪▒╪º╪│╪▒█î ┬╖ ╪¿┘ä┘ê┌⌐
+  301  education/konkour/zaman-sabt-nam.html  | ╪▓┘à╪º┘å ╪½╪¿╪¬ ┘å╪º┘à ┌⌐┘å┌⌐┘ê╪▒ ╪│╪▒╪º╪│╪▒█î █▒█┤█░█╡ ┘ê █▒█┤█░█╢ ┬╖ ╪¿┘ä┘ê┌⌐
+  393  education/konkour/entekhab-reshte-1405.html  | ╪º┘å╪¬╪«╪º╪¿ ╪▒╪┤╪¬┘ç ┌⌐┘å┌⌐┘ê╪▒ █▒█┤█░█╡ ┬╖ ╪¿┘ä┘ê┌⌐
+  285  education/konkour/nahve-sabt-nam.html  | ┘å╪¡┘ê┘ç ╪½╪¿╪¬ ┘å╪º┘à ┌⌐┘å┌⌐┘ê╪▒ ╪│╪▒╪º╪│╪▒█î ┬╖ ╪¿┘ä┘ê┌⌐
+  292  education/konkour/sharayet-ekhtesasi.html  | ╪┤╪▒╪º█î╪╖ ╪º╪«╪¬╪╡╪º╪╡█î ╪½╪¿╪¬ ┘å╪º┘à ┌⌐┘å┌⌐┘ê╪▒ ╪│╪▒╪º╪│╪▒█î ┬╖ ╪¿┘ä┘ê┌⌐
+  302  education/konkour/elam-natayej-1405.html  | ╪º╪╣┘ä╪º┘à ┘å╪¬╪º█î╪¼ ┘å┘ç╪º█î█î ┌⌐┘å┌⌐┘ê╪▒ █▒█┤█░█╡ ┬╖ ╪¿┘ä┘ê┌⌐
+  375  education/konkour/index.html  | ┌⌐┘å┌⌐┘ê╪▒ ╪│╪▒╪º╪│╪▒█î ┬╖ ╪¿┘ä┘ê┌⌐
+  306  education/konkour/tasir-moadel-1405.html  | ╪¬╪º╪½█î╪▒ ┘à╪╣╪»┘ä ╪»╪▒ ┌⌐┘å┌⌐┘ê╪▒ █▒█┤█░█╡ ┘ê █▒█┤█░█╢ ┬╖ ╪¿┘ä┘ê┌⌐
+taghirat EXISTS ['taghirat-konkour-1405.html']
+virayesh EXISTS ['virayesh-entekhab-reshte.html']
+site-sanjesh EXISTS ['site-sanjesh.html']
+kart-vorod EXISTS ['kart-vorod-jalase.html', 'gom-shodan-kart-vorod.html']
+hazfiyat EXISTS ['hazfiyat-konkour-1405.html']
+takhmin EXISTS ['takhmin-rotbe.html']
+karname EXISTS ['karname-avvalie-1405.html']
+termim EXISTS ['termim-moadel-1405.html']
+site-entekhab EXISTS ['site-entekhab-reshte.html']

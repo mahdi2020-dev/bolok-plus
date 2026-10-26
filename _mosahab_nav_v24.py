@@ -19,6 +19,9 @@ CATEGORIES: list[tuple[str, str, list[tuple[str, str]]]] = [
             ("education/konkour/zaman-sabt-nam.html", "زمان ثبت نام"),
             ("education/konkour/nahve-sabt-nam.html", "نحوه ثبت نام"),
             ("education/konkour/sharayet-ekhtesasi.html", "شرایط اختصاصی"),
+            ("education/konkour/site-sanjesh.html", "سایت سازمان سنجش"),
+            ("education/konkour/kart-vorod-jalase.html", "کارت ورود به جلسه"),
+            ("education/konkour/taghirat-konkour-1405.html", "تغییرات کنکور ۱۴۰۵"),
         ],
     ),
     (
@@ -30,6 +33,9 @@ CATEGORIES: list[tuple[str, str, list[tuple[str, str]]]] = [
             ("education/konkour/eslahiye-daftarche.html", "اصلاحیه دفترچه"),
             ("education/konkour/narmafzar-entekhab-reshte.html", "نرم‌افزار انتخاب رشته"),
             ("education/konkour/behtarin-reshte-ensani.html", "رشته‌های انسانی"),
+            ("education/konkour/site-entekhab-reshte.html", "سایت انتخاب رشته"),
+            ("education/konkour/virayesh-entekhab-reshte.html", "ویرایش انتخاب رشته"),
+            ("education/konkour/karname-avvalie-1405.html", "کارنامه اولیه"),
         ],
     ),
     (
@@ -42,6 +48,9 @@ CATEGORIES: list[tuple[str, str, list[tuple[str, str]]]] = [
             ("education/konkour/shahriye-pardis.html", "شهریه پردیس"),
             ("education/konkour/rad-medu.html", "راد مدیو"),
             ("education/konkour/maghalat.html", "سایر مقالات"),
+            ("education/konkour/termim-moadel-1405.html", "ترمیم معدل ۱۴۰۵"),
+            ("education/konkour/takhmin-rotbe.html", "تخمین رتبه"),
+            ("education/konkour/hazfiyat-konkour-1405.html", "حذفیات کنکور ۱۴۰۵"),
         ],
     ),
     (

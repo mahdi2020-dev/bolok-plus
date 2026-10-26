@@ -3834,20 +3834,28 @@ h3 {
 @media (min-width: 760px) and (max-width: 1100px) {
   .nav {
     gap: 0;
-    font-size: 0.78rem;
+    font-size: 0.76rem;
+    flex-wrap: nowrap;
   }
   .nav-trigger,
   .nav > .nav-link {
-    padding: 0.4rem 0.45rem;
+    padding: 0.38rem 0.4rem;
+  }
+  .nav > .nav-link {
+    display: none;
   }
   .header-search {
-    min-width: 120px;
+    min-width: 112px;
   }
   .header-search-label {
-    font-size: 0.78rem;
+    font-size: 0.76rem;
   }
   .brand-text small {
     display: none;
+  }
+  .header-cta {
+    padding: 0.38rem 0.7rem;
+    font-size: 0.76rem;
   }
 }
 
@@ -3856,5 +3864,9 @@ h3 {
     gap: 0.15rem;
     font-size: 0.86rem;
   }
+}
+
+:root {
+  --header-h: 72px;
 }
 
