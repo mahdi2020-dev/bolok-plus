@@ -3161,6 +3161,50 @@ h3 {
   text-align: right;
 }
 
+.mag-group {
+  margin-bottom: 2rem;
+  scroll-margin-top: calc(var(--header-h) + 1rem);
+}
+.mag-group-title {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0 0 0.9rem;
+  font-size: 1.2rem;
+  font-weight: 900;
+}
+.mag-group .feed-card-body h3 {
+  margin: 0 0 0.4rem;
+  font-size: clamp(1.02rem, 2.2vw, 1.22rem);
+  font-weight: 900;
+  line-height: 1.4;
+  color: var(--ink);
+}
+.mag-jump {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 1rem;
+}
+.mag-jump a {
+  padding: 0.38rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--ink-soft);
+  font-weight: 800;
+  font-size: 0.82rem;
+}
+.mag-jump a:hover {
+  color: var(--ink);
+  border-color: rgba(12, 14, 18, 0.3);
+}
+.mag-hub-cta {
+  margin: 0 0 1rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
 .faq-section {
   padding: 2.5rem 0 1rem;
 }
