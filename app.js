@@ -1,5 +1,12 @@
 (() => {
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // RTL mobile browsers can open scrolled sideways if anything overflows.
+  const pinScrollX = () => {
+    document.documentElement.scrollLeft = 0;
+    document.body.scrollLeft = 0;
+  };
+  pinScrollX();
+  window.addEventListener("load", pinScrollX, { once: true });
   const finePointer = window.matchMedia("(pointer: fine)").matches;
 
   // Nav drawer (mobile) — body lock, header state, resize close
