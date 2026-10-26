@@ -2,8 +2,11 @@ User-agent: *
 Allow: /
 Allow: /llms.txt
 Allow: /.well-known/security.txt
+Allow: /sitemap.xml
+Allow: /sitemap.txt
 Disallow: /_deploy_proof/
 Disallow: /_audit_out.txt
 Disallow: /*.py$
 
 Sitemap: https://bolokapp.ir/sitemap.xml
+Sitemap: https://bolokapp.ir/sitemap.txt
