@@ -1,12 +1,27 @@
 (() => {
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  // RTL mobile browsers can open scrolled sideways if anything overflows.
+  // RTL phones can open on the wrong edge when anything is wider than the screen.
   const pinScrollX = () => {
-    document.documentElement.scrollLeft = 0;
-    document.body.scrollLeft = 0;
+    const se = document.scrollingElement || document.documentElement;
+    const brand = document.querySelector(".brand");
+    const vw = document.documentElement.clientWidth;
+    const max = Math.max(0, se.scrollWidth - se.clientWidth);
+    const candidates = [0, -max, max];
+    const brandFits = () => {
+      if (!brand) return true;
+      const r = brand.getBoundingClientRect();
+      return r.width > 0 && r.left >= -1 && r.right <= vw + 1;
+    };
+    for (const left of candidates) {
+      se.scrollLeft = left;
+      if (brandFits()) return;
+    }
+    se.scrollLeft = 0;
   };
   pinScrollX();
   window.addEventListener("load", pinScrollX, { once: true });
+  window.addEventListener("resize", pinScrollX);
+  document.fonts?.ready?.then(pinScrollX);
   const finePointer = window.matchMedia("(pointer: fine)").matches;
 
   // Nav drawer (mobile) — body lock, header state, resize close

@@ -25,7 +25,9 @@
 html {
   scroll-behavior: auto;
   overflow-x: hidden;
+  overflow-x: clip;
   max-width: 100%;
+  overscroll-behavior-x: none;
 }
 
 html.lenis,
@@ -45,7 +47,10 @@ body {
   text-rendering: optimizeLegibility;
   min-height: 100dvh;
   overflow-x: hidden;
+  overflow-x: clip;
   max-width: 100%;
+  overscroll-behavior-x: none;
+  touch-action: pan-y;
 }
 
 /* Atmospheric layers — not flat */
@@ -646,6 +651,17 @@ body.nav-open {
     grid-column: 3;
     justify-self: end;
     gap: 0.4rem;
+    min-width: 0;
+  }
+  .header-cta {
+    display: inline-flex;
+    padding: 0.4rem 0.7rem;
+    font-size: 0.78rem;
+    min-height: 40px;
+  }
+  .site-header {
+    width: 100%;
+    overflow-x: clip;
   }
   .header-search {
     min-width: 44px;
@@ -984,9 +1000,6 @@ a.btn-light,
     max-width: 100%;
     overflow: hidden;
   }
-  .phone {
-    width: min(220px, 64vw);
-  }
 }
 
 .phone-tilt {
@@ -998,8 +1011,19 @@ a.btn-light,
 }
 
 .phone {
-  width: min(240px, 68vw);
+  width: 240px;
+  max-width: 100%;
   animation: phone-float 5.5s ease-in-out infinite;
+}
+
+@media (max-width: 859px) {
+  .phone-col,
+  .phone-tilt {
+    width: 100%;
+  }
+  .phone {
+    width: min(240px, 100%);
+  }
 }
 
 @keyframes phone-float {
@@ -1690,7 +1714,8 @@ a.btn-light,
     linear-gradient(180deg, rgba(255, 255, 255, 0.42), rgba(247, 248, 250, 0.94)),
     radial-gradient(55% 70% at 100% 0%, rgba(12, 14, 18, 0.045), transparent 58%);
   content-visibility: auto;
-  contain-intrinsic-size: 720px;
+  contain-intrinsic-inline-size: auto none;
+  contain-intrinsic-block-size: auto 720px;
 }
 
 .mega-cta {
@@ -2012,7 +2037,8 @@ a.btn-light,
 .edu-wrap .portal-layout,
 .article-body {
   content-visibility: auto;
-  contain-intrinsic-size: 800px;
+  contain-intrinsic-inline-size: auto none;
+  contain-intrinsic-block-size: auto 800px;
 }
 
 @media (max-width: 480px) {
@@ -3987,7 +4013,10 @@ h3 {
 
 .table-wrap {
   width: 100%;
+  max-width: 100%;
   overflow-x: auto;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x pan-y;
   -webkit-overflow-scrolling: touch;
   margin: 1.15rem 0 1.4rem;
   border-radius: 18px;
@@ -4002,7 +4031,7 @@ h3 {
   border: 0;
   border-radius: 0;
   background: transparent;
-  min-width: 420px;
+  min-width: min(420px, 100%);
 }
 
 .steps-table {
@@ -4025,6 +4054,7 @@ h3 {
   border-bottom: 1px solid rgba(12, 14, 18, 0.07);
   font-weight: 700;
   color: var(--ink-soft);
+  overflow-wrap: anywhere;
   transition: background 0.2s ease, color 0.2s ease;
 }
 
