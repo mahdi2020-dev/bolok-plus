@@ -7,4 +7,3 @@ Disallow: /_audit_out.txt
 Disallow: /*.py$
 
 Sitemap: https://bolokapp.ir/sitemap.xml
-Host: https://bolokapp.ir
