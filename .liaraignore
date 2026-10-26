@@ -23,3 +23,12 @@ _pro_polish.py
 _fix_cta_rtl.py
 _gen_maghalat.py
 !5130850.txt
+
+_audit_links.py
+_audit_seo.py
+_audit_out.txt
+_header_footer_v22.py
+_mosahab_nav_v24.py
+_seo_boost_v25.py
+_gen_tajrobi_entekhab.py
+_*.py

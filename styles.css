@@ -169,8 +169,9 @@ a {
   justify-self: end;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.65rem;
   z-index: 2;
+  flex-shrink: 0;
 }
 
 .header-cta {
@@ -3619,6 +3620,7 @@ h3 {
   border-bottom: 1px solid var(--line);
   backdrop-filter: blur(16px) saturate(1.1);
   -webkit-backdrop-filter: blur(16px) saturate(1.1);
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
 .site-header.is-scrolled {
@@ -3831,39 +3833,72 @@ h3 {
   }
 }
 
+/* Compact desktop / tablet: keep «معرفی» visible; never truncate primary labels */
 @media (min-width: 760px) and (max-width: 1100px) {
   .nav {
-    gap: 0;
-    font-size: 0.76rem;
+    gap: 0.1rem;
+    font-size: 0.8rem;
     flex-wrap: nowrap;
+    justify-content: center;
+    min-width: 0;
   }
   .nav-trigger,
   .nav > .nav-link {
-    padding: 0.38rem 0.4rem;
+    padding: 0.4rem 0.45rem;
+    white-space: nowrap;
   }
   .nav > .nav-link {
-    display: none;
+    display: inline-flex;
   }
   .header-search {
-    min-width: 112px;
+    min-width: 0;
+    gap: 0.35rem;
+    padding-inline: 0.7rem;
   }
   .header-search-label {
-    font-size: 0.76rem;
+    font-size: 0.78rem;
   }
   .brand-text small {
     display: none;
   }
   .header-cta {
-    padding: 0.38rem 0.7rem;
-    font-size: 0.76rem;
+    padding: 0.4rem 0.85rem;
+    font-size: 0.78rem;
+    flex-shrink: 0;
+  }
+  .header-actions {
+    gap: 0.45rem;
+    flex-shrink: 0;
   }
 }
 
 @media (min-width: 1101px) {
   .nav {
-    gap: 0.15rem;
-    font-size: 0.86rem;
+    gap: 0.35rem;
+    font-size: 0.88rem;
   }
+  .nav-trigger,
+  .nav > .nav-link {
+    padding: 0.45rem 0.55rem;
+  }
+  .header-actions {
+    gap: 0.65rem;
+  }
+}
+
+/* «بیشتر» overflow mega — tidy secondary portals */
+.nav-dropdown--more {
+  min-width: 240px;
+  padding: 0.55rem;
+}
+.nav-dropdown--more a {
+  display: block;
+  padding: 0.55rem 0.75rem;
+  border-radius: 10px;
+  font-weight: 700;
+}
+.nav-dropdown--more a:hover {
+  background: rgba(12, 14, 18, 0.06);
 }
 
 :root {
