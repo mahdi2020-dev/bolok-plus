@@ -184,6 +184,24 @@
       );
     });
 
+    document.querySelectorAll(".edu-grid, .faq").forEach((group) => {
+      const kids = group.querySelectorAll(":scope > .edu-card, :scope > details");
+      if (!kids.length) return;
+      gsap.fromTo(
+        kids,
+        { opacity: 0, y: 28, scale: 0.97 },
+        {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          duration: 0.75,
+          stagger: 0.08,
+          ease: "power3.out",
+          scrollTrigger: { trigger: group, start: "top 88%", once: true },
+        },
+      );
+    });
+
     // Safety net if a reveal tween never starts
     window.setTimeout(() => {
       document.querySelectorAll(".reveal, .reveal-blur").forEach((el) => {
@@ -556,6 +574,52 @@
     else if (motionIO) motionIO.observe(tl);
     else tl.classList.add("is-inview");
   });
+
+  document
+    .querySelectorAll(".edu-card, .feat-card, .feed-card, .callout, .faq details, .related-chip")
+    .forEach((el, i) => {
+      if (el.closest(".edu-grid") && window.gsap) return;
+      el.classList.add("motion-rise");
+      el.style.setProperty("--d", `${Math.min(i % 8, 7) * 70}ms`);
+      if (reduceMotion) {
+        el.classList.add("is-inview");
+        return;
+      }
+      const r = el.getBoundingClientRect();
+      if (r.top < window.innerHeight * 0.92 && r.bottom > 0) el.classList.add("is-inview");
+      else if (motionIO) motionIO.observe(el);
+      else el.classList.add("is-inview");
+    });
+
+  const watchComments = () => {
+    document.querySelectorAll(".sc-item:not(.motion-rise)").forEach((el, i) => {
+      el.classList.add("motion-rise");
+      el.style.setProperty("--d", `${Math.min(i, 6) * 80}ms`);
+      el.classList.add("is-inview");
+    });
+  };
+  const armComments = () => {
+    const root = document.querySelector("[data-site-comments]");
+    if (!root || root.dataset.motionArmed === "1") return Boolean(root);
+    root.dataset.motionArmed = "1";
+    watchComments();
+    if (window.MutationObserver) {
+      new MutationObserver(watchComments).observe(root, { childList: true, subtree: true });
+    }
+    return true;
+  };
+  if (!armComments()) {
+    const timer = window.setInterval(() => {
+      if (armComments()) window.clearInterval(timer);
+    }, 200);
+    window.setTimeout(() => window.clearInterval(timer), 8000);
+  }
+
+  window.setTimeout(() => {
+    document.querySelectorAll(".motion-rise:not(.is-inview)").forEach((el) => {
+      el.classList.add("is-inview");
+    });
+  }, 1400);
 
   // Wrap naked steps-tables for mobile scroll polish
   document.querySelectorAll("table.steps-table").forEach((table) => {

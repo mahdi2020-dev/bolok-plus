@@ -674,12 +674,36 @@ body.nav-open {
 }
 
 .hero-logo-wrap {
+  position: relative;
   width: 112px;
   height: 112px;
   margin: 0 auto 1.35rem;
   perspective: 900px;
   transform-style: preserve-3d;
-  animation: logo-breathe 5.5s ease-in-out infinite;
+  animation: logo-breathe 4.2s ease-in-out infinite;
+}
+
+.hero-logo-wrap::before {
+  content: "";
+  position: absolute;
+  inset: -28px;
+  border-radius: 46%;
+  background: radial-gradient(circle, rgba(12, 14, 18, 0.16), transparent 68%);
+  animation: glow-pulse 2.8s ease-in-out infinite;
+  z-index: -1;
+  pointer-events: none;
+}
+
+@keyframes glow-pulse {
+  0%,
+  100% {
+    transform: scale(0.92);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
 }
 
 @keyframes logo-breathe {
@@ -4268,6 +4292,35 @@ h3 {
   }
 }
 
+.edu-card,
+.feat-card,
+.feed-card,
+.sc-item {
+  transition: transform 0.35s var(--motion, ease), box-shadow 0.35s var(--motion, ease);
+}
+
+.edu-card:hover,
+.feat-card:hover,
+.feed-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 22px 48px rgba(12, 14, 18, 0.14);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .motion-rise {
+    opacity: 0;
+    transform: translateY(22px) scale(0.98);
+    transition:
+      opacity 0.7s var(--motion, ease),
+      transform 0.7s var(--motion, ease);
+    transition-delay: var(--d, 0ms);
+  }
+  .motion-rise.is-inview {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .chart-fill,
   .timeline-row,
@@ -4276,7 +4329,10 @@ h3 {
   .icon-tile,
   .checklist li,
   .edu-hero h1,
-  .edu-hero .edu-lead {
+  .edu-hero .edu-lead,
+  .motion-rise,
+  .hero-logo-wrap,
+  .hero-logo-wrap::before {
     transition: none !important;
     animation: none !important;
     opacity: 1 !important;
@@ -4534,3 +4590,4 @@ h3 {
     width: 100%;
   }
 }
+                                                                                    
