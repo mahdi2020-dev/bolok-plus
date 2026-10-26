@@ -566,6 +566,17 @@
     wrap.appendChild(table);
   });
 
+  // Public article comments (bolokapp.ir → backendpy)
+  if (document.querySelector(".article-body")) {
+    const src = document.querySelector('script[src*="app.js"]')?.getAttribute("src") || "";
+    const ver = (src.match(/[?&]v=([^&]+)/) || [])[1] || "28";
+    const base = src.replace(/[^/]*$/, "") || "";
+    const s = document.createElement("script");
+    s.src = `${base}comments.js?v=${ver}`;
+    s.defer = true;
+    document.head.appendChild(s);
+  }
+
   const boot = () => {
     // Wait briefly for deferred CDN scripts; never leave content hidden
     let tries = 0;

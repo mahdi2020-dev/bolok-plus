@@ -1,14 +1,21 @@
 # بلوک (Bolok)
 
-> برنامه‌ریز مطالعه فارسی برای اندروید + راهنمای آموزشی کنکور سراسری، بدون‌آزمون غیرانتفاعی و کارشناسی ارشد.
+> برنامه‌ریز مطالعه فارسی برای کنکور و امتحان + راهنمای کنکور سراسری بدون تبلیغ مؤسسات.
 
 ## صفحات اصلی
 - [خانه](https://bolokapp.ir/)
 - [هاب کنکور](https://bolokapp.ir/education/konkour/index.html)
+- [سایر مقالات](https://bolokapp.ir/education/konkour/maghalat.html)
 - [مشاوره کنکور](https://bolokapp.ir/education/konkour/moshavere/index.html)
 - [بدون آزمون غیرانتفاعی](https://bolokapp.ir/education/konkour/gheyr-entefaee/index.html)
-- [مشاوره کارشناسی ارشد](https://bolokapp.ir/education/konkour/arshad/index.html)
+- [کنکور کارشناسی ارشد](https://bolokapp.ir/education/konkour/arshad/index.html)
+- [انتخاب رشته تجربی ۱۴۰۵](https://bolokapp.ir/education/konkour/entekhab-reshte-tajrobi.html)
 - [جستجو](https://bolokapp.ir/search.html)
+- [درباره](https://bolokapp.ir/about.html)
+- [حریم خصوصی](https://bolokapp.ir/privacy.html)
 
 ## منبع رسمی زمان‌بندی
 - سازمان سنجش: https://www.sanjesh.org
+
+## اپ
+- دانلود اپ بلوک از صفحه اصلی: https://bolokapp.ir/#download

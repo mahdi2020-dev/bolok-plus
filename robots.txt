@@ -1,5 +1,10 @@
 User-agent: *
 Allow: /
+Allow: /llms.txt
+Allow: /.well-known/security.txt
 Disallow: /_deploy_proof/
+Disallow: /_audit_out.txt
+Disallow: /*.py$
+
 Sitemap: https://bolokapp.ir/sitemap.xml
-Host: bolokapp.ir
+Host: https://bolokapp.ir
