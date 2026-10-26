@@ -29,6 +29,7 @@ CATEGORIES: list[tuple[str, str, list[tuple[str, str]]]] = [
         "انتخاب رشته",
         [
             ("education/konkour/entekhab-reshte-1405.html", "انتخاب رشته ۱۴۰۵"),
+            ("education/konkour/entekhab-reshte-tajrobi.html", "انتخاب رشته تجربی"),
             ("education/konkour/elam-natayej-1405.html", "اعلام نتایج نهایی"),
             ("education/konkour/eslahiye-daftarche.html", "اصلاحیه دفترچه"),
             ("education/konkour/narmafzar-entekhab-reshte.html", "نرم‌افزار انتخاب رشته"),
