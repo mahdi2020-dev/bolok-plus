@@ -6,7 +6,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 SITE = ROOT.parent
-V = "36"
+V = "50"
 
 KINDS = [
     ("official_textbook", "کتاب درسی", "text"),

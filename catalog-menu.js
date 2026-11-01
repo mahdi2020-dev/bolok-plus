@@ -63,7 +63,13 @@
     // Close mobile drawer when opening catalog
     if (open) {
       document.body.classList.remove("nav-open");
+      document.documentElement.classList.remove("nav-open");
+      document.querySelector(".site-header")?.classList.remove("is-open");
       document.querySelector("[data-nav-drawer]")?.classList.remove("open");
+      document.querySelector("[data-nav-backdrop]")?.classList.remove("is-on");
+      document
+        .querySelector("[data-nav-toggle]")
+        ?.setAttribute("aria-expanded", "false");
       seedAudienceFromUrl();
     }
     if (open && !menuData && !loading) loadMenu();

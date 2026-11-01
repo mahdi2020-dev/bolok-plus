@@ -1,40 +1,64 @@
 # بلوک پلاس · bolok_plus
 
-سایت استاتیک موبایل‌اول برای معرفی اپ **بلوک**، اینماد و اتصال بعدی به WebView داخل اپ.
+سایت استاتیک موبایل‌اول برای معرفی اپ **بلوک**، بانک منابع عمومی، اینماد و اتصال بعدی به WebView داخل اپ.
 
 - دامنه هدف: [bolokapp.ir](https://bolokapp.ir)
 - پشتیبانی: sanjaporg@gmail.com
 - بدون بیلد: فقط HTML / CSS / JS
+- API داده: [`iraniplanner.ir`](https://iraniplanner.ir) (`/api/site/catalog/…`)
+
+**نیچ محصول:** تیزهوشان — تمرکز پیام و اولویت محتوا روی گذر **ششم → هفتم** و **نهم → دهم**.
 
 ## فایل‌ها
 
-| فایل | نقش |
+| مسیر | نقش |
 |------|-----|
 | `index.html` | لندینگ + اسلایدر + فوتر اینماد |
-| `about.html` | درباره |
-| `terms.html` | شرایط استفاده |
-| `privacy.html` | حریم خصوصی |
-| `styles.css` / `app.js` | ظاهر و اسلایدر |
+| `about.html` / `terms.html` / `privacy.html` | صفحات حقوقی |
+| `resources/` | هاب و صفحهٔ جزئیات منبع (CSR) |
+| `resources/item.html` + `resources.js` | صفحهٔ اولیا/دانش‌آموز — حکم، فصل‌ها، گالری، FAQ/JSON-LD، سئو |
+| `styles.css` / `app.js` | ظاهر، هدر v36، دراور موبایل، اسلایدر |
+| `download-menu.js` | منوی دانلود + بج بازار/مایکت |
+| `_header_catalog_v36.py` | قالب هدر مشترک + پچ HTML (`?v=` کش‌باست) |
 | `assets/` | لوگو و favicon |
 
-## پیش‌نمایش لوکال
+کش‌باست فعلی دارایی‌ها: **`?v=54`**. صفحهٔ منبع: نمرات به‌صورت از ۱۰/٪، حکم بلوک، تگ‌های فیلترشده، نقشهٔ راه با پاسخنامه.
 
-فایل `index.html` را در مرورگر باز کنید، یا از ریشهٔ همین پوشه:
+## بانک منابع (وب)
+
+- لیست/فیلتر: `resources/index.html` و kind-صفحات
+- جزئیات: `resources/item.html?id=<catalog_id>`
+- داده از ادمین (`source_catalog` منتشرشده) از طریق `site_catalog_api`:
+  - `authors` · `isbn` · `editorial_verdict` · `seo_*`
+  - `chapters_public` (ترجیح جمع تست گفتارها برای `test_count`)
+  - `book_meta` · `review` · گالری / کاور / نمونه PDF
+- متا را در **بلوک ادمین → محتوا → منابع → شناسنامه کتاب** پر کن؛ منوی ⋮ «صفحه روی سایت» همان URL را باز می‌کند.
+
+## هدر موبایل (≤۹۰۰px)
+
+یک ردیف: برند | جستجو+دانلود | همبرگر · دراور تمام‌قد با backdrop و قفل اسکرول · تلفن/درباره فقط داخل دراور. دسکتاپ (≥۹۰۱) عمداً جداست.
+
+## پیش‌نمایش لوکال
 
 ```powershell
 cd bolok_plus
 npx --yes serve .
 ```
 
-## دیپلوی Cloudflare Pages
+## دیپلوی
 
-1. به [Cloudflare Dashboard → Workers & Pages → Create](https://dash.cloudflare.com) بروید.
-2. **Upload your static files** را بزنید.
-3. کل محتویات پوشهٔ `bolok_plus` را آپلود کنید (نه پوشهٔ والد مونوریپو).
-4. نام پروژه مثلاً `bolok-plus`.
-5. دامنهٔ سفارشی `bolokapp.ir` را به همین پروژه وصل کنید (DNS روی Cloudflare).
+دیپلوی را خودت انجام بده — ایجنت دیپلوی نمی‌کند.
 
-یا با Git: ریپو را Connect کنید و **Root directory** را `bolok_plus` بگذارید؛ Build command خالی، Output directory `.` یا خالی.
+1. کل محتویات پوشهٔ `bolok_plus` را روی هاست استاتیک (مثلاً Cloudflare Pages / لیارا استاتیک) آپلود کن.
+2. اگر فیلد/API بک‌اند عوض شده، `backendpy` را جدا با `deploy-liara.ps1` دیپلوی کن.
+
+### Cloudflare Pages (نمونه)
+
+1. [Workers & Pages → Create](https://dash.cloudflare.com) → **Upload your static files**
+2. محتویات `bolok_plus` را آپلود کن (نه ریشهٔ مونوریپو)
+3. دامنهٔ `bolokapp.ir` را وصل کن
+
+یا با Git: Root directory = `bolok_plus`؛ Build خالی.
 
 ## اینماد — احراز دسترسی فنی دامنه
 
@@ -51,20 +75,18 @@ npx --yes serve .
 
 ### روش متاتگ (پشتیبان)
 
-در `index.html` این تگ اضافه شده:
+در `index.html`:
 
 ```html
 <meta name="enamad" content="5130850" />
 ```
 
-در پنل می‌توانید **تایید متاتگ** را هم بزنید.
-
 ### بعد از تأیید دامنه
 
-کد/تصویر بج اینماد را داخل `#enamad` در `index.html` قرار دهید.
-اطلاعات کسب‌وکار (نام، آدرس، تلفن) را در فوتر همان صفحه تکمیل کنید.
+بج اینماد داخل `#enamad` و دراور موبایل قرار دارد؛ اطلاعات کسب‌وکار را در فوتر تکمیل کنید.
 
 ## WebView در اپ (بعداً)
 
 آدرس پایه: `https://bolokapp.ir`  
-صفحات حقوقی: `/terms.html` · `/privacy.html` · `/about.html`
+صفحات حقوقی: `/terms.html` · `/privacy.html` · `/about.html`  
+بانک منابع: `/resources/`

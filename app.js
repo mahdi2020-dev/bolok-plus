@@ -24,24 +24,32 @@
   document.fonts?.ready?.then(pinScrollX);
   const finePointer = window.matchMedia("(pointer: fine)").matches;
 
-  // Nav drawer (mobile) — body lock, header state, resize close
+  // Nav drawer (mobile) — backdrop, body lock, header state, resize close
   const drawer = document.querySelector("[data-nav-drawer]");
   const toggle = document.querySelector("[data-nav-toggle]");
+  const backdrop = document.querySelector("[data-nav-backdrop]");
   const siteHeaderEl = document.querySelector(".site-header");
   if (toggle && drawer) {
     toggle.setAttribute("aria-expanded", "false");
     const setDrawer = (open) => {
       drawer.classList.toggle("open", open);
+      backdrop?.classList.toggle("is-on", open);
       toggle.setAttribute("aria-expanded", open ? "true" : "false");
       document.body.classList.toggle("nav-open", open);
+      document.documentElement.classList.toggle("nav-open", open);
       siteHeaderEl?.classList.toggle("is-open", open);
     };
     const closeDrawer = () => setDrawer(false);
-    toggle.addEventListener("click", () => {
+    toggle.addEventListener("click", (e) => {
+      e.stopPropagation();
       setDrawer(!drawer.classList.contains("open"));
     });
+    backdrop?.addEventListener("click", closeDrawer);
     drawer.querySelectorAll("a").forEach((a) => {
       a.addEventListener("click", closeDrawer);
+    });
+    drawer.querySelectorAll("[data-catalog-open]").forEach((btn) => {
+      btn.addEventListener("click", closeDrawer);
     });
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") closeDrawer();
@@ -50,7 +58,8 @@
       if (
         drawer.classList.contains("open") &&
         !drawer.contains(e.target) &&
-        !toggle.contains(e.target)
+        !toggle.contains(e.target) &&
+        !backdrop?.contains(e.target)
       ) {
         closeDrawer();
       }

@@ -1,13 +1,18 @@
 (() => {
-  const TOAST_MSG = "منتظر باشید، در حال انتشاریم";
   const PANEL_ID = "bolok-download-panel";
-
-  const STORE_SVG = {
-    bazaar:
-      '<svg class="dl-store-mark" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2.2 3.6 7v10L12 21.8 20.4 17V7L12 2.2zm0 2.3 6.1 3.5v7L12 18.5l-6.1-3.5v-7L12 4.5z"/><path fill="currentColor" d="M12 8.2 8.4 10.3v3.4L12 15.8l3.6-2.1v-3.4L12 8.2z"/></svg>',
-    myket:
-      '<svg class="dl-store-mark" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4.5 5.5h15v13h-15z" opacity=".15"/><path fill="currentColor" d="M7 8.2h2.2l1.6 4.4L12.4 8.2H15l-2.7 7.6h-2.2L7 8.2zm8.2 0H19v1.7h-2.1v1.5H18v1.6h-1.9v3H15.2V8.2z"/></svg>',
+  const ASSET_V = "56";
+  const STORE_URLS = {
+    bazaar: "https://cafebazaar.ir/app/ir.bolok.app",
+    myket: "https://myket.ir/app/ir.bolok.app",
   };
+
+  const SITE_BASE = (() => {
+    const s = document.querySelector('script[src*="download-menu.js"]');
+    if (!s) return "";
+    return (s.getAttribute("src") || "").replace(/download-menu\.js[^"]*$/i, "");
+  })();
+
+  const asset = (name) => `${SITE_BASE}assets/${name}?v=${ASSET_V}`;
 
   function ensurePanel() {
     let root = document.getElementById(PANEL_ID);
@@ -20,82 +25,58 @@
     root.innerHTML = `
       <div class="dl-backdrop" data-dl-close tabindex="-1"></div>
       <div class="dl-popover" role="dialog" aria-modal="true" aria-labelledby="dl-popover-title">
-        <div class="dl-popover-head">
-          <h2 id="dl-popover-title">دانلود اپ بلوک</h2>
-          <button type="button" class="dl-close" data-dl-close aria-label="بستن">×</button>
+        <button type="button" class="dl-close" data-dl-close aria-label="بستن">×</button>
+        <div class="dl-hero">
+          <img class="dl-hero-icon" src="${asset("app-icon.png")}" width="88" height="88" alt="" decoding="async" />
+          <div class="dl-hero-copy">
+            <p class="dl-kicker">اندروید</p>
+            <h2 id="dl-popover-title">دانلود اپ بلوک</h2>
+            <p class="dl-popover-lead">برنامه روزانه مطالعه را بلوکی بچین و پیشرفت را ثبت کن</p>
+          </div>
         </div>
-        <p class="dl-popover-lead">از یکی از فروشگاه‌ها نصب کنید</p>
         <div class="dl-store-list">
-          <button type="button" class="dl-store-btn" data-dl-store="bazaar">
-            ${STORE_SVG.bazaar}
-            <span class="dl-store-copy">
-              <small>دریافت از</small>
-              <strong>بازار</strong>
+          <a class="dl-store dl-store--bazaar" href="${STORE_URLS.bazaar}" target="_blank" rel="noopener noreferrer">
+            <span class="dl-store-icon" aria-hidden="true">
+              <img src="${asset("logo-bazaar.png")}" width="56" height="56" alt="" decoding="async" />
             </span>
-          </button>
-          <button type="button" class="dl-store-btn" data-dl-store="myket">
-            ${STORE_SVG.myket}
             <span class="dl-store-copy">
-              <small>دریافت از</small>
-              <strong>مایکت</strong>
+              <span class="dl-store-label">دریافت از</span>
+              <span class="dl-store-name">بازار</span>
             </span>
-          </button>
+          </a>
+          <a class="dl-store dl-store--myket" href="${STORE_URLS.myket}" target="_blank" rel="noopener noreferrer">
+            <span class="dl-store-icon" aria-hidden="true">
+              <img src="${asset("logo-myket.png")}" width="56" height="56" alt="" decoding="async" />
+            </span>
+            <span class="dl-store-copy">
+              <span class="dl-store-label">دریافت از</span>
+              <span class="dl-store-name">مایکت</span>
+            </span>
+          </a>
         </div>
       </div>
-      <div class="dl-toast" data-dl-toast hidden role="status" aria-live="polite"></div>
     `;
     document.body.appendChild(root);
     return root;
   }
 
   const root = ensurePanel();
-  const toastEl = root.querySelector("[data-dl-toast]");
-  let toastTimer = 0;
   let lastFocus = null;
 
-  function showToast(msg) {
-    if (!toastEl) return;
-    toastEl.textContent = msg;
-    toastEl.hidden = false;
-    toastEl.classList.add("is-on");
-    window.clearTimeout(toastTimer);
-    toastTimer = window.setTimeout(() => {
-      toastEl.classList.remove("is-on");
-      toastEl.hidden = true;
-    }, 2600);
-  }
-
-  function openPanel(anchor) {
+  function openPanel() {
     lastFocus = document.activeElement;
     root.hidden = false;
+    root.classList.remove("dl-anchored");
+    const pop = root.querySelector(".dl-popover");
+    if (pop) {
+      pop.style.removeProperty("--dl-top");
+      pop.style.removeProperty("--dl-left");
+      pop.style.removeProperty("--dl-width");
+    }
     requestAnimationFrame(() => root.classList.add("is-open"));
     const closeBtn = root.querySelector(".dl-close");
     if (closeBtn) closeBtn.focus({ preventScroll: true });
     document.documentElement.classList.add("dl-menu-open");
-    if (anchor && typeof anchor.getBoundingClientRect === "function") {
-      positionNear(anchor);
-    } else {
-      root.querySelector(".dl-popover")?.style.removeProperty("--dl-top");
-      root.querySelector(".dl-popover")?.style.removeProperty("--dl-left");
-      root.classList.remove("dl-anchored");
-    }
-  }
-
-  function positionNear(anchor) {
-    const pop = root.querySelector(".dl-popover");
-    if (!pop) return;
-    const r = anchor.getBoundingClientRect();
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    const width = Math.min(280, vw - 24);
-    let left = r.left + r.width / 2 - width / 2;
-    left = Math.max(12, Math.min(left, vw - width - 12));
-    let top = r.bottom + 10;
-    if (top + 220 > vh) top = Math.max(12, r.top - 220);
-    pop.style.setProperty("--dl-top", `${Math.round(top)}px`);
-    pop.style.setProperty("--dl-left", `${Math.round(left)}px`);
-    pop.style.setProperty("--dl-width", `${width}px`);
-    root.classList.add("dl-anchored");
   }
 
   function closePanel() {
@@ -103,7 +84,7 @@
     document.documentElement.classList.remove("dl-menu-open");
     window.setTimeout(() => {
       if (!root.classList.contains("is-open")) root.hidden = true;
-    }, 180);
+    }, 220);
     if (lastFocus && typeof lastFocus.focus === "function") {
       try {
         lastFocus.focus({ preventScroll: true });
@@ -137,17 +118,10 @@
       return;
     }
 
-    const storeBtn = t.closest("[data-dl-store]");
-    if (storeBtn && root.contains(storeBtn)) {
-      e.preventDefault();
-      showToast(TOAST_MSG);
-      return;
-    }
-
     const trigger = isDownloadTrigger(t);
     if (trigger) {
       e.preventDefault();
-      openPanel(trigger);
+      openPanel();
     }
   });
 
@@ -159,6 +133,6 @@
 
   if (location.hash === "#download") {
     history.replaceState(null, "", location.pathname + location.search);
-    openPanel(null);
+    openPanel();
   }
 })();
