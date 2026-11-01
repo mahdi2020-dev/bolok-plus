@@ -3,7 +3,7 @@
 سایت استاتیک موبایل‌اول برای معرفی اپ **بلوک**، اینماد و اتصال بعدی به WebView داخل اپ.
 
 - دامنه هدف: [bolokapp.ir](https://bolokapp.ir)
-- پشتیبانی: bolokadmin@gmail.com
+- پشتیبانی: sanjaporg@gmail.com
 - بدون بیلد: فقط HTML / CSS / JS
 
 ## فایل‌ها

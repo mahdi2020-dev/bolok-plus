@@ -498,7 +498,7 @@ def bump() -> None:
         text = path.read_text(encoding="utf-8")
         new = text.replace(f"?v={V_OLD}", f"?v={V_NEW}")
         # fix leftover older busts on logos in headers
-        new = new.replace("?v=24", f"?v={V_NEW}").replace("?v=25", f"?v={V_NEW}")
+        new = new.replace("?v=26", f"?v={V_NEW}").replace("?v=26", f"?v={V_NEW}")
         if new != text:
             path.write_text(new, encoding="utf-8")
             n += 1

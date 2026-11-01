@@ -58,18 +58,27 @@
     window.addEventListener(
       "resize",
       () => {
-        if (window.matchMedia("(min-width: 760px)").matches) closeDrawer();
+        // Match CSS: desktop inline nav from 901px up
+        if (window.matchMedia("(min-width: 901px)").matches) closeDrawer();
       },
       { passive: true },
     );
   }
 
-  // Header shadow on scroll
+  // Header shadow on scroll + dynamic sticky offset from real shell height
   const siteHeader = document.querySelector(".site-header");
   if (siteHeader) {
     let ticking = false;
+    const syncHeaderHeight = () => {
+      const shell = siteHeader.querySelector(".header-shell") || siteHeader;
+      const h = Math.ceil(shell.getBoundingClientRect().height);
+      if (h > 0) {
+        document.documentElement.style.setProperty("--header-h-v36", `${h}px`);
+      }
+    };
     const syncHeader = () => {
       siteHeader.classList.toggle("is-scrolled", window.scrollY > 8);
+      syncHeaderHeight();
       ticking = false;
     };
     syncHeader();
@@ -83,6 +92,11 @@
       },
       { passive: true },
     );
+    window.addEventListener("resize", syncHeaderHeight, { passive: true });
+    if (typeof ResizeObserver !== "undefined") {
+      const ro = new ResizeObserver(syncHeaderHeight);
+      ro.observe(siteHeader.querySelector(".header-shell") || siteHeader);
+    }
   }
 
   // Article TOC active state
@@ -130,7 +144,7 @@
     });
   });
 
-  // Desktop category dropdowns (mosahab-style; hover on fine pointer, click toggle)
+  // Desktop/mobile consult dropdown (and any [data-nav-item])
   const navItems = Array.from(document.querySelectorAll("[data-nav-item]"));
   const closeAllNav = () => {
     navItems.forEach((item) => {
@@ -142,16 +156,28 @@
     const trigger = item.querySelector("[data-nav-trigger]");
     if (!trigger) return;
     trigger.addEventListener("click", (e) => {
-      const desktop = window.matchMedia("(min-width: 760px)").matches;
-      const fine = window.matchMedia("(pointer: fine)").matches;
-      // Desktop + mouse: let CSS :hover open the menu; allow navigation
-      if (desktop && fine) return;
       e.preventDefault();
+      e.stopPropagation();
       const open = !item.classList.contains("is-open");
       closeAllNav();
       item.classList.toggle("is-open", open);
       trigger.setAttribute("aria-expanded", open ? "true" : "false");
     });
+    if (item.hasAttribute("data-consult") && finePointer) {
+      let leaveTimer = 0;
+      item.addEventListener("mouseenter", () => {
+        window.clearTimeout(leaveTimer);
+        closeAllNav();
+        item.classList.add("is-open");
+        trigger.setAttribute("aria-expanded", "true");
+      });
+      item.addEventListener("mouseleave", () => {
+        leaveTimer = window.setTimeout(() => {
+          item.classList.remove("is-open");
+          trigger.setAttribute("aria-expanded", "false");
+        }, 160);
+      });
+    }
   });
   document.addEventListener("click", (e) => {
     if (!navItems.some((item) => item.contains(e.target))) closeAllNav();
@@ -167,6 +193,28 @@
       const open = !block.classList.contains("is-open");
       block.classList.toggle("is-open", open);
       btn.setAttribute("aria-expanded", open ? "true" : "false");
+    });
+  });
+
+  // Paytakht-style announcements dropdown
+  document.querySelectorAll("[data-announce]").forEach((wrap) => {
+    const btn = wrap.querySelector("[data-announce-toggle]");
+    const panel = wrap.querySelector("[data-announce-panel]");
+    if (!btn || !panel) return;
+    const setOpen = (open) => {
+      panel.hidden = !open;
+      btn.setAttribute("aria-expanded", open ? "true" : "false");
+    };
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setOpen(panel.hidden);
+    });
+    document.addEventListener("click", (e) => {
+      if (!wrap.contains(e.target)) setOpen(false);
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") setOpen(false);
     });
   });
 
@@ -444,6 +492,40 @@
     });
   }
 
+  // In-page anchors (معرفی ما / #showcase) — offset for tall v36 header
+  const scrollToHash = () => {
+    const hash = (location.hash || "").replace(/^#/, "");
+    if (!hash) return;
+    const el = document.getElementById(hash);
+    if (!el) return;
+    const header = document.querySelector(".site-header");
+    const offset = (header?.getBoundingClientRect().height || 0) + 16;
+    const top = el.getBoundingClientRect().top + window.scrollY - offset;
+    window.scrollTo({
+      top: Math.max(0, top),
+      behavior: reduceMotion ? "auto" : "smooth",
+    });
+  };
+  window.addEventListener("hashchange", scrollToHash);
+  window.addEventListener(
+    "load",
+    () => {
+      if (location.hash) {
+        requestAnimationFrame(() => requestAnimationFrame(scrollToHash));
+      }
+    },
+    { once: true }
+  );
+  document.addEventListener("click", (e) => {
+    const a = e.target instanceof Element ? e.target.closest('a[href="#showcase"]') : null;
+    if (!a) return;
+    const el = document.getElementById("showcase");
+    if (!el) return;
+    e.preventDefault();
+    history.pushState(null, "", "#showcase");
+    scrollToHash();
+  });
+
   // Site search (search.html)
   const searchForm = document.querySelector("[data-site-search]");
   if (searchForm) {
@@ -652,7 +734,7 @@
     wrap.appendChild(table);
   });
 
-  // Public article comments (bolokapp.ir → backendpy)
+  // Public article comments (bolokapp.ir → iraniplanner.ir)
   if (document.querySelector(".article-body")) {
     const src = document.querySelector('script[src*="app.js"]')?.getAttribute("src") || "";
     const ver = (src.match(/[?&]v=([^&]+)/) || [])[1] || "28";

@@ -1,0 +1,121 @@
+files 120 no-article 11
+33    konkour/moshavere/soalat-farhangian-1405.html | سوالات کنکور فرهنگیان ۱۴۰۵
+35    konkour/moshavere/soalat-ensani-1405.html | سوالات کنکور انسانی ۱۴۰۵
+37    konkour/moshavere/pasokhname-sarasari-1405.html | پاسخنامه کنکور سراسری ۱۴۰۵
+37    konkour/moshavere/soalat-tajrobi-1405.html | سوالات کنکور تجربی ۱۴۰۵
+38    konkour/moshavere/soalat-riazi-1405.html | سوالات کنکور ریاضی ۱۴۰۵
+38    konkour/moshavere/soalat-sarasari-1405.html | سوالات کنکور سراسری ۱۴۰۵
+38    konkour/moshavere/soalat-zaban-1405.html | سوالات کنکور زبان ۱۴۰۵
+40    konkour/moshavere/moallem-honarestan.html | شرایط معلم شدن در هنرستان
+40    konkour/moshavere/pasokhname-tajrobi-1405.html | پاسخنامه کنکور تجربی ۱۴۰۵
+41    konkour/gheyr-entefaee/elam-natayej-bedoon-konkour.html | اعلام نتایج بدون کنکور دانشگاه غیرانتفاعی
+41    konkour/moshavere/konkour-bozorgsalan.html | شرکت در کنکور دانش‌آموزان بزرگسال
+41    konkour/moshavere/shoroo-az-tabestan.html | شروع کنکور از تابستان
+41    konkour/moshavere/tajrobe-posht-konkouri.html | تجربه پشت‌کنکوری‌ها
+42    konkour/moshavere/soalat-honar-1405.html | سوالات کنکور هنر ۱۴۰۵
+43    konkour/moshavere/diplom-bozorgsalan-ya-roozane.html | تفاوت دیپلم بزرگسالان با روزانه
+43    konkour/moshavere/pasokhname-farhangian-1405.html | پاسخنامه کنکور فرهنگیان ۱۴۰۵
+44    konkour/gheyr-entefaee/sabt-nam-1405.html | ثبت‌نام دانشگاه غیرانتفاعی ۱۴۰۵
+44    konkour/moshavere/pasokhname-ensani-1405.html | پاسخنامه کنکور انسانی ۱۴۰۵
+44    konkour/moshavere/pasokhname-riazi-1405.html | پاسخنامه کنکور ریاضی ۱۴۰۵
+44    konkour/moshavere/tasir-moadel-yazdahom.html | تاثیر معدل یازدهم در کنکور
+44    konkour/moshavere/teb-sonnati-bedoon-konkour.html | تحصیل در رشته طب سنتی بدون کنکور
+46    konkour/moshavere/jaygozin-konkour.html | جایگزین کنکور چیست
+47    konkour/gheyr-entefaee/hazine-sabt-nam-1405.html | هزینه ثبت‌نام بدون کنکور دانشگاه غیرانتفاعی ۱۴۰۵
+47    konkour/gheyr-entefaee/madarek-sabt-nam-1405.html | مدارک لازم برای ثبت‌نام بدون کنکور دانشگاه غیرانتفاعی ۱۴۰۵
+47    konkour/moshavere/pasokhname-zaban-1405.html | پاسخنامه کنکور زبان ۱۴۰۵
+48    konkour/arshad/soalat-1403.html | سوالات کنکور کارشناسی ارشد ۱۴۰۳
+48    konkour/gheyr-entefaee/daftarche-entekhab-reshte.html | دفترچه انتخاب رشته دانشگاه غیرانتفاعی
+48    konkour/gheyr-entefaee/list-reshteha.html | لیست رشته‌های دانشگاه غیرانتفاعی
+48    konkour/gheyr-entefaee/shahriye.html | شهریه دانشگاه غیرانتفاعی
+48    konkour/gheyr-entefaee/sharayet-hazine-ensraf.html | شرایط و هزینه انصراف از دانشگاه غیرانتفاعی
+48    konkour/gheyr-entefaee/zaman-elam-natayej-1405.html | زمان اعلام نتایج بدون آزمون دانشگاه غیرانتفاعی ۱۴۰۵
+48    konkour/gheyr-entefaee/zaman-sabt-nam-1405.html | زمان ثبت‌نام دانشگاه غیرانتفاعی ۱۴۰۵
+48    konkour/moshavere/eshtebah-sabtnam-internet.html | اشتباه در ثبت‌نام اینترنتی دانشگاه‌ها
+48    konkour/moshavere/hoghugh-azad-ya-payamnoor.html | رشته حقوق دانشگاه آزاد بهتره یا پیام نور
+48    konkour/moshavere/madarek-farhangian-1405.html | مدارک لازم برای ثبت نام کنکور فرهنگیان ۱۴۰۵
+48    konkour/moshavere/shekayat-azad-bazresi.html | سامانه رسیدگی به شکایات دانشگاه آزاد
+49    konkour/gheyr-entefaee/nahve-sabt-nam-1405.html | نحوه ثبت‌نام دانشگاه غیرانتفاعی ۱۴۰۵
+49    konkour/gheyr-entefaee/nahve-sabt-nam-sarasari-bedoon-1405.html | نحوه ثبت‌نام بدون کنکور دانشگاه سراسری ۱۴۰۵
+50    konkour/gheyr-entefaee/tasir-sahmiye.html | تأثیر سهمیه در پذیرش بدون کنکور دانشگاه غیرانتفاعی
+50    konkour/moshavere/azad-ya-posht-konkour.html | دانشگاه آزاد برم یا پشت کنکور بمونم
+51    konkour/gheyr-entefaee/elam-natayej-takmil-zarfiat.html | اعلام نتایج تکمیل ظرفیت دانشگاه غیرانتفاعی
+51    konkour/moshavere/behtarin-daneshgah-daroosazi.html | لیست بهترین دانشگاه‌های داروسازی در ایران
+52    konkour/moshavere/agar-parastari-ghabool-nasham.html | اگر پرستاری قبول نشم
+52    konkour/moshavere/chart-darsi-hoghugh.html | چارت درسی رشته حقوق
+52    konkour/moshavere/dalayel-oft-rotbe.html | دلایل افت رتبه در کنکور سراسری
+53    konkour/arshad/pasokhname-1403.html | پاسخنامه کنکور کارشناسی ارشد ۱۴۰۳
+53    konkour/gheyr-entefaee/shahriye-1405-1406.html | شهریه دانشگاه غیرانتفاعی ۱۴۰۵–۱۴۰۶
+54    konkour/gheyr-entefaee/tasvie-hesab.html | تسویه حساب دانشگاه غیرانتفاعی
+54    konkour/moshavere/nafarat-bartar-ghalamchi.html | نفرات برتر آزمون قلم‌چی
+55    konkour/arshad/pasokhname-1404.html | پاسخنامه کنکور ارشد ۱۴۰۴
+55    konkour/gheyr-entefaee/sabt-nam.html | ثبت‌نام دانشگاه غیرانتفاعی
+55    konkour/gheyr-entefaee/tamdid-mohlat.html | تمدید مهلت ثبت‌نام بدون کنکور دانشگاه غیرانتفاعی
+57    konkour/moshavere/posht-konkour-ya-mohajerat.html | ماندن در پشت کنکور یا مهاجرت
+58    konkour/azad-1405.html | انتخاب رشته دانشگاه آزاد ۱۴۰۵
+58    konkour/arshad/eteraz-olympiad.html | اعتراض به نتایج نهایی المپیاد دانشجویی
+58    konkour/gheyr-entefaee/nahve-pardakht-shahriye.html | نحوه پرداخت شهریه دانشگاه غیرانتفاعی
+58    konkour/gheyr-entefaee/sabt-nam-paziroftegan.html | ثبت‌نام پذیرفته‌شدگان بدون کنکور دانشگاه‌های غیرانتفاعی
+59    konkour/moshavere/parastari-ya-otagh-amal.html | پرستاری بهتر است یا اتاق عمل
+61    konkour/azad-nahve.html | نحوه انتخاب رشته دانشگاه آزاد
+62    konkour/azad-shenase.html | شناسه انتخاب رشته دانشگاه آزاد
+62    konkour/shahriye-pardis.html | شهریه پردیس خودگردان
+63    konkour/gheyr-entefaee/barname-kelasi.html | مشاهده برنامه کلاسی دانشگاه غیرانتفاعی
+64    konkour/narmafzar-entekhab-reshte.html | نرم‌افزار انتخاب رشته کنکور
+64    konkour/moshavere/pasokhname-honar-1405.html | پاسخنامه کنکور هنر ۱۴۰۵
+65    konkour/moshavere/sahmiye-dahak-khanebar.html | سهمیه دهک‌بندی خانوار در کنکور
+67    konkour/barname-1406.html | برنامه‌ریزی برای کنکور ۱۴۰۶
+67    konkour/arshad/soalat-1404.html | سوالات کنکور کارشناسی ارشد ۱۴۰۴
+71    konkour/gheyr-entefaee/faregh-tahsili.html | فارغ‌التحصیلی دانشگاه غیرانتفاعی
+72    konkour/arshad/atbaa-khareji.html | شرایط اتباع خارجی در کنکور ارشد
+75    konkour/arshad/dafoos.html | آزمون دافوس
+76    konkour/arshad/kod-zarib-modiriyat.html | کد ضریب ارشد مدیریت
+77    konkour/arshad/dafaa-melli-1406.html | کارشناسی ارشد دانشگاه عالی دفاع ملی ۱۴۰۶
+77    konkour/arshad/proposal-arshad.html | پروپوزال کارشناسی ارشد
+77    konkour/moshavere/radiology-ya-oloum-azmayeshgahi.html | رادیولوژی بهتره یا علوم آزمایشگاهی
+80    konkour/arshad/taasis-moasse-mohajerat.html | شرایط تأسیس مؤسسه مهاجرتی
+81    konkour/arshad/soalat-1405.html | سوالات کنکور کارشناسی ارشد ۱۴۰۵
+82    konkour/arshad/nemune-proposal.html | دانلود نمونه پروپوزال ارشد
+83    konkour/arshad/sajed.html | سامانه ساجد وزارت علوم
+90    konkour/moshavere/tafavot-madrak-bedoon-ba-konkour.html | تفاوت مدرک بدون کنکور و با کنکور
+91    konkour/arshad/tafawot-behdasht-olum.html | تفاوت کنکور ارشد وزارت بهداشت و وزارت علوم
+91    konkour/arshad/vaziyat-kelas-takmili.html | آخرین وضعیت کلاس‌های تحصیلات تکمیلی
+94    konkour/moshavere/azmoon-jame-jaygozin.html | طرح آزمون جامع جایگزین کنکور
+95    konkour/arshad/konkour-afghanestan.html | کنکور فوق‌لیسانس افغانستان
+105   konkour/arshad/pasokhname-1405.html | پاسخنامه کنکور ارشد ۱۴۰۵
+105   konkour/moshavere/gom-shodan-kart-vorod.html | اگر کارت ورود به جلسه را گم کنیم چه می‌شود
+120   konkour/moshavere/natayej-arzyabi-farhangian.html | نتایج ارزیابی شایستگی دانشگاه فرهنگیان
+142   konkour/gheyr-entefaee/darsa-imamreza.html | سامانه درسا دانشگاه امام رضا
+145   konkour/arshad/rahat-tarin-reshte.html | راحت‌ترین رشته ارشد برای قبولی
+175   konkour/behtarin-reshte-ensani.html | بهترین رشته‌های انسانی
+179   konkour/eslahiye-daftarche.html | اصلاحیه دفترچه انتخاب رشته کنکور
+198   konkour/arshad/kod-zarib-hoghugh.html | کد ضریب ارشد حقوق
+214   konkour/nahve-sabt-nam.html | نحوه ثبت نام کنکور سراسری
+221   konkour/rad-medu.html | سامانه راد مدیو (rad.medu.ir)
+227   konkour/hazfiyat-konkour-1405.html | حذفیات کنکور سراسری ۱۴۰۵
+227   konkour/sharayet-ekhtesasi.html | شرایط اختصاصی ثبت نام کنکور سراسری
+228   konkour/zaman-sabt-nam.html | زمان ثبت نام کنکور سراسری ۱۴۰۵ و ۱۴۰۶
+230   konkour/elam-natayej-1405.html | اعلام نتایج نهایی کنکور ۱۴۰۵
+236   konkour/tasir-moadel-1405.html | تاثیر معدل در کنکور ۱۴۰۵ و ۱۴۰۶
+241   konkour/karname-avvalie-1405.html | کارنامه اولیه کنکور ۱۴۰۵
+244   konkour/takhmin-rotbe.html | تخمین رتبه کنکور سراسری
+255   konkour/kart-vorod-jalase.html | کارت ورود به جلسه کنکور سراسری
+266   konkour/virayesh-entekhab-reshte.html | ویرایش انتخاب رشته کنکور سراسری ۱۴۰۵
+299   konkour/termim-moadel-1405.html | ترمیم معدل ۱۴۰۵
+309   konkour/taghirat-konkour-1405.html | تغییرات کنکور سراسری ۱۴۰۵
+332   konkour/site-entekhab-reshte.html | سایت انتخاب رشته کنکور ۱۴۰۵
+337   konkour/entekhab-reshte-1405.html | انتخاب رشته کنکور ۱۴۰۵
+419   konkour/site-sanjesh.html | سایت سازمان سنجش sanjesh.org
+1115  konkour/entekhab-reshte-tajrobi.html | راهنمای انتخاب رشته تجربی ۱۴۰۵
+1126  konkour/sabt-nam.html | ثبت نام کنکور سراسری
+None  index.html | 
+None  konkour/index.html | 
+None  konkour/maghalat.html | 
+None  konkour/arshad/index.html | 
+None  konkour/arshad/page-2.html | 
+None  konkour/gheyr-entefaee/index.html | 
+None  konkour/gheyr-entefaee/page-2.html | 
+None  konkour/moshavere/index.html | 
+None  konkour/moshavere/page-2.html | 
+None  konkour/moshavere/page-3.html | 
+None  konkour/moshavere/page-4.html | 

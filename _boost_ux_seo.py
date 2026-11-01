@@ -210,7 +210,7 @@ def patch_homepage(html: str) -> str:
         "name": "بلوک",
         "url": "{BASE}/",
         "logo": "{BASE}/assets/bolok-logo.png",
-        "email": "bolokadmin@gmail.com",
+        "email": "sanjaporg@gmail.com",
         "sameAs": []
       }},
       {{

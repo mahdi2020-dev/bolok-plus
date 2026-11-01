@@ -1,5 +1,5 @@
 (() => {
-  const API_BASE = "https://backendpy.liara.run";
+  const API_BASE = "https://iraniplanner.ir";
   const DISCLAIMER =
     "(نظرات حاوی توهین، الفاظ رکیک و تبلیغات سایر موسسات تایید نخواهند شد.) نظر خود را بنویسید…";
 

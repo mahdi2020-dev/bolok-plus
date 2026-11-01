@@ -47,7 +47,7 @@ def mega_footer(prefix: str, *, with_enamad: bool = False) -> str:
             <span>بلوک</span>
           </a>
           <p class="mega-tagline">برنامه‌ریز مطالعه فارسی برای کنکور، امتحان و یادگیری جدی.</p>
-          <a class="mega-mail" href="mailto:bolokadmin@gmail.com">bolokadmin@gmail.com</a>
+          <a class="mega-mail" href="mailto:sanjaporg@gmail.com">sanjaporg@gmail.com</a>
           <div class="mega-chips" aria-label="ویژگی‌ها">
             <span>اندروید</span>
             <span>فارسی</span>
@@ -146,7 +146,7 @@ def polish_homepage(html: str) -> str:
             '"sameAs": [],\n'
             '        "contactPoint": {\n'
             '          "@type": "ContactPoint",\n'
-            '          "email": "bolokadmin@gmail.com",\n'
+            '          "email": "sanjaporg@gmail.com",\n'
             '          "contactType": "customer support",\n'
             '          "availableLanguage": ["fa"]\n'
             '        }\n'

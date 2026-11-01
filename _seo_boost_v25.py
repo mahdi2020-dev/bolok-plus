@@ -286,7 +286,7 @@ def build_page(
             <span>بلوک</span>
           </a>
           <p class="mega-tagline">برنامه‌ریز مطالعه فارسی برای کنکور، امتحان و یادگیری جدی.</p>
-          <a class="mega-mail" href="mailto:bolokadmin@gmail.com">bolokadmin@gmail.com</a>
+          <a class="mega-mail" href="mailto:sanjaporg@gmail.com">sanjaporg@gmail.com</a>
         </div>
         <nav class="mega-col" aria-label="مطالب آموزشی">
           <h3>آموزش کنکور</h3>
@@ -1156,8 +1156,26 @@ def rebuild_search_index() -> None:
         title = re.sub(r"<[^>]+>", "", (h1_m or title_m).group(1)).replace("· بلوک", "").strip()
         desc = desc_m.group(1) if desc_m else ""
         parts = path.parts
-        if "moshavere" in parts:
+        if "consult" in parts and "psychology" in parts:
+            cat = "مشاوره·روانشناسی"
+        elif "consult" in parts and "academic" in parts:
+            cat = "مشاوره·تحصیلی"
+        elif "consult" in parts:
             cat = "مشاوره"
+        elif "moshavere" in parts:
+            psych_stems = {
+                "tajrobe-posht-konkouri",
+                "dalayel-oft-rotbe",
+                "posht-konkour-ya-mohajerat",
+                "azad-ya-posht-konkour",
+                "agar-parastari-ghabool-nasham",
+                "parastari-ya-otagh-amal",
+                "radiology-ya-oloum-azmayeshgahi",
+                "hoghugh-azad-ya-payamnoor",
+                "diplom-bozorgsalan-ya-roozane",
+                "jaygozin-konkour",
+            }
+            cat = "مشاوره·روانشناسی" if path.stem in psych_stems else "مشاوره·تحصیلی"
         elif "gheyr-entefaee" in parts:
             cat = "غیرانتفاعی"
         elif "arshad" in parts:
@@ -1268,7 +1286,7 @@ def patch_index_org_schema() -> None:
                 "name": "بلوک",
                 "url": BASE,
                 "logo": f"{BASE}/assets/bolok-logo.png",
-                "email": "bolokadmin@gmail.com",
+                "email": "sanjaporg@gmail.com",
                 "sameAs": [],
             },
             {
