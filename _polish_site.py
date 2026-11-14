@@ -85,7 +85,6 @@ def mega_footer(prefix: str, *, with_enamad: bool = False) -> str:
 
       <div class="mega-bar">
         <p>© بلوک · <a href="{BASE}/">bolokapp.ir</a></p>
-        <p class="mega-bar-note">محتوای آموزشی مکمل اپ است؛ تاریخ‌های رسمی را از سنجش چک کنید.</p>
       </div>
     </div>
   </footer>"""

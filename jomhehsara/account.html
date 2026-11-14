@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="bolok-root" content="../" />
+  <title>داشبورد | جزوه‌سرا</title>
+  <link rel="icon" href="../assets/bolok-logo.svg?v=59" type="image/svg+xml" />
+  <link rel="stylesheet" href="../assets/fonts/vazirmatn-fd.css?v=1" />
+  <link rel="stylesheet" href="../styles.css?v=64" />
+  <link rel="stylesheet" href="jomhehsara.css?v=39" />
+  <script src="../site-api.js?v=22" defer></script>
+  <script src="jomhehsara.js?v=34" defer></script>
+</head>
+<body class="jh-body jh-dash-body" data-jh-page="account">
+  <div id="jh-dash-boot" class="jh-boot">در حال بارگذاری حساب…</div>
+  <div id="jh-dash" class="jh-dash" hidden>
+    <aside class="jh-dash-side" id="jh-dash-side">
+      <div class="jh-dash-brand">
+        <strong>جزوه‌سرا</strong>
+        <span>داشبورد بلوک</span>
+      </div>
+      <nav class="jh-account-nav" aria-label="داشبورد">
+        <p class="jh-nav-group">خلاصه</p>
+        <a href="account.html?tab=overview" data-tab="overview"><span class="jh-nav-ico" aria-hidden="true">◉</span>نمای کلی</a>
+        <p class="jh-nav-group">حساب من</p>
+        <a href="account.html?tab=library" data-tab="library"><span class="jh-nav-ico" aria-hidden="true">▣</span>کتابخانه من</a>
+        <p class="jh-nav-group">انتشار و درآمد</p>
+        <a href="account.html?tab=mine" data-tab="mine"><span class="jh-nav-ico" aria-hidden="true">✎</span>جزوه‌های ارسالی</a>
+        <a href="account.html?tab=services" data-tab="services"><span class="jh-nav-ico" aria-hidden="true">⚙</span>سفارش‌های آماده‌سازی</a>
+        <a href="account.html?tab=wallet" data-tab="wallet"><span class="jh-nav-ico" aria-hidden="true">◎</span>درآمد و تسویه</a>
+        <a href="account.html?tab=certs" data-tab="certs"><span class="jh-nav-ico" aria-hidden="true">★</span>گواهی‌ها</a>
+        <p class="jh-nav-group">پشتیبانی</p>
+        <a href="account.html?tab=tickets" data-tab="tickets"><span class="jh-nav-ico" aria-hidden="true">◇</span>پشتیبانی جزوات</a>
+        <a href="account.html?tab=profile" data-tab="profile"><span class="jh-nav-ico" aria-hidden="true">○</span>مشخصات و خروج</a>
+        <p class="jh-nav-group">سایت</p>
+        <a href="../index.html"><span class="jh-nav-ico" aria-hidden="true">⌂</span>برگشت به صفحه اصلی</a>
+      </nav>
+    </aside>
+    <div class="jh-dash-main">
+      <header class="jh-dash-top">
+        <button type="button" class="jh-btn secondary jh-dash-menu" id="btn-dash-menu" aria-label="منو">منو</button>
+        <div class="jh-dash-hello">
+          <h1 id="jh-hello">حساب من</h1>
+          <p class="jh-note" id="jh-hello-sub">مدیریت کتابخانه، انتشار و پشتیبانی</p>
+        </div>
+        <div class="jh-dash-top-actions">
+          <div id="jh-switcher" class="jh-switcher"></div>
+          <a class="jh-btn secondary" href="index.html">فروشگاه</a>
+          <a class="jh-btn" href="submit.html">انتشار جزوه</a>
+        </div>
+      </header>
+      <div id="jh-err" class="jh-msg" hidden></div>
+      <div class="jh-tab-panel" data-tab="overview" id="panel-overview">
+        <div class="jh-dash-skel" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+      </div>
+      <div class="jh-tab-panel" data-tab="library" id="panel-library"></div>
+      <div class="jh-tab-panel" data-tab="mine" id="panel-mine"></div>
+      <div class="jh-tab-panel" data-tab="services" id="panel-services"></div>
+      <div class="jh-tab-panel" data-tab="wallet" id="panel-wallet"></div>
+      <div class="jh-tab-panel" data-tab="certs" id="panel-certs"></div>
+      <div class="jh-tab-panel" data-tab="tickets" id="panel-tickets"></div>
+      <div class="jh-tab-panel" data-tab="profile" id="panel-profile"></div>
+    </div>
+  </div>
+  <div class="jh-dash-backdrop" id="jh-dash-backdrop" hidden></div>
+</body>
+</html>

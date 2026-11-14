@@ -215,12 +215,6 @@ def homepage_faq(html: str) -> str:
 """
     if '<section class="final-cta container">' in html:
         html = html.replace('<section class="final-cta container">', section + '    <section class="final-cta container">', 1)
-    if "mobile-download" not in html:
-        html = html.replace(
-            "</body>",
-            '  <a class="mobile-download" href="#download">دانلود اپ بلوک</a>\n</body>',
-            1,
-        )
     ld = {
         "@context": "https://schema.org",
         "@type": "FAQPage",

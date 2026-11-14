@@ -774,14 +774,6 @@ FOOTER_CSS = """/* ——— Mega footer · v22 ——— */
   color: var(--ink);
 }
 
-.mega-bar-note {
-  margin: 0;
-  font-size: 0.75rem;
-  color: var(--muted);
-  max-width: 36rem;
-  line-height: 1.6;
-}
-
 .mega-bar p {
   margin: 0;
 }

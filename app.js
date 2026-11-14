@@ -24,6 +24,142 @@
   document.fonts?.ready?.then(pinScrollX);
   const finePointer = window.matchMedia("(pointer: fine)").matches;
 
+  // جزوه‌سرا in desktop header + drawer (relative to data-site-root)
+  const ensureJomhehsaraNav = () => {
+    const headerEl = document.querySelector(".site-header[data-site-root], .site-header");
+    const rootAttr =
+      headerEl?.getAttribute("data-site-root") ??
+      document.querySelector("[data-site-root]")?.getAttribute("data-site-root") ??
+      "";
+    const root = rootAttr || "";
+    const href = `${root}jomhehsara/`;
+    const mainNav = document.querySelector(".header-links--main");
+    if (mainNav && !mainNav.querySelector("a.nav-jomhehsara, a[href*='jomhehsara']")) {
+      const a = document.createElement("a");
+      a.className = "nav-jomhehsara";
+      a.href = href;
+      a.textContent = "جزوه‌سرا";
+      const consult = mainNav.querySelector(".header-consult");
+      if (consult?.nextSibling) {
+        mainNav.insertBefore(a, consult.nextSibling);
+      } else if (consult) {
+        consult.after(a);
+      } else {
+        mainNav.prepend(a);
+      }
+    }
+    const drawerNav = document.querySelector(".drawer-nav");
+    if (
+      drawerNav &&
+      !drawerNav.querySelector("a[href*='jomhehsara']")
+    ) {
+      const item = document.createElement("a");
+      item.className = "drawer-nav-item";
+      item.href = href;
+      item.innerHTML = `
+        <span class="drawer-nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 19.5V6a2 2 0 0 1 2-2h11v16H6a2 2 0 0 0-2 2z"/><path d="M17 4v16"/><path d="M8 8h5M8 12h5"/></svg>
+        </span>
+        <span class="drawer-nav-label">جزوه‌سرا</span>`;
+      const about = Array.from(drawerNav.querySelectorAll("a.drawer-nav-item")).find(
+        (el) => (el.textContent || "").includes("درباره"),
+      );
+      if (about) drawerNav.insertBefore(item, about);
+      else drawerNav.appendChild(item);
+    }
+  };
+  ensureJomhehsaraNav();
+
+  // Site account (جزوه‌سرا OTP) — profile icon in header + drawer
+  const siteRoot = () => {
+    const headerEl = document.querySelector(".site-header[data-site-root], .site-header");
+    return (
+      headerEl?.getAttribute("data-site-root") ??
+      document.querySelector("[data-site-root]")?.getAttribute("data-site-root") ??
+      ""
+    );
+  };
+  const ensureSiteAccountHeader = () => {
+    const root = siteRoot();
+    const loginHref = `${root}jomhehsara/login.html`;
+    const accountHref = `${root}jomhehsara/account.html?tab=overview`;
+    const personSvg =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="8" r="3.4"/><path d="M5.2 19.2c1.6-3.2 4-4.7 6.8-4.7s5.2 1.5 6.8 4.7"/></svg>';
+
+    let btn =
+      document.querySelector("[data-site-account]") ||
+      document.querySelector(".header-about-compact");
+    if (!btn) {
+      const actions = document.querySelector(".header-top-actions");
+      if (actions) {
+        btn = document.createElement("a");
+        btn.className = "header-icon-btn header-account";
+        btn.setAttribute("data-site-account", "");
+        btn.innerHTML = personSvg;
+        const search = actions.querySelector(".header-search-compact");
+        if (search?.nextSibling) actions.insertBefore(btn, search.nextSibling);
+        else actions.appendChild(btn);
+      }
+    }
+    if (btn) {
+      btn.classList.remove("header-about-compact");
+      btn.classList.add("header-account");
+      btn.setAttribute("data-site-account", "");
+      btn.href = loginHref;
+      btn.setAttribute("aria-label", "ورود یا ثبت‌نام");
+      btn.title = "ورود / ثبت‌نام";
+      if (!btn.querySelector("svg")) btn.innerHTML = personSvg;
+    }
+
+    const drawerNav = document.querySelector(".drawer-nav");
+    if (drawerNav && !drawerNav.querySelector("[data-site-account-drawer]")) {
+      const item = document.createElement("a");
+      item.className = "drawer-nav-item";
+      item.setAttribute("data-site-account-drawer", "");
+      item.href = loginHref;
+      item.innerHTML = `
+        <span class="drawer-nav-icon" aria-hidden="true">${personSvg}</span>
+        <span class="drawer-nav-label">ورود / حساب من</span>`;
+      drawerNav.prepend(item);
+    }
+
+    const applyAccount = (account) => {
+      const label = account
+        ? `${account.first_name || ""} ${account.last_name || ""}`.trim() || "حساب من"
+        : "ورود / ثبت‌نام";
+      const href = account ? accountHref : loginHref;
+      if (btn) {
+        btn.href = href;
+        btn.title = label;
+        btn.setAttribute("aria-label", label);
+        btn.classList.toggle("is-logged-in", false);
+      }
+      const drawerItem = document.querySelector("[data-site-account-drawer]");
+      if (drawerItem) {
+        drawerItem.href = href;
+        const lab = drawerItem.querySelector(".drawer-nav-label");
+        if (lab) lab.textContent = account ? label : "ورود / حساب من";
+      }
+    };
+
+    const BS = window.BolokSite;
+    if (!BS?.getSiteSession?.() || !BS.api) {
+      applyAccount(null);
+      return;
+    }
+    BS.api("/api/site/auth/restore-session", { method: "POST", body: "{}" })
+      .then((res) => {
+        if (!res?.ok) {
+          BS.setSiteSession("");
+          applyAccount(null);
+          return;
+        }
+        applyAccount(res.data || null);
+      })
+      .catch(() => applyAccount(null));
+  };
+  ensureSiteAccountHeader();
+
   // Nav drawer (mobile) — backdrop, body lock, header state, resize close
   const drawer = document.querySelector("[data-nav-drawer]");
   const toggle = document.querySelector("[data-nav-toggle]");
@@ -81,8 +217,13 @@
     const syncHeaderHeight = () => {
       const shell = siteHeader.querySelector(".header-shell") || siteHeader;
       const h = Math.ceil(shell.getBoundingClientRect().height);
+      // Full sticky header (padding + shell) — drawer items must clear the brand.
+      const full = Math.ceil(siteHeader.getBoundingClientRect().height);
       if (h > 0) {
         document.documentElement.style.setProperty("--header-h-v36", `${h}px`);
+      }
+      if (full > 0) {
+        document.documentElement.style.setProperty("--site-header-offset", `${full}px`);
       }
     };
     const syncHeader = () => {

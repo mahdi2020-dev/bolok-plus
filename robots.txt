@@ -10,3 +10,4 @@ Disallow: /*.py$
 
 Sitemap: https://bolokapp.ir/sitemap.xml
 Sitemap: https://bolokapp.ir/sitemap.txt
+Sitemap: https://bolokapp.ir/sitemap-resources.xml

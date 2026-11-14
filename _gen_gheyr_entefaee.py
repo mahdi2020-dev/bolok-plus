@@ -477,7 +477,6 @@ def mega_footer() -> str:
       </div>
       <div class="mega-bar">
         <p>© بلوک · <a href="{BASE}/">bolokapp.ir</a></p>
-        <p class="mega-bar-note">تاریخ‌ها و ظرفیت‌ها را از سنجش و سایت واحد چک کنید.</p>
       </div>
     </div>
   </footer>

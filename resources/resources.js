@@ -33,9 +33,45 @@
     }
     host.hidden = false;
     const chips = [];
-    if (audienceGrade) chips.push(`<span class="chip">پایه: ${esc(audienceGrade)}</span>`);
-    if (audienceGoal) chips.push(`<span class="chip">هدف: ${esc(audienceGoal)}</span>`);
-    host.innerHTML = `<div class="resource-filter-active">${chips.join("")}</div>`;
+    if (audienceGrade) {
+      chips.push(
+        `<span class="chip chip--accent">پایه: ${esc(toFa(audienceGrade))}</span>`
+      );
+    }
+    if (audienceGoal) {
+      chips.push(`<span class="chip">هدف: ${esc(audienceGoal)}</span>`);
+    }
+    host.innerHTML = `<div class="resource-filter-active">
+      ${chips.join("")}
+      <a class="resource-filter-clear" href="index.html">حذف فیلتر پایه</a>
+    </div>`;
+    const hero = document.querySelector(".resources-hero h1");
+    const heroP = document.querySelector(".resources-hero p");
+    if (hero && audienceGrade) {
+      hero.textContent = `منابع پایه ${toFa(audienceGrade)}`;
+    }
+    if (heroP && audienceGrade) {
+      heroP.textContent = audienceGoal
+        ? `منابع منتشرشده برای پایه ${toFa(audienceGrade)} · ${audienceGoal}`
+        : `کمک‌آموزشی، جزوه و تمرین‌های مناسب پایه ${toFa(
+            audienceGrade
+          )} — از جمله منابع مشترک تیزهوشان.`;
+    }
+  };
+
+  const wireAudienceLinks = () => {
+    if (!audienceGrade && !audienceGoal) return;
+    document.querySelectorAll(".kind-chips a, .family-grid a.family-card").forEach((a) => {
+      const href = a.getAttribute("href") || "";
+      if (!href || href.startsWith("#") || href.startsWith("http")) {
+        if (href.startsWith("#")) {
+          const base = `index.html${href}`;
+          a.setAttribute("href", withAudience(base));
+        }
+        return;
+      }
+      a.setAttribute("href", withAudience(href));
+    });
   };
 
   const coverFallbackHtml = (item) => {
@@ -67,7 +103,7 @@
     return `<a class="resource-card resource-card--book" href="${esc(href)}">
       <div class="resource-card-cover">${coverHtml(item)}${score}</div>
       <div class="resource-card-body">
-        <h3>${esc(item.name || "منبع")}</h3>
+        <h3>${esc(toFa(item.name || "منبع"))}</h3>
         <p class="meta">${esc(meta || kindLabel)}</p>
       </div>
     </a>`;
@@ -107,7 +143,14 @@
     const append = (items, replace) => {
       if (replace) el.innerHTML = "";
       if (!items.length && replace) {
-        if (st) st.textContent = "منبعی یافت نشد.";
+        if (st) {
+          const gradeHint = audienceGrade
+            ? `برای پایه «${toFa(audienceGrade)}» هنوز منبع منتشرشده‌ای در این بخش نیست.`
+            : "منبعی یافت نشد.";
+          st.innerHTML = `<span class="rsc-empty-title">${esc(
+            gradeHint
+          )}</span><span class="rsc-empty-sub">از منوی بانک منابع پایهٔ دیگر را امتحان کنید یا فیلتر را بردارید.</span>`;
+        }
         return;
       }
       el.insertAdjacentHTML("beforeend", items.map(cardHtml).join(""));
@@ -143,8 +186,6 @@
     load(true);
   };
 
-  renderFilterBar();
-
   const home = document.querySelector("[data-resources-home]");
   const kindEl = document.querySelector("[data-resources-kind]");
   const itemEl = document.querySelector("[data-resource-item]");
@@ -160,9 +201,11 @@
 
   if (kindEl) {
     const kind = kindEl.getAttribute("data-resources-kind") || "";
+    const lessonFilter = (params.get("lesson") || "").trim();
     bindInfinite(kindEl, (offset) => {
       const aq = audienceQuery();
       aq.set("kind", kind);
+      if (lessonFilter) aq.set("lesson", lessonFilter);
       aq.set("limit", String(PAGE_SIZE));
       aq.set("offset", String(offset));
       return aq;
@@ -209,21 +252,36 @@
     </svg>`;
   };
 
-  const scoreRing = (score) => {
+  const scoreRing = (score, { instant = false } = {}) => {
     const n = Math.max(0, Math.min(100, Number(score) || 0));
     const r = 42;
     const c = 2 * Math.PI * r;
     const offset = c * (1 - n / 100);
-    return `<div class="resource-score-ring" data-animate-charts aria-label="امتیاز کیفیت ${toFa(n)} از ۱۰۰">
+    const dash = instant ? offset : c;
+    const num = instant ? toFa(n) : toFa(0);
+    return `<div class="resource-score-ring${instant ? " is-animated" : ""}" data-animate-charts aria-label="امتیاز کیفیت ${toFa(n)} از ۱۰۰">
       <svg viewBox="0 0 100 100">
         <circle class="ring-bg" cx="50" cy="50" r="${r}" />
         <circle class="ring-fg" cx="50" cy="50" r="${r}"
           stroke-dasharray="${c.toFixed(1)}"
-          stroke-dashoffset="${c.toFixed(1)}"
+          stroke-dashoffset="${dash.toFixed(1)}"
           data-ring-target="${offset.toFixed(1)}" />
       </svg>
-      <div class="ring-num"><strong data-count-to="${n}">${toFa(0)}</strong><span>از ۱۰۰</span></div>
+      <div class="ring-num"><strong data-count-to="${n}">${num}</strong><span>از ۱۰۰</span></div>
     </div>`;
+  };
+
+  const paintCompareCharts = (root) => {
+    if (!root) return;
+    root.querySelectorAll("[data-bar-width]").forEach((el) => {
+      el.style.width = `${el.getAttribute("data-bar-width") || 0}%`;
+    });
+    root.querySelectorAll("[data-ring-target]").forEach((el) => {
+      el.style.strokeDashoffset = el.getAttribute("data-ring-target") || "0";
+    });
+    root.querySelectorAll("[data-count-to]").forEach((el) => {
+      el.textContent = toFa(el.getAttribute("data-count-to") || 0);
+    });
   };
 
   const humanSectionLabel = (sec) => {
@@ -232,7 +290,45 @@
     if (code === "ux_structure" || /ساختار\s*و\s*UX|UX/i.test(raw)) {
       return "طراحی ظاهری و خوانایی";
     }
+    if (code === "exam_standard" || /استاندارد\s*کنکور/.test(raw)) {
+      return "استاندارد آزمون";
+    }
+    if (/تناسب\s*کنکور/.test(raw)) return "تناسب با آزمون هدف";
+    if (/شبیه\s*کنکور/.test(raw)) return "شبیه آزمون هدف";
+    if (/هم[\u200c\-]?سطح\s*کنکور/.test(raw)) return "هم‌سطح آزمون هدف";
     return raw;
+  };
+
+  const gradeBandOf = (g) => {
+    const t = String(g || "");
+    if (/پنجم|ششم|چهارم/.test(t)) return "elem";
+    if (/هفتم|هشتم|نهم/.test(t)) return "mid";
+    if (/دهم|یازدهم|دوازدهم|فنی|کاردانش/.test(t)) return "high";
+    return "";
+  };
+
+  const isDualTizhooshanAudience = (s) => {
+    const grades = (s?.student_grades || []).map((g) => String(g).trim()).filter(Boolean);
+    const name = String(s?.name || "");
+    const goals = (s?.exam_goals || []).map((g) => String(g));
+    const tiz = goals.some((g) => /تیزهوشان/.test(g));
+    const bands = new Set(grades.map(gradeBandOf).filter(Boolean));
+    const hasSixth =
+      grades.some((g) => /ششم/.test(g)) || /ششم/.test(name);
+    const hasNinth =
+      grades.some((g) => /نهم/.test(g)) || /نهم/.test(name);
+    if (bands.has("elem") && bands.has("mid")) {
+      return tiz || bands.size === 2;
+    }
+    // Cover catalog rows tagged only «ششم» while title/exam imply نهم تیزهوشان.
+    return tiz && hasSixth && hasNinth;
+  };
+
+  const primaryExamLabel = (s) => {
+    const goals = (s?.exam_goals || []).map((g) => String(g).trim()).filter(Boolean);
+    if (goals.length) return goals[0];
+    if (isDualTizhooshanAudience(s)) return "آزمون تیزهوشان";
+    return "آزمون هدف";
   };
 
   const sectionHint = (sec) => {
@@ -445,32 +541,88 @@
         pct,
       };
     });
-    let hotCode = LEVEL_CODES.includes(dominant) ? dominant : "";
-    if (!hotCode) {
-      hotCode = rows.reduce((a, b) => (b.pct > a.pct ? b : a), rows[0]).code;
+    // Always highlight the highest fit % (e.g. 90% strong), not passport dominant.
+    // Tie-break: passport dominant if tied for max, else strong > mid > weak.
+    const maxPct = rows.reduce((m, r) => Math.max(m, r.pct), 0);
+    const tied = rows.filter((r) => r.pct === maxPct);
+    const rank = { strong: 3, mid: 2, weak: 1 };
+    let hotCode = tied[0]?.code || "mid";
+    if (tied.length > 1) {
+      if (LEVEL_CODES.includes(dominant) && tied.some((r) => r.code === dominant)) {
+        hotCode = dominant;
+      } else {
+        hotCode = tied.reduce((a, b) =>
+          (rank[b.code] || 0) > (rank[a.code] || 0) ? b : a
+        ).code;
+      }
+    } else if (tied.length === 1) {
+      hotCode = tied[0].code;
     }
-    const proLine =
-      firstSentence(review?.pros) ||
-      "درسنامه و پوشش تست برای شروع و تثبیت مناسب است";
-    const conLine =
-      firstSentence(review?.cons) ||
-      "برای دانش‌آموزان خیلی قوی ممکن است تست‌های فوق‌سنگین کم باشد";
-    return `<div class="rsc-spectrum" data-animate-charts role="img" aria-label="پروفایل تناسب سطح">
+    const hotRow = rows.find((r) => r.code === hotCode) || rows[0];
+    return {
+      html: `<div class="rsc-spectrum" data-animate-charts role="img" aria-label="پروفایل تناسب سطح">
       <div class="rsc-spectrum-track">${rows
         .map((r) => {
           const hot = r.code === hotCode ? " is-hot" : "";
-          return `<div class="rsc-spectrum-seg${hot}" style="flex:${Math.max(r.pct, 12)}">
+          return `<div class="rsc-spectrum-seg${hot}" style="flex:${Math.max(r.pct, 14)}">
             <strong>${esc(r.label)}</strong>
             <em>${toFa(Math.round(r.pct))}٪</em>
+            ${hot ? `<span class="rsc-spectrum-tag">بیشترین تناسب</span>` : ""}
           </div>`;
         })
         .join("")}</div>
-      <p class="rsc-spectrum-hint">بخش پررنگ‌تر = سطح غالب ثبت‌شده در شناسنامهٔ بلوک</p>
-      <ul class="rsc-spectrum-takeaways">
-        <li class="is-pro"><span class="rsc-spectrum-ico" aria-hidden="true">✓</span><span>نقطه قوت اصلی: ${esc(proLine)}</span></li>
-        <li class="is-con"><span class="rsc-spectrum-ico" aria-hidden="true">!</span><span>نکته مهم: ${esc(conLine)}</span></li>
-      </ul>
-    </div>`;
+    </div>`,
+      hotCode,
+      hotRow,
+      rows,
+    };
+  };
+
+  const isSchoolAudience = (s) => {
+    const grades = (s?.student_grades || []).map((g) => String(g).trim());
+    if (!grades.length) return isDualTizhooshanAudience(s);
+    return grades.some((g) => {
+      const b = gradeBandOf(g);
+      return b === "elem" || b === "mid";
+    });
+  };
+
+  const fitForChildHtml = (s, review, bookMeta) => {
+    const spectrum = levelSpectrum(review?.level_profile || [], review, bookMeta);
+    const useCases = displayUseCases(review).slice(0, 3);
+    const dual = isDualTizhooshanAudience(s);
+    const exam = primaryExamLabel(s);
+    const hotCode = spectrum.hotCode || "mid";
+    const dualLead = dual
+      ? `<p class="rsc-fit-dual">${
+          hotCode === "strong"
+            ? "برای پایه ششم بیشتر مناسب دانش‌آموزان قوی و چالشی است؛ برای نهم معمولاً متوسط تا قوی."
+            : hotCode === "weak"
+              ? "برای شروع پایه ششم و نهم با سطح مبتدی قابل‌استفاده‌تر است؛ دانش‌آموزان خیلی قوی ممکن است منبع مکمل بخواهند."
+              : "برای پایه ششم دانش‌آموزان متوسط‌روبه‌بالا و برای نهم طیف متوسط تا قوی پوشش داده می‌شود."
+        } مباحث این منبع برای <strong>تیزهوشان ششم و نهم (مشترک)</strong> قابل استفاده است.</p>`
+      : "";
+    const useHtml = useCases.length
+      ? `<div class="rsc-fit-usecases">${useCases
+          .map((u) => {
+            const v = Math.max(0, Math.min(100, Number(u.pct ?? u.value) || 0));
+            const label = u.label_fa || u.name || u.code || "";
+            return `<div class="rsc-fit-use"><span>${esc(label)}</span><strong>${toFa(
+              Math.round(v)
+            )}٪</strong></div>`;
+          })
+          .join("")}</div>`
+      : "";
+    const sub = isSchoolAudience(s)
+      ? `ویژه والدین و دانش‌آموزان · هدف: ${exam}`
+      : `برای انتخاب منبع مناسب سطح شما · هدف: ${exam}`;
+    return `<section class="resource-panel rsc-fit-child" data-animate-charts>
+      <h2 class="resource-subhead">این منبع برای من مناسب است؟</h2>
+      <p class="resource-muted">${esc(sub)}</p>
+      ${dualLead}
+      ${spectrum.html}
+      ${useHtml}
+    </section>`;
   };
 
   const animateCharts = (root) => {
@@ -527,18 +679,46 @@
     nodes.forEach((n) => io.observe(n));
   };
 
+  const mergeSectionsForCompare = (secA, secB) => {
+    const order = [];
+    const seen = new Set();
+    const add = (list) => {
+      (Array.isArray(list) ? list : []).forEach((s) => {
+        const code = String(s?.code || "").trim();
+        if (!code || seen.has(code)) return;
+        seen.add(code);
+        order.push(code);
+      });
+    };
+    add(secA);
+    add(secB);
+    const mapA = new Map((secA || []).map((s) => [String(s.code), s]));
+    const mapB = new Map((secB || []).map((s) => [String(s.code), s]));
+    return order.map((code) => ({
+      code,
+      a: mapA.get(code) || null,
+      b: mapB.get(code) || null,
+      label: humanSectionLabel(mapA.get(code) || mapB.get(code) || { code }),
+    }));
+  };
+
   const dualRadar = (secA, secB) => {
-    if (!Array.isArray(secA) || secA.length < 3) return "";
-    const n = secA.length;
+    const rows = mergeSectionsForCompare(secA, secB);
+    if (rows.length < 3) return "";
+    const n = rows.length;
     const cx = 120;
     const cy = 120;
-    const R = 88;
+    const R = 78;
     const angleAt = (i) => -Math.PI / 2 + (i * 2 * Math.PI) / n;
     const pt = (i, r) => {
       const a = angleAt(i);
       return [cx + r * Math.cos(a), cy + r * Math.sin(a)];
     };
-    const byCode = new Map((secB || []).map((s) => [s.code, s]));
+    const pctOfSec = (sec) => {
+      if (!sec) return 0;
+      if (sec.pct != null) return Math.max(0, Math.min(100, Number(sec.pct) || 0)) / 100;
+      return pctOf(sec.score, sec.max) / 100;
+    };
     const grid = [0.25, 0.5, 0.75, 1]
       .map((f) => {
         const poly = Array.from({ length: n }, (_, i) => pt(i, R * f).join(",")).join(" ");
@@ -549,26 +729,16 @@
       const [x, y] = pt(i, R);
       return `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" class="radar-axis" />`;
     }).join("");
-    const polyA = secA
-      .map((sec, i) => {
-        const pct = Math.max(0, Math.min(100, Number(sec.pct) || 0)) / 100;
-        return pt(i, R * pct).join(",");
-      })
-      .join(" ");
-    const polyB = secA
-      .map((sec, i) => {
-        const other = byCode.get(sec.code) || {};
-        const pct = Math.max(0, Math.min(100, Number(other.pct) || 0)) / 100;
-        return pt(i, R * pct).join(",");
-      })
-      .join(" ");
-    const labels = secA
-      .map((sec, i) => {
-        const [x, y] = pt(i, R + 18);
-        return `<text x="${x}" y="${y}" class="radar-label">${esc(sec.label_fa || "")}</text>`;
+    const polyA = rows.map((row, i) => pt(i, R * pctOfSec(row.a)).join(",")).join(" ");
+    const polyB = rows.map((row, i) => pt(i, R * pctOfSec(row.b)).join(",")).join(" ");
+    const labels = rows
+      .map((row, i) => {
+        const [x, y] = pt(i, R + 22);
+        const short = String(row.label || "").replace(/\s*\/\s*/g, "/").slice(0, 14);
+        return `<text x="${x}" y="${y}" class="radar-label">${esc(short)}</text>`;
       })
       .join("");
-    return `<svg class="resource-radar" viewBox="0 0 240 240" role="img" aria-label="مقایسه معیارها">
+    return `<svg class="resource-radar cmp-radar" viewBox="0 0 240 240" role="img" aria-label="مقایسه معیارها">
       ${grid}${axes}
       <polygon points="${polyA}" class="radar-fill radar-fill--a" />
       <polygon points="${polyB}" class="radar-fill radar-fill--b" />
@@ -577,30 +747,146 @@
   };
 
   const dualBars = (secA, secB) => {
-    if (!Array.isArray(secA) || !secA.length) return "";
-    const byCode = new Map((secB || []).map((s) => [s.code, s]));
-    return `<div class="resource-bars resource-bars--dual">${secA
-      .map((a) => {
-        const b = byCode.get(a.code) || {};
-        const pa = Math.max(0, Math.min(100, Number(a.pct) || 0));
-        const pb = Math.max(0, Math.min(100, Number(b.pct) || 0));
-        return `<div class="resource-bar resource-bar--dual">
-          <div class="resource-bar-head"><span>${esc(a.label_fa || "")}</span>
-            <em>${esc(scoreOutOf10Label(a.score, a.max, pa))} · ${esc(
-              scoreOutOf10Label(b.score, b.max ?? a.max, pb)
-            )}</em>
+    const rows = mergeSectionsForCompare(secA, secB);
+    if (!rows.length) return "";
+    return `<div class="cmp-duel-list">${rows
+      .map((row) => {
+        const a = row.a;
+        const b = row.b;
+        const pa = a
+          ? a.pct != null
+            ? Math.max(0, Math.min(100, Number(a.pct) || 0))
+            : pctOf(a.score, a.max)
+          : 0;
+        const pb = b
+          ? b.pct != null
+            ? Math.max(0, Math.min(100, Number(b.pct) || 0))
+            : pctOf(b.score, b.max)
+          : 0;
+        const labelA = a
+          ? scoreOutOf10Label(a.score, a.max, pa)
+          : "ثبت نشده";
+        const labelB = b
+          ? scoreOutOf10Label(b.score, b.max, pb)
+          : "ثبت نشده";
+        const winA = !!(a && b && pa > pb);
+        const winB = !!(a && b && pb > pa);
+        const rowMod = winA ? " is-win-a" : winB ? " is-win-b" : "";
+        return `<div class="cmp-duel-row${rowMod}">
+          <div class="cmp-duel-head">
+            <span class="cmp-duel-label">${esc(row.label)}</span>
           </div>
-          <div class="resource-dual-track">
-            <div class="resource-bar-track resource-bar-track--a"><i style="width:${pa}%"></i></div>
-            <div class="resource-bar-track resource-bar-track--b"><i style="width:${pb}%"></i></div>
+          <div class="cmp-duel-scores">
+            <div class="cmp-duel-side cmp-duel-side--a${winA ? " is-win" : ""}">
+              <em class="cmp-use--a">${esc(labelA)}</em>
+              ${winA ? `<span class="cmp-duel-tip cmp-duel-tip--a">برتر</span>` : ""}
+            </div>
+            <div class="cmp-duel-side cmp-duel-side--b${winB ? " is-win" : ""}">
+              <em class="cmp-use--b">${esc(labelB)}</em>
+              ${winB ? `<span class="cmp-duel-tip cmp-duel-tip--b">برتر</span>` : ""}
+            </div>
+          </div>
+          <div class="cmp-duel-tracks">
+            <div class="resource-bar-track resource-bar-track--a"><i data-bar-width="${pa}" style="width:${pa}%"></i></div>
+            <div class="resource-bar-track resource-bar-track--b"><i data-bar-width="${pb}" style="width:${pb}%"></i></div>
           </div>
         </div>`;
       })
       .join("")}</div>`;
   };
 
+  const compareMetaTable = (itemA, itemB) => {
+    const mapA = new Map(metaTiles(itemA).map(([k, v]) => [String(k), v]));
+    const mapB = new Map(metaTiles(itemB).map(([k, v]) => [String(k), v]));
+    const keys = [];
+    const seen = new Set();
+    [...mapA.keys(), ...mapB.keys()].forEach((k) => {
+      if (seen.has(k)) return;
+      seen.add(k);
+      keys.push(k);
+    });
+    if (!keys.length) return "";
+    const pubA = itemA.publisher || "فعلی";
+    const pubB = itemB.publisher || "انتخابی";
+    return `<div class="cmp-meta-table-wrap">
+      <table class="cmp-meta-table">
+        <thead>
+          <tr>
+            <th>شاخص</th>
+            <th class="cmp-col--a">${esc(pubA)}</th>
+            <th class="cmp-col--b">${esc(pubB)}</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${keys
+            .slice(0, 8)
+            .map((k) => {
+              const va = mapA.has(k) ? mapA.get(k) : "—";
+              const vb = mapB.has(k) ? mapB.get(k) : "—";
+              return `<tr>
+                <th scope="row">${esc(k)}</th>
+                <td class="cmp-col--a">${esc(String(va))}</td>
+                <td class="cmp-col--b">${esc(String(vb))}</td>
+              </tr>`;
+            })
+            .join("")}
+        </tbody>
+      </table>
+    </div>`;
+  };
+
   const toFa = (n) =>
     String(n ?? "").replace(/\d/g, (d) => "۰۱۲۳۴۵۶۷۸۹"[Number(d)]);
+
+  /** Pages that are actually studied (درسنامه+تست), excluding پاسخنامه when marked. */
+  const studyPagesForPlanner = (s) => {
+    const bookMeta = s?.book_meta && typeof s.book_meta === "object" ? s.book_meta : {};
+    const total = Math.max(0, Number(bookMeta.total_pages) || 0);
+    const akStart = Number(bookMeta.answer_key_page_start);
+    if (Number.isFinite(akStart) && akStart > 1) {
+      const study = akStart - 1;
+      if (total <= 0 || study < total) return Math.max(1, study);
+    }
+    const chapters = Array.isArray(s?.chapters_public) ? s.chapters_public : [];
+    let maxEnd = 0;
+    chapters.forEach((ch) => {
+      const end = Number(ch?.page_end);
+      if (Number.isFinite(end) && end > maxEnd) maxEnd = end;
+      (Array.isArray(ch?.goftars) ? ch.goftars : []).forEach((g) => {
+        const ge = Number(g?.page_end);
+        if (Number.isFinite(ge) && ge > maxEnd) maxEnd = ge;
+      });
+    });
+    if (maxEnd > 0 && (total <= 0 || maxEnd < total)) return maxEnd;
+    return total;
+  };
+
+  /** Soft-align use-case % with section scores so «آموزش از صفر» can't contradict weak درسنامه. */
+  const displayUseCases = (review) => {
+    const raw = Array.isArray(review?.use_case_scores) ? review.use_case_scores : [];
+    const lesson = (review?.sections || []).find(
+      (sec) => String(sec?.code || "") === "lesson_quality"
+    );
+    const lessonPct =
+      lesson && Number(lesson.max) > 0
+        ? (Math.max(0, Number(lesson.score) || 0) / Number(lesson.max)) * 100
+        : null;
+    const cons = String(review?.cons || "");
+    const consBlocksZero = /نامناسب.{0,24}از\s*صفر|از\s*صفر.{0,24}نامناسب/.test(cons);
+    return raw.map((u) => {
+      let pct = Math.max(0, Math.min(100, Number(u.pct ?? u.value) || 0));
+      const isZero = /صفر|zero/i.test(String(u.code || u.label_fa || ""));
+      if (isZero) {
+        if (lessonPct != null) {
+          // Cap at lesson-quality percentage (e.g. 5.6/10 → ≤۵۶٪).
+          pct = Math.min(pct, Math.round(lessonPct));
+          if (lessonPct < 55) pct = Math.min(pct, Math.round(lessonPct * 0.9));
+        }
+        if (consBlocksZero) pct = Math.min(pct, 38);
+      }
+      return { ...u, pct, value: pct };
+    });
+  };
 
   const JALALI_MONTHS = [
     "فروردین",
@@ -682,8 +968,13 @@
     const profile = Array.isArray(review?.level_profile) ? review.level_profile : [];
     const top = profile
       .slice()
-      .sort((a, b) => (Number(b.pct) || 0) - (Number(a.pct) || 0))[0];
-    const level = labels.dominant_level || top?.label_fa || "—";
+      .map((p) => ({
+        ...p,
+        pct: Math.max(0, Number(p.pct != null ? p.pct : p.value) || 0),
+      }))
+      .sort((a, b) => b.pct - a.pct)[0];
+    // Same source as spectrum «بیشترین تناسب» — avoid passport mid vs profile strong clash.
+    const level = top?.label_fa || labels.dominant_level || "—";
     const usage = labels.primary_usage || "آموزش و تثبیت";
     const best = top?.label_fa
       ? `دانش‌آموز ${top.label_fa}`
@@ -715,9 +1006,7 @@
     const labels = bookMeta?.labels_fa || {};
     const level = labels.dominant_level || "";
     const usage = labels.primary_usage || "";
-    const useCases = Array.isArray(review?.use_case_scores)
-      ? review.use_case_scores
-      : [];
+    const useCases = displayUseCases(review);
     const ranked = useCases
       .map((u) => ({
         ...u,
@@ -732,9 +1021,6 @@
       0,
       Number(weakFit?.pct != null ? weakFit.pct : weakFit?.value) || 0
     );
-    const pro = firstSentence(review?.pros);
-    const con = firstSentence(review?.cons);
-
     if (top && top.pct >= 55 && /صفر|آموزش/.test(String(top.label_fa || top.code || ""))) {
       return [
         "مناسب برای شروع از صفر و دانش‌آموزانی که به درسنامهٔ خودآموز و روان با تست‌های خط‌به‌خط نیاز دارند",
@@ -766,8 +1052,6 @@
         ? `مناسب دانش‌آموزان سطح ${level}`
         : "مناسب دانش‌آموزانی که می‌خواهند با منبع استاندارد پیش بروند",
       usage ? `با کاربری «${usage}»` : "",
-      pro ? `· ${pro}` : "",
-      con ? `· توجه: ${con}` : "",
     ].filter(Boolean);
     return bits.join(" ");
   };
@@ -775,12 +1059,67 @@
   const editorialBox = (s, review, bookMeta) => {
     const raw = String(s.editorial_verdict || "").trim();
     const useOperator = raw && !looksLikePublisherSlogan(raw);
-    const text = useOperator ? raw : bolokVerdict(s, review, bookMeta);
+    let text = useOperator ? raw : bolokVerdict(s, review, bookMeta);
+    if (isDualTizhooshanAudience(s)) {
+      text = `${text} با اینکه نام روی جلد ممکن است یک پایه باشد، مباحث هوش و استعداد تحلیلی آن برای تیزهوشان ششم و نهم مشترک و کاربردی است.`;
+    }
     const soft = !useOperator;
     return `<aside class="rsc-verdict${soft ? " rsc-verdict--soft" : ""}" data-animate-charts>
       <span class="rsc-verdict-kicker">در یک نگاه · مناسب برای چه کسانی؟</span>
       <p>${esc(text)}</p>
     </aside>`;
+  };
+
+  const bestFitLevelLabel = (review, bookMeta) => {
+    const labels = (bookMeta && bookMeta.labels_fa) || {};
+    const profile = Array.isArray(review?.level_profile) ? review.level_profile : [];
+    const top = profile
+      .slice()
+      .map((p) => ({
+        ...p,
+        pct: Math.max(0, Number(p.pct != null ? p.pct : p.value) || 0),
+      }))
+      .sort((a, b) => b.pct - a.pct)[0];
+    return top?.label_fa || labels.dominant_level || "";
+  };
+
+  const advisorReviewHtml = (s, review, bookMeta) => {
+    const score = Number(review?.total_score ?? s.quality_score);
+    const labels = bookMeta?.labels_fa || {};
+    const exam = primaryExamLabel(s);
+    const dual = isDualTizhooshanAudience(s);
+    const sample = String(s.sample_pdf_url || "").trim();
+    const fitLevel = bestFitLevelLabel(review, bookMeta);
+    const paras = [];
+    // Do not restate editorial_verdict — that copy already lives in editorialBox.
+    if (Number.isFinite(score) && score > 0) {
+      paras.push(
+        `از دید مشاوران بلوک، امتیاز کیفیت این منبع ${toFa(
+          Math.round(score)
+        )} از ۱۰۰ برای مسیر «${exam}» است${
+          fitLevel ? ` و بیشترین تناسب سطح با «${fitLevel}» است` : ""
+        }.`
+      );
+    }
+    if (dual) {
+      paras.push(
+        "اگر فرزندتان ششم است و پایهٔ قوی دارد، این منبع معمولاً چالشی و مفید است؛ برای نهم بیشتر در بازه متوسط تا قوی می‌نشیند. اگر هنوز در شروع مفهومی هستید، بهتر است قبلش یک منبع ساده‌تر بخوانید."
+      );
+    } else if (labels.primary_usage) {
+      paras.push(
+        `کاربری اصلی این منبع «${labels.primary_usage}» است؛ برای تصمیم نهایی بخش «چرا بخرید / حواستان باشد» را کنار امتیازها ببینید.`
+      );
+    }
+    if (sample) {
+      paras.push(
+        "قبل از خرید، چند صفحهٔ نمونه را ورق بزنید تا فونت، چیدمان و سنگینی تست‌ها را خودتان بسنجید."
+      );
+    }
+    if (!paras.length) return "";
+    return `<section class="resource-panel rsc-advisor">
+      <h2 class="resource-subhead">نظر مشاوران بلوک (جمع‌بندی نهایی)</h2>
+      ${paras.map((p) => `<p>${esc(p)}</p>`).join("")}
+    </section>`;
   };
 
   const identityStrip = (s) => {
@@ -886,10 +1225,19 @@
       mainType === "Standard_MCQ" ||
       mainType === "Challenging_MCQ" ||
       /تست|MCQ/i.test(String(s.help_book_main_type_label_fa || ""));
+    const dual = isDualTizhooshanAudience(s);
+    if (dual) {
+      accents.push("مناسب تیزهوشان ششم و نهم (مشترک)");
+      muted.push("ششم و نهم");
+    }
     if (s.lesson) accents.push(String(s.lesson));
     if (s.help_book_main_type_label_fa) accents.push(String(s.help_book_main_type_label_fa));
     if (s.kind_label_fa || s.kind) muted.push(String(s.kind_label_fa || s.kind));
-    mergeGradeLabels(s.student_grades).slice(0, 2).forEach((g) => muted.push(g));
+    if (!dual) {
+      mergeGradeLabels(s.student_grades).slice(0, 2).forEach((g) => muted.push(g));
+    }
+    const publisher = String(s.publisher || "").trim();
+    if (publisher) muted.push(publisher);
     const goals = (s.exam_goals || [])
       .map((g) => String(g).trim())
       .filter(Boolean)
@@ -900,11 +1248,12 @@
       const key = label.trim();
       if (!key || seen.has(key)) return "";
       seen.add(key);
-      return `<span class="chip${accent ? " chip--accent" : ""}">${esc(key)}</span>`;
+      const dualClass = /ششم و نهم/.test(key) ? " chip--dual" : "";
+      return `<span class="chip${accent ? " chip--accent" : ""}${dualClass}">${esc(key)}</span>`;
     };
     return [...accents.map((t) => chip(t, true)), ...muted.map((t) => chip(t, false))]
       .filter(Boolean)
-      .slice(0, 7)
+      .slice(0, 8)
       .join("");
   };
 
@@ -974,51 +1323,51 @@
     </section>`
         : "";
     }
-    return `<section class="resource-panel rsc-chapters">
-      <h2 class="resource-subhead">نقشهٔ راه فصل‌ها</h2>
-      <p class="resource-muted">${toFa(chapters.length)} فصل${
-        bookTotal ? ` · حدود ${toFa(bookTotal)} تست` : ""
-      }</p>
-      <div class="resource-acc">${chapters
-        .map((ch, idx) => {
-          const kids = Array.isArray(ch.goftars) ? ch.goftars : [];
-          const tests = counts[idx] || 0;
-          const share =
-            bookTotal > 0 && tests > 0 ? Math.round((tests / bookTotal) * 100) : 0;
-          const pageRange =
-            ch.page_start != null && ch.page_end != null
-              ? `صفحه ${toFa(ch.page_start)} تا ${toFa(ch.page_end)}`
-              : "";
-          const density =
-            tests > 0
-              ? `<span class="rsc-ch-density">${toFa(tests)} تست${
-                  share ? ` (${toFa(share)}٪ کل کتاب)` : ""
-                }</span>`
-              : "";
-          const metaBits = [pageRange].filter(Boolean).join(" · ");
-          const kidsHtml = kids.length
-            ? `<ol class="rsc-ch-timeline">${kids
-                .map((g) => {
-                  const gm = [
-                    g.page_start != null && g.page_end != null
-                      ? `ص ${toFa(g.page_start)}–${toFa(g.page_end)}`
-                      : "",
-                    g.test_start != null && g.test_end != null
-                      ? `تست ${toFa(g.test_start)}–${toFa(g.test_end)}`
-                      : "",
-                  ]
-                    .filter(Boolean)
-                    .join(" · ");
-                  return `<li>
+    const previewLimit = 5;
+    const hiddenCount = Math.max(0, chapters.length - previewLimit);
+    const chapterCard = (ch, idx) => {
+      const kids = Array.isArray(ch.goftars) ? ch.goftars : [];
+      const tests = counts[idx] || 0;
+      const share =
+        bookTotal > 0 && tests > 0 ? Math.round((tests / bookTotal) * 100) : 0;
+      const pageRange =
+        ch.page_start != null && ch.page_end != null
+          ? `صفحه ${toFa(ch.page_start)} تا ${toFa(ch.page_end)}`
+          : "";
+      const density =
+        tests > 0
+          ? `<span class="rsc-ch-density">${toFa(tests)} تست${
+              share ? ` (${toFa(share)}٪ کل کتاب)` : ""
+            }</span>`
+          : "";
+      const shareBar =
+        share > 0
+          ? `<span class="rsc-ch-share" aria-hidden="true"><i data-bar-width="${share}" style="width:0%"></i></span>`
+          : "";
+      const metaBits = [pageRange].filter(Boolean).join(" · ");
+      const kidsHtml = kids.length
+        ? `<ol class="rsc-ch-timeline">${kids
+            .map((g) => {
+              const gm = [
+                g.page_start != null && g.page_end != null
+                  ? `ص ${toFa(g.page_start)}–${toFa(g.page_end)}`
+                  : "",
+                g.test_start != null && g.test_end != null
+                  ? `تست ${toFa(g.test_start)}–${toFa(g.test_end)}`
+                  : "",
+              ]
+                .filter(Boolean)
+                .join(" · ");
+              return `<li>
                     <span class="rsc-ch-dot" aria-hidden="true"></span>
                     <div><strong>${esc(g.title || "")}</strong>${
                       gm ? `<small>${esc(gm)}</small>` : ""
                     }</div>
                   </li>`;
-                })
-                .join("")}</ol>`
-            : "";
-          return `<details class="resource-acc-item"${idx === 0 ? " open" : ""}>
+            })
+            .join("")}</ol>`
+        : "";
+      return `<details class="resource-acc-item"${idx === 0 ? " open" : ""}>
             <summary>
               <span class="resource-acc-main">
                 <span class="resource-acc-title">${esc(ch.title || `فصل ${idx + 1}`)}</span>
@@ -1026,14 +1375,36 @@
                   ${density}
                   ${metaBits ? `<em>${esc(metaBits)}</em>` : ""}
                 </span>
+                ${shareBar}
               </span>
               <span class="resource-acc-chevron" aria-hidden="true"></span>
             </summary>
             <div class="resource-acc-body">${kidsHtml ||
               '<p class="resource-muted">زیربخش ثبت نشده.</p>'}</div>
           </details>`;
-        })
+    };
+    return `<section class="resource-panel rsc-chapters" id="rsc-chapters" data-animate-charts>
+      <h2 class="resource-subhead">فهرست فصل‌ها و تعداد تست‌های این منبع</h2>
+      <p class="resource-muted">${toFa(chapters.length)} فصل${
+        bookTotal ? ` · حدود ${toFa(bookTotal)} تست` : ""
+      }</p>
+      <div class="resource-acc rsc-ch-grid">${chapters
+        .slice(0, previewLimit)
+        .map((ch, idx) => chapterCard(ch, idx))
         .join("")}</div>
+      ${
+        hiddenCount > 0
+          ? `<details class="rsc-ch-more">
+        <summary class="rsc-ch-more-btn">مشاهده تمام ${toFa(
+          chapters.length
+        )} فصل (${toFa(hiddenCount)} فصل دیگر)</summary>
+        <div class="resource-acc rsc-ch-grid">${chapters
+          .slice(previewLimit)
+          .map((ch, i) => chapterCard(ch, i + previewLimit))
+          .join("")}</div>
+      </details>`
+          : ""
+      }
       ${akRow}
     </section>`;
   };
@@ -1054,11 +1425,15 @@
     const d = Math.max(1, Number(daily) || 1);
     if (mode === "pages") {
       const days = p > 0 ? Math.max(1, Math.ceil(p / d)) : 1;
-      const secondary =
-        t > 0 ? `~${toFa(Math.max(1, Math.ceil(t / days)))} تست` : "—";
+      // Implied daily tests from page pace: (tests/pages) * dailyPages
+      let dailyTests = "—";
+      if (t > 0 && p > 0) {
+        const n = Math.min(t, Math.max(1, Math.ceil((t / p) * d)));
+        dailyTests = `حدود ${toFa(n)} تست`;
+      }
       return {
         days,
-        secondary,
+        secondary: dailyTests,
         secondaryLabel: "حل تست روزانه",
         lead:
           p > 0
@@ -1068,11 +1443,17 @@
       };
     }
     const days = t > 0 ? Math.max(1, Math.ceil(t / d)) : 1;
-    const secondary =
-      p > 0 ? `~${toFa(Math.max(1, Math.ceil(p / days)))} صفحه` : "—";
+    // Implied daily pages from test pace: (pages/tests) * dailyTests
+    let dailyPages = "—";
+    if (p > 0 && t > 0) {
+      const n = Math.min(p, Math.max(1, Math.ceil((p / t) * d)));
+      dailyPages = `حدود ${toFa(n)} صفحه`;
+    } else if (p > 0 && days > 0) {
+      dailyPages = `حدود ${toFa(Math.min(p, Math.max(1, Math.ceil(p / days))))} صفحه`;
+    }
     return {
       days,
-      secondary,
+      secondary: dailyPages,
       secondaryLabel: "مطالعه روزانه",
       lead:
         t > 0
@@ -1085,24 +1466,25 @@
   const plannerHtml = (s) => {
     const bookMeta = s.book_meta && typeof s.book_meta === "object" ? s.book_meta : {};
     const total = Number(bookMeta.total_tests) || 0;
-    const pages = Number(bookMeta.total_pages) || 0;
+    const catalogPages = Number(bookMeta.total_pages) || 0;
+    const pages = studyPagesForPlanner(s) || catalogPages;
     if (total <= 0 && pages <= 0) return "";
     const hasTests = total > 0;
     const hasPages = pages > 0;
-    const mode = hasTests ? "tests" : "pages";
+    const mode = hasPages ? "pages" : "tests";
     const defs = plannerDefaults(total, pages);
     const daily = mode === "pages" ? defs.dailyPages : defs.dailyTests;
     const initial = computePlanner(mode, daily, total, pages);
     const rangeMin = mode === "pages" ? 3 : 5;
     const rangeMax = mode === "pages" ? 50 : 80;
     const rangeStep = mode === "pages" ? 1 : 5;
-    return `<section class="resource-panel rsc-planner rsc-planner--dark" data-planner data-total-tests="${total}" data-total-pages="${pages}" data-planner-mode="${mode}">
-      <h2 class="resource-subhead">برنامه‌ریزی مطالعه</h2>
+    return `<section class="resource-panel rsc-planner rsc-planner--dark" id="rsc-planner" data-planner data-total-tests="${total}" data-total-pages="${pages}" data-planner-mode="${mode}">
+      <h2 class="resource-subhead">برنامه مطالعه این کتاب در اپ بلوک</h2>
       <p class="resource-muted" data-planner-lead>${esc(initial.lead)}</p>
       <p class="rsc-planner-note">برنامهٔ ترکیبی شامل مطالعهٔ درسنامه + حل تست‌های روزانه است.</p>
       <div class="rsc-planner-modes" role="tablist" aria-label="حالت برنامه‌ریزی">
-        <button type="button" class="rsc-planner-mode${mode === "tests" ? " is-active" : ""}${hasTests ? "" : " is-disabled"}" data-planner-mode-btn="tests" ${hasTests ? "" : "disabled"} role="tab" aria-selected="${mode === "tests"}">بر اساس تست</button>
         <button type="button" class="rsc-planner-mode${mode === "pages" ? " is-active" : ""}${hasPages ? "" : " is-disabled"}" data-planner-mode-btn="pages" ${hasPages ? "" : "disabled"} role="tab" aria-selected="${mode === "pages"}">بر اساس صفحه</button>
+        <button type="button" class="rsc-planner-mode${mode === "tests" ? " is-active" : ""}${hasTests ? "" : " is-disabled"}" data-planner-mode-btn="tests" ${hasTests ? "" : "disabled"} role="tab" aria-selected="${mode === "tests"}">بر اساس تست</button>
       </div>
       <label class="rsc-planner-label" for="rsc-daily-amount" data-planner-range-label>${esc(initial.rangeLabel)}</label>
       <div class="rsc-planner-row">
@@ -1135,10 +1517,10 @@
   const peersHtml = (s) => {
     const peers = Array.isArray(s.peers) ? s.peers.filter((p) => p && p.id !== s.id) : [];
     if (!peers.length) return "";
-    return `<section class="resource-panel rsc-peers rsc-rivals">
+    return `<section class="resource-panel rsc-peers rsc-rivals" id="rsc-rivals">
       <div class="rsc-peers-head">
-        <h2 class="resource-subhead">معمولاً با این منابع مقایسه می‌شود</h2>
-        <button type="button" class="btn btn-ghost btn-sm" data-open-compare>همه</button>
+        <h2 class="resource-subhead">رقبای اصلی این کتاب</h2>
+        <button type="button" class="btn btn-ghost btn-sm" data-open-compare>مقایسه همه</button>
       </div>
       <div class="rsc-rival-list">${peers
         .slice(0, 2)
@@ -1238,7 +1620,7 @@
   };
 
   const buildFaqItems = (s) => {
-    const name = String(s.name || "منبع").trim();
+    const name = toFa(String(s.name || "منبع").trim());
     const bookMeta = s.book_meta && typeof s.book_meta === "object" ? s.book_meta : {};
     const review = s.review && typeof s.review === "object" ? s.review : null;
     const score = Number(review?.total_score ?? s.quality_score);
@@ -1247,7 +1629,9 @@
       ? s.chapters_public.length
       : s.chapter_count;
     const total = Number(bookMeta.total_tests) || 0;
-    const pages = Number(bookMeta.total_pages) || 0;
+    const catalogPages = Number(bookMeta.total_pages) || 0;
+    const studyPages = studyPagesForPlanner(s) || 0;
+    const pages = studyPages || catalogPages;
     const defs = plannerDefaults(total, pages);
     const faqMode = total > 0 ? "tests" : pages > 0 ? "pages" : "tests";
     const faqDaily = faqMode === "pages" ? defs.dailyPages : defs.dailyTests;
@@ -1255,26 +1639,25 @@
       total > 0 || pages > 0
         ? computePlanner(faqMode, faqDaily, total, pages)
         : null;
-    const dominantCode = String(bookMeta.dominant_level || "").trim().toLowerCase();
     const profile = Array.isArray(review?.level_profile) ? review.level_profile : [];
+    const fitLevel = bestFitLevelLabel(review, bookMeta);
     const topLevels = (() => {
-      if (dominantCode && LEVEL_LABELS[dominantCode]) {
-        return labels.dominant_level || LEVEL_LABELS[dominantCode];
-      }
-      return profile
+      const ranked = profile
         .slice()
         .map((p) => ({
           ...p,
           pct: Math.max(0, Number(p.pct != null ? p.pct : p.value) || 0),
         }))
         .sort((a, b) => b.pct - a.pct)
-        .slice(0, 2)
-        .map((p) => `${p.label_fa || p.code} (${toFa(Math.round(p.pct))}٪)`)
-        .join(" و ");
+        .slice(0, 2);
+      if (ranked.length) {
+        return ranked
+          .map((p) => `${p.label_fa || p.code} (${toFa(Math.round(p.pct))}٪)`)
+          .join(" و ");
+      }
+      return fitLevel || labels.dominant_level || "";
     })();
-    const useCases = Array.isArray(review?.use_case_scores)
-      ? review.use_case_scores
-      : [];
+    const useCases = displayUseCases(review);
     const zeroPct = Math.max(
       0,
       Number(
@@ -1290,9 +1673,23 @@
     );
 
     const items = [];
+    const answerPages =
+      catalogPages > 0 && studyPages > 0 && catalogPages > studyPages
+        ? catalogPages - studyPages
+        : 0;
+    const pagesFa =
+      catalogPages > 0 && studyPages > 0 && answerPages > 0
+        ? `دارای ${toFa(catalogPages)} صفحه (${toFa(studyPages)} صفحه درسنامه و تست + ${toFa(
+            answerPages
+          )} صفحه پاسخنامه تشریحی)`
+        : catalogPages
+          ? `دارای ${toFa(catalogPages)} صفحه`
+          : studyPages
+            ? `دارای ${toFa(studyPages)} صفحه`
+            : "";
     const sizeFa = [
       bookMeta.edition_year ? `در چاپ ${toFa(bookMeta.edition_year)}` : "",
-      pages ? `دارای ${toFa(pages)} صفحه` : "",
+      pagesFa,
       total ? `و مجموعاً ${toFa(total)} تست` : "",
       chCount ? `در ${toFa(chCount)} فصل` : "",
     ]
@@ -1309,9 +1706,9 @@
           ? `بر اساس ارزیابی کارشناسان بلوک (امتیاز ${toFa(
               Math.round(score)
             )} از ۱۰۰)، این منبع بیشترین تناسب را با ${
-              topLevels || labels.dominant_level || "سطح متوسط"
+              topLevels || fitLevel || "سطح متوسط"
             } دارد و برای ${labels.primary_usage || "آموزش و تثبیت"} مناسب است.`
-          : `مناسب ${labels.dominant_level || "سطح متوسط"} با کاربری ${
+          : `مناسب ${fitLevel || labels.dominant_level || "سطح متوسط"} با کاربری ${
               labels.primary_usage || "آموزش و تثبیت"
             }.`,
     });
@@ -1326,22 +1723,29 @@
         } می‌توانید کل کتاب را در حدود ${toFa(faqPlan.days)} روز تمام کنید.`,
       });
     }
+    const examName = primaryExamLabel(s);
     items.push({
-      q: `آیا برای دانش‌آموزی که کلاس کنکور نمی‌رود این کتاب کافی است؟`,
+      q: `آیا برای داوطلبی که کلاس آموزشی نمی‌رود (خودخوان)، این کتاب برای ${examName} کافی است؟`,
       aFa:
         zeroPct >= 55 || /آموزش|شروع|تثبیت/.test(String(labels.primary_usage || ""))
-          ? `اگر هدف شروع خودآموز و تثبیت باشد، ارزیابی بلوک نشان می‌دهد درسنامه و تست‌ها برای مطالعهٔ مستقل${
+          ? `اگر هدف شروع خودآموز و تثبیت برای ${examName} باشد، ارزیابی بلوک نشان می‌دهد درسنامه و تست‌ها برای مطالعهٔ مستقل${
               Number.isFinite(score) ? ` (امتیاز ${toFa(Math.round(score))} از ۱۰۰)` : ""
             } قابل اتکا هستند؛ برای تست‌های فوق‌سنگین ممکن است منبع مکمل لازم شود.`
-          : `برای مطالعهٔ کاملاً مستقل، ابتدا سطح خود را با نمونه صفحات بسنجید؛ اگر درسنامه روان نیست، کلاس یا منبع مفهومی مکمل توصیه می‌شود.`,
+          : `برای مطالعهٔ کاملاً مستقل در مسیر ${examName}، ابتدا سطح خود را با نمونه صفحات بسنجید؛ اگر درسنامه روان نیست، کلاس یا منبع مفهومی مکمل توصیه می‌شود.`,
     });
+    if (isDualTizhooshanAudience(s)) {
+      items.push({
+        q: `آیا کتاب ${name} برای تیزهوشان ششم هم قابل استفاده است؟`,
+        aFa: `بله. مباحث هوش و استعداد تحلیلی (به‌ویژه تصویری و فضایی) بین آزمون سمپاد ششم به هفتم و نهم به دهم مشترک است. برای دانش‌آموز قوی ششم معمولاً چالشی و مفید است؛ برای نهم در بازه متوسط تا قوی می‌نشیند.`,
+      });
+    }
     return items;
   };
 
   const faqHtml = (s) => {
     const items = buildFaqItems(s);
     if (!items.length) return "";
-    return `<section class="resource-panel rsc-faq">
+    return `<section class="resource-panel rsc-faq" id="rsc-faq">
       <h2 class="resource-subhead">سؤالات متداول والدین و دانش‌آموزان</h2>
       <div class="resource-acc">${items
         .map(
@@ -1357,10 +1761,11 @@
   };
 
   const breadcrumbTrail = (s) => {
-    const name = String(s.name || "منبع").trim();
-    const kindHref = s.kind
-      ? withAudience(`${encodeURIComponent(s.kind)}.html`)
-      : withAudience("index.html");
+    const name = toFa(String(s.name || "منبع").trim());
+    const kindFile = s.kind
+      ? `${encodeURIComponent(s.kind)}.html`
+      : "index.html";
+    const kindHref = withAudience(kindFile);
     const crumbs = [
       { label: "بلوک", href: "../index.html" },
       { label: "بانک منابع", href: withAudience("index.html") },
@@ -1368,27 +1773,42 @@
     if (s.kind_label_fa || s.kind) {
       crumbs.push({ label: String(s.kind_label_fa || s.kind), href: kindHref });
     }
-    if (s.lesson) crumbs.push({ label: String(s.lesson), href: null });
-    crumbs.push({ label: name, href: null });
+    // Google BreadcrumbList requires `item` (URL) on every crumb except we always set it.
+    if (s.lesson) {
+      const lessonQ = new URLSearchParams();
+      if (audienceGrade) lessonQ.set("grade", audienceGrade);
+      if (audienceGoal) lessonQ.set("exam_goal", audienceGoal);
+      lessonQ.set("lesson", String(s.lesson).trim());
+      crumbs.push({
+        label: String(s.lesson),
+        href: `${kindFile}?${lessonQ.toString()}`,
+      });
+    }
+    crumbs.push({ label: name, href: null, isCurrent: true });
     return crumbs;
   };
 
   const applySeo = (s) => {
-    const name = String(s.name || "منبع").trim();
-    const title =
-      String(s.seo_title || "").trim() ||
-      `بررسی و تحلیل کتاب ${name} | سطح، تست و نمونه PDF - بلوک`;
-    document.title = title;
+    const name = toFa(String(s.name || "منبع").trim());
     const bookMeta = s.book_meta && typeof s.book_meta === "object" ? s.book_meta : {};
     const review = s.review && typeof s.review === "object" ? s.review : null;
+    const yearFa = bookMeta.edition_year ? ` - چاپ ${toFa(bookMeta.edition_year)}` : "";
+    const title = toFa(
+      String(s.seo_title || "").trim() ||
+        `بررسی و تحلیل کتاب ${name}${yearFa} | سطح، تست و نمونه PDF - بلوک`
+    );
+    document.title = title;
     const score = Number(review?.total_score ?? s.quality_score);
+    const fitLevel = bestFitLevelLabel(review, bookMeta);
     const desc =
       String(s.seo_description || "").trim() ||
       [
         `بررسی ${name} برای اولیا و دانش‌آموز`,
-        bookMeta.labels_fa?.dominant_level
-          ? `سطح ${bookMeta.labels_fa.dominant_level}`
-          : "",
+        fitLevel
+          ? `سطح ${fitLevel}`
+          : bookMeta.labels_fa?.dominant_level
+            ? `سطح ${bookMeta.labels_fa.dominant_level}`
+            : "",
         bookMeta.total_tests != null ? `${bookMeta.total_tests} تست` : "",
         bookMeta.total_pages != null ? `${bookMeta.total_pages} صفحه` : "",
         s.publisher || "",
@@ -1405,13 +1825,55 @@
     }
     meta.setAttribute("content", desc);
 
-    let canonical = document.querySelector('link[rel="canonical"]');
+    let robots = document.querySelector('meta[name="robots"]');
+    if (!robots) {
+      robots = document.createElement("meta");
+      robots.setAttribute("name", "robots");
+      document.head.appendChild(robots);
+    }
+    robots.setAttribute(
+      "content",
+      "index,follow,max-snippet:-1,max-image-preview:large,max-video-preview:-1"
+    );
+
+    const pageUrlClean = (() => {
+      const u = new URL(location.href);
+      u.hash = "";
+      // Keep only id for stable canonical (drop grade/exam_goal noise).
+      const id = u.searchParams.get("id");
+      u.search = "";
+      if (id) u.searchParams.set("id", id);
+      return u.toString();
+    })();
+
+    let canonical =
+      document.getElementById("rsc-canonical") ||
+      document.querySelector('link[rel="canonical"]');
     if (!canonical) {
       canonical = document.createElement("link");
       canonical.setAttribute("rel", "canonical");
+      canonical.id = "rsc-canonical";
       document.head.appendChild(canonical);
     }
-    canonical.setAttribute("href", location.href.split("#")[0]);
+    canonical.setAttribute("href", pageUrlClean);
+
+    const setOg = (prop, content) => {
+      if (!content) return;
+      let el = document.querySelector(`meta[property="${prop}"]`);
+      if (!el) {
+        el = document.createElement("meta");
+        el.setAttribute("property", prop);
+        document.head.appendChild(el);
+      }
+      el.setAttribute("content", content);
+    };
+    setOg("og:title", title);
+    setOg("og:description", desc);
+    setOg("og:url", pageUrlClean);
+    setOg("og:type", "book");
+    setOg("og:locale", "fa_IR");
+    setOg("og:site_name", "بلوک");
+    if (s.cover_url) setOg("og:image", String(s.cover_url));
 
     const authors = Array.isArray(s.authors)
       ? s.authors
@@ -1421,7 +1883,7 @@
           .filter(Boolean);
     const faq = buildFaqItems(s);
     const crumbs = breadcrumbTrail(s);
-    const pageUrl = location.href.split("#")[0];
+    const pageUrl = pageUrlClean;
     const rating =
       Number.isFinite(score) && score > 0
         ? {
@@ -1433,19 +1895,24 @@
           }
         : null;
 
+    const isbnRaw = String(s.isbn || bookMeta.isbn || "").trim();
+    const isbnOk = isbnRaw && isbnRaw !== "-" && /\d/.test(isbnRaw);
+    const gtin13 = isbnOk ? isbnRaw.replace(/\D/g, "").slice(0, 13) : "";
+
     const graph = [
       {
         "@type": "BreadcrumbList",
-        itemListElement: crumbs.map((c, i) => ({
-          "@type": "ListItem",
-          position: i + 1,
-          name: c.label,
-          ...(c.href
-            ? { item: new URL(c.href, location.href).href }
-            : i === crumbs.length - 1
-              ? { item: pageUrl }
-              : {}),
-        })),
+        itemListElement: crumbs.map((c, i) => {
+          const itemUrl = c.href
+            ? new URL(c.href, location.href).href
+            : pageUrl;
+          return {
+            "@type": "ListItem",
+            position: i + 1,
+            name: c.label,
+            item: itemUrl,
+          };
+        }),
       },
       {
         "@type": "Book",
@@ -1460,9 +1927,7 @@
         ...(authors.length
           ? { author: authors.map((a) => ({ "@type": "Person", name: a })) }
           : {}),
-        ...(s.isbn || bookMeta.isbn
-          ? { isbn: String(s.isbn || bookMeta.isbn) }
-          : {}),
+        ...(isbnOk ? { isbn: isbnRaw } : {}),
         ...(s.cover_url ? { image: s.cover_url } : {}),
         ...(rating ? { aggregateRating: rating } : {}),
       },
@@ -1472,8 +1937,11 @@
         name,
         description: desc,
         ...(s.cover_url ? { image: s.cover_url } : {}),
-        ...(s.isbn || bookMeta.isbn
-          ? { sku: String(s.isbn || bookMeta.isbn), gtin13: String(s.isbn || bookMeta.isbn).replace(/\D/g, "").slice(0, 13) }
+        ...(isbnOk
+          ? {
+              sku: isbnRaw,
+              ...(gtin13.length === 13 ? { gtin13 } : {}),
+            }
           : {}),
         brand: { "@type": "Brand", name: s.publisher || "بلوک" },
         ...(rating ? { aggregateRating: rating } : {}),
@@ -1485,7 +1953,10 @@
         mainEntity: faq.map((f) => ({
           "@type": "Question",
           name: f.q,
-          acceptedAnswer: { "@type": "Answer", text: f.a },
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: f.aFa || f.a || "",
+          },
         })),
       });
     }
@@ -1573,103 +2044,193 @@
     document.body.classList.remove("compare-open");
   };
 
+  const lessonTokens = (text) => {
+    const stop = new Set(["و", "یا", "در", "از", "به", "با", "برای", "کتاب", "بخش", "جلد"]);
+    return String(text || "")
+      .split(/[^\u0600-\u06FFa-zA-Z0-9]+/)
+      .map((t) => t.trim())
+      .filter((t) => t.length > 1 && !stop.has(t));
+  };
+
+  const lessonSimilarity = (a, b) => {
+    const ta = new Set(lessonTokens(a));
+    const tb = new Set(lessonTokens(b));
+    if (!ta.size || !tb.size) return 0;
+    let inter = 0;
+    ta.forEach((t) => {
+      if (tb.has(t)) inter += 1;
+    });
+    return inter / new Set([...ta, ...tb]).size;
+  };
+
+  const fetchCompareCandidates = async (item) => {
+    const fromPeers = (Array.isArray(item.peers) ? item.peers : []).filter(
+      (p) => p && String(p.id) !== String(item.id)
+    );
+    if (fromPeers.length) return fromPeers;
+
+    const aq = audienceQuery();
+    aq.set("kind", String(item.kind || "book"));
+    aq.set("limit", "24");
+    aq.set("offset", "0");
+    const tokens = lessonTokens(item.lesson || item.name || "");
+    if (tokens.length) aq.set("q", tokens.slice(0, 3).join(" "));
+    try {
+      const data = await SITE.api(`/api/site/catalog/search?${aq}`);
+      const items = (data.items || []).filter((p) => p && String(p.id) !== String(item.id));
+      return items
+        .map((p) => ({
+          ...p,
+          _sim: lessonSimilarity(item.lesson || "", p.lesson || "") ||
+            lessonSimilarity(item.name || "", p.name || ""),
+        }))
+        .filter((p) => p._sim >= 0.25 || !tokens.length)
+        .sort(
+          (a, b) =>
+            (b._sim || 0) - (a._sim || 0) ||
+            (Number(b.quality_score) || 0) - (Number(a.quality_score) || 0)
+        )
+        .slice(0, 8);
+    } catch (_) {
+      return [];
+    }
+  };
+
   const renderCompareView = (a, b) => {
     const root = document.getElementById("resource-compare-root");
     if (!root) return;
+    const body = root.querySelector("[data-compare-body]");
+    if (!body) return;
     const ra = a.review || {};
     const rb = b.review || {};
-    const scoreA = ra.total_score ?? a.quality_score ?? 0;
-    const scoreB = rb.total_score ?? b.quality_score ?? 0;
-    const tilesA = metaTiles(a)
-      .slice(0, 6)
-      .map(
-        ([k, v]) =>
-          `<div class="resource-stat"><span>${esc(String(k))}</span><strong>${esc(
-            String(v)
-          )}</strong></div>`
-      )
-      .join("");
-    const tilesB = metaTiles(b)
-      .slice(0, 6)
-      .map(
-        ([k, v]) =>
-          `<div class="resource-stat"><span>${esc(String(k))}</span><strong>${esc(
-            String(v)
-          )}</strong></div>`
-      )
-      .join("");
-    root.querySelector("[data-compare-body]").innerHTML = `
-      <div class="cmp-head">
-        <button type="button" class="cmp-back" data-compare-back>← انتخاب منبع دیگر</button>
-        <h2>مقایسه منابع</h2>
-      </div>
-      <div class="cmp-names">
-        <div class="cmp-name cmp-name--a">
-          <span class="cmp-dot"></span>
-          <strong>${esc(a.name || "منبع فعلی")}</strong>
-          <small>${esc(a.publisher || a.lesson || "")}</small>
+    const scoreA = Math.round(Number(ra.total_score ?? a.quality_score ?? 0) || 0);
+    const scoreB = Math.round(Number(rb.total_score ?? b.quality_score ?? 0) || 0);
+    const delta = Math.abs(scoreA - scoreB);
+    const nameA = a.name || "منبع فعلی";
+    const nameB = b.name || "منبع دوم";
+    let winnerHtml;
+    const winTone = scoreA === scoreB ? "tie" : scoreA > scoreB ? "a" : "b";
+    if (winTone === "tie") {
+      winnerHtml = `<p class="cmp-winner cmp-winner--tie"><span class="cmp-winner-badge">مساوی</span><span class="cmp-winner-text">امتیاز کلی یکسان · هر دو ${toFa(scoreA)}</span></p>`;
+    } else if (winTone === "a") {
+      winnerHtml = `<p class="cmp-winner cmp-winner--a"><span class="cmp-winner-badge">برتر</span><span class="cmp-winner-text"><strong>${esc(nameA)}</strong> بالاتر · اختلاف ${toFa(delta)} امتیاز</span></p>`;
+    } else {
+      winnerHtml = `<p class="cmp-winner cmp-winner--b"><span class="cmp-winner-badge">برتر</span><span class="cmp-winner-text"><strong>${esc(nameB)}</strong> بالاتر · اختلاف ${toFa(delta)} امتیاز</span></p>`;
+    }
+    const coverCard = (s, tone, score, isWinner) => {
+      const cover = (s.cover_url || "").trim();
+      const img = cover
+        ? `<img src="${esc(cover)}" alt="" />`
+        : `<span class="cmp-peer-ph" aria-hidden="true"></span>`;
+      const scored = Number.isFinite(score) && score > 0;
+      return `<div class="cmp-hero-card cmp-hero-card--${tone}${isWinner ? " is-winner" : ""}">
+        ${isWinner ? `<span class="cmp-hero-win">برتر</span>` : ""}
+        <div class="cmp-hero-cover">${img}</div>
+        <div class="cmp-hero-copy">
+          <strong>${esc(s.name || "منبع")}</strong>
+          <small>${esc([s.publisher, s.lesson].filter(Boolean).join(" · "))}</small>
         </div>
-        <div class="cmp-name cmp-name--b">
-          <span class="cmp-dot"></span>
-          <strong>${esc(b.name || "منبع دوم")}</strong>
-          <small>${esc(b.publisher || b.lesson || "")}</small>
-        </div>
-      </div>
-      <div class="cmp-score-row">
-        ${scoreRing(scoreA)}
-        <div class="cmp-radar-wrap">${dualRadar(ra.sections || [], rb.sections || [])}</div>
-        ${scoreRing(scoreB)}
-      </div>
-      <div class="cmp-legend">
-        <span class="cmp-legend--a">منبع فعلی</span>
-        <span class="cmp-legend--b">منبع انتخابی</span>
-      </div>
-      <h3 class="resource-subhead">معیارهای اصلی</h3>
-      ${dualBars(ra.sections || [], rb.sections || [])}
-      <div class="cmp-meta-grid">
-        <div><h3 class="resource-subhead">شناسنامه · فعلی</h3><div class="resource-stat-grid">${
-          tilesA || '<p class="resource-muted">—</p>'
-        }</div></div>
-        <div><h3 class="resource-subhead">شناسنامه · انتخابی</h3><div class="resource-stat-grid">${
-          tilesB || '<p class="resource-muted">—</p>'
-        }</div></div>
-      </div>
-      <div class="cmp-actions">
-        <a class="btn btn-ghost" href="${esc(
-          withAudience(`item.html?id=${encodeURIComponent(b.id)}`)
-        )}">مشاهده منبع انتخابی</a>
-        <button type="button" class="btn btn-primary" data-compare-close>بستن</button>
+        ${
+          scored
+            ? `<div class="cmp-hero-ring">${scoreRing(score, { instant: true })}</div>`
+            : `<div class="cmp-hero-noscore">ثبت نشده</div>`
+        }
       </div>`;
-    root.querySelector("[data-compare-back]")?.addEventListener("click", () => openComparePicker(a));
-    root.querySelector("[data-compare-close]")?.addEventListener("click", closeCompare);
+    };
+    const useA = displayUseCases(a.review).slice(0, 4);
+    const useB = displayUseCases(b.review);
+    const useByCode = new Map(useB.map((u) => [String(u.code || u.label_fa), u]));
+    const useHtml = useA.length
+      ? `<div class="cmp-use-grid">${useA
+          .map((u) => {
+            const key = String(u.code || u.label_fa);
+            const other = useByCode.get(key) || {};
+            const hasA = u.pct != null || u.value != null;
+            const hasB = other.pct != null || other.value != null;
+            const pa = Math.round(Number(u.pct ?? u.value) || 0);
+            const pb = Math.round(Number(other.pct ?? other.value) || 0);
+            return `<div class="cmp-use-row">
+              <span>${esc(u.label_fa || u.code || "")}</span>
+              <strong class="cmp-use--a">${hasA ? `${toFa(pa)}٪` : "ثبت نشده"}</strong>
+              <strong class="cmp-use--b">${hasB ? `${toFa(pb)}٪` : "ثبت نشده"}</strong>
+            </div>`;
+          })
+          .join("")}</div>`
+      : "";
+    const radarSvg = dualRadar(ra.sections || [], rb.sections || []);
+    const metaTable = compareMetaTable(a, b);
+
+    body.innerHTML = `
+      <div class="cmp-head cmp-head--sticky">
+        <button type="button" class="cmp-back" data-compare-back>← انتخاب دیگر</button>
+        <h2>مقایسه منابع</h2>
+        <button type="button" class="cmp-x" data-compare-close aria-label="بستن">×</button>
+      </div>
+      <div class="cmp-scroll">
+        <div class="cmp-heroes">
+          ${coverCard(a, "a", scoreA, winTone === "a")}
+          <div class="cmp-vs" aria-hidden="true"><span>در برابر</span></div>
+          ${coverCard(b, "b", scoreB, winTone === "b")}
+        </div>
+        ${winnerHtml}
+        <div class="cmp-legend">
+          <span class="cmp-legend--a">${esc(a.publisher || nameA)}</span>
+          <span class="cmp-legend--b">${esc(b.publisher || nameB)}</span>
+        </div>
+        <h3 class="resource-subhead cmp-section-title">دوئل معیارها</h3>
+        ${dualBars(ra.sections || [], rb.sections || []) || '<p class="resource-muted">معیاری ثبت نشده</p>'}
+        ${
+          radarSvg
+            ? `<details class="cmp-radar-details">
+                <summary>نمودار رادار معیارها</summary>
+                <div class="cmp-radar-wrap">${radarSvg}</div>
+              </details>
+              <div class="cmp-radar-desktop">
+                <h3 class="resource-subhead">نمودار رادار</h3>
+                <div class="cmp-radar-wrap">${radarSvg}</div>
+              </div>`
+            : ""
+        }
+        ${
+          useHtml
+            ? `<h3 class="resource-subhead">تناسب کاربری</h3>${useHtml}`
+            : ""
+        }
+        ${
+          metaTable
+            ? `<h3 class="resource-subhead">شناسنامه روبه‌رو</h3>${metaTable}`
+            : ""
+        }
+      </div>
+      <div class="cmp-actions cmp-actions--sticky">
+        <a class="btn btn-ghost" href="${esc(
+          withAudience(`item.html?id=${encodeURIComponent(a.id)}`)
+        )}">منبع فعلی</a>
+        <a class="btn btn-primary" href="${esc(
+          withAudience(`item.html?id=${encodeURIComponent(b.id)}`)
+        )}">منبع مقابل</a>
+      </div>`;
+    body.querySelector("[data-compare-back]")?.addEventListener("click", () =>
+      openComparePicker(a)
+    );
+    body.querySelectorAll("[data-compare-close]").forEach((el) => {
+      el.addEventListener("click", closeCompare);
+    });
+    paintCompareCharts(body);
   };
 
-  const openComparePicker = (item) => {
-    let root = document.getElementById("resource-compare-root");
-    if (!root) {
-      root = document.createElement("div");
-      root.id = "resource-compare-root";
-      root.className = "resource-compare-sheet";
-      root.innerHTML = `<div class="cmp-backdrop" data-compare-close></div>
-        <div class="cmp-panel" role="dialog" aria-modal="true" aria-label="مقایسه منابع">
-          <div data-compare-body></div>
-        </div>`;
-      document.body.appendChild(root);
-      root.addEventListener("click", (e) => {
-        if (e.target.closest("[data-compare-close]")) closeCompare();
-      });
-    }
-    document.body.classList.add("compare-open");
-    const peers = Array.isArray(item.peers) ? item.peers.filter((p) => p && p.id !== item.id) : [];
-    const body = root.querySelector("[data-compare-body]");
+  const paintPeerPicker = (item, peers, body) => {
     if (!peers.length) {
       body.innerHTML = `
         <div class="cmp-head">
           <h2>مقایسه با منبع دیگر</h2>
           <button type="button" class="cmp-x" data-compare-close aria-label="بستن">×</button>
         </div>
-        <p class="cat-empty">منبع هم‌درس دیگری برای مقایسه نیست.</p>
-        <div class="cmp-actions"><button type="button" class="btn btn-ghost" data-compare-close>بستن</button></div>`;
+        <p class="cat-empty">هنوز منبع مشابهی برای مقایسه پیدا نشد. منابع هم‌مبحث را از لیست بانک منابع باز کنید.</p>
+        <div class="cmp-actions">
+          <a class="btn btn-ghost" href="${esc(withAudience("book.html"))}">بانک کمک‌آموزشی</a>
+          <button type="button" class="btn btn-primary" data-compare-close>بستن</button>
+        </div>`;
       return;
     }
     body.innerHTML = `
@@ -1677,13 +2238,13 @@
         <h2>انتخاب منبع برای مقایسه</h2>
         <button type="button" class="cmp-x" data-compare-close aria-label="بستن">×</button>
       </div>
-      <p class="resource-muted">منابع هم‌درس${
-        audienceGrade ? ` · پایه ${esc(audienceGrade)}` : ""
-      }</p>
+      <p class="resource-muted">منابع مشابه${
+        item.lesson ? ` · ${esc(item.lesson)}` : ""
+      }${audienceGrade ? ` · پایه ${esc(toFa(audienceGrade))}` : ""}</p>
       <div class="cmp-peer-list">${peers
         .map((p) => {
           const cover = (p.cover_url || "").trim();
-          const score = p.quality_score != null ? String(p.quality_score) : "—";
+          const score = p.quality_score != null ? toFa(p.quality_score) : "—";
           const thumb = cover
             ? `<img src="${esc(cover)}" alt="" loading="lazy" />`
             : `<span class="cmp-peer-ph" aria-hidden="true"></span>`;
@@ -1700,7 +2261,7 @@
     body.querySelectorAll("[data-peer-id]").forEach((btn) => {
       btn.addEventListener("click", async () => {
         const pid = btn.getAttribute("data-peer-id");
-        body.innerHTML = `<p class="cat-empty">در حال بارگذاری مقایسه…</p>`;
+        body.innerHTML = `<p class="cat-empty">در حال آماده‌سازی مقایسه…</p>`;
         try {
           const aq = audienceQuery();
           const q = aq.toString();
@@ -1719,6 +2280,28 @@
         }
       });
     });
+  };
+
+  const openComparePicker = async (item) => {
+    let root = document.getElementById("resource-compare-root");
+    if (!root) {
+      root = document.createElement("div");
+      root.id = "resource-compare-root";
+      root.className = "resource-compare-sheet";
+      root.innerHTML = `<div class="cmp-backdrop" data-compare-close></div>
+        <div class="cmp-panel" role="dialog" aria-modal="true" aria-label="مقایسه منابع">
+          <div data-compare-body></div>
+        </div>`;
+      document.body.appendChild(root);
+      root.addEventListener("click", (e) => {
+        if (e.target.closest("[data-compare-close]")) closeCompare();
+      });
+    }
+    document.body.classList.add("compare-open");
+    const body = root.querySelector("[data-compare-body]");
+    body.innerHTML = `<p class="cat-empty">در حال پیدا کردن منابع مشابه…</p>`;
+    const peers = await fetchCompareCandidates(item);
+    paintPeerPicker(item, peers, body);
   };
 
   const compareWithPeer = async (item, peerId) => {
@@ -1745,7 +2328,26 @@
     }
   };
 
+  const scrollToPlanner = (e) => {
+    const target = document.getElementById("rsc-planner");
+    if (!target) return;
+    e?.preventDefault?.();
+    const reduce =
+      typeof matchMedia === "function" &&
+      matchMedia("(prefers-reduced-motion: reduce)").matches;
+    target.scrollIntoView({
+      behavior: reduce ? "auto" : "smooth",
+      block: "start",
+    });
+  };
+
   const bindItemActions = (s) => {
+    itemEl.querySelectorAll("[data-scroll-planner]").forEach((el) => {
+      el.addEventListener("click", scrollToPlanner);
+    });
+    document.querySelectorAll("[data-scroll-planner]").forEach((el) => {
+      el.addEventListener("click", scrollToPlanner);
+    });
     itemEl.querySelectorAll("[data-open-compare]").forEach((btn) => {
       btn.addEventListener("click", () => openComparePicker(s));
     });
@@ -1797,7 +2399,7 @@
       };
 
       const paint = () => {
-        const mode = planner.getAttribute("data-planner-mode") || "tests";
+        const mode = planner.getAttribute("data-planner-mode") || "pages";
         const daily = Math.max(1, Number(range?.value) || 1);
         if (dailyEl) dailyEl.textContent = toFa(daily);
         const result = computePlanner(mode, daily, total, pages);
@@ -1817,7 +2419,7 @@
       modeBtns.forEach((btn) => {
         btn.addEventListener("click", () => {
           if (btn.disabled || btn.classList.contains("is-disabled")) return;
-          const next = btn.getAttribute("data-planner-mode-btn") || "tests";
+          const next = btn.getAttribute("data-planner-mode-btn") || "pages";
           planner.setAttribute("data-planner-mode", next);
           modeBtns.forEach((b) => {
             const on = b.getAttribute("data-planner-mode-btn") === next;
@@ -1845,13 +2447,13 @@
       document.body.classList.add("has-rsc-sticky");
     }
     bar.innerHTML = `
-      <a class="rsc-sticky-btn rsc-sticky-btn--primary" href="../index.html#download" data-download-open>برنامه</a>
+      <a class="rsc-sticky-btn rsc-sticky-btn--primary" href="#rsc-planner" data-scroll-planner>برنامه</a>
       <button type="button" class="rsc-sticky-btn" data-sticky-compare>مقایسه</button>
       ${
         sample
           ? `<a class="rsc-sticky-btn" href="${esc(
               sample
-            )}" target="_blank" rel="noopener noreferrer">نمونه</a>`
+            )}" target="_blank" rel="noopener noreferrer">نمونه PDF</a>`
           : `<a class="rsc-sticky-btn" href="${esc(
               withAudience("index.html")
             )}">منابع</a>`
@@ -1892,12 +2494,18 @@
     const totalScore = review?.total_score ?? s.quality_score;
     const verbal = scoreVerbal(totalScore);
 
+    const yearFa = bookMeta.edition_year ? ` - چاپ ${toFa(bookMeta.edition_year)}` : "";
+    const h1 = `بررسی و تحلیل ${toFa(s.name || "منبع")}${yearFa}`;
+    const sampleCta = sample
+      ? `<a class="btn btn-ghost" href="${esc(
+          sample
+        )}" target="_blank" rel="noopener noreferrer">ورق زدن نمونه صفحات (PDF رایگان)</a>`
+      : "";
+
     let chartsHtml = "";
     if (review || totalScore != null) {
-      const useCards = useCaseCards(review?.use_case_scores || []);
-      const spectrum = levelSpectrum(review?.level_profile || [], review, bookMeta);
       chartsHtml = `
-        <section class="resource-panel resource-panel--score">
+        <section class="resource-panel resource-panel--score" id="rsc-score">
           <div class="resource-score-head">
             ${scoreRing(totalScore)}
             <div class="resource-score-copy">
@@ -1906,21 +2514,19 @@
                 verbal.label
               )}</span>
               ${scoreMicroBadges(review, bookMeta)}
-              ${useCards}
             </div>
           </div>
           ${
             review
-              ? `<div class="resource-chart-grid">
+              ? `${fitForChildHtml(s, review, bookMeta)}
+          <div class="resource-chart-grid">
             <aside class="rsc-radar-card">
               <h3 class="resource-subhead">توازن ویژگی‌های کتاب</h3>
               <div class="resource-radar-wrap">${radarSvg(review.sections || [])}</div>
             </aside>
             <div>
-              <h3 class="resource-subhead">معیارهای اصلی و جزئیات</h3>
+              <h3 class="resource-subhead">تحلیل درسنامه، بانک تست و پاسخنامه</h3>
               ${sectionAccordion(review.sections || [])}
-              <h3 class="resource-subhead">پروفایل تناسب سطح</h3>
-              ${spectrum}
             </div>
           </div>`
               : ""
@@ -1933,19 +2539,32 @@
       ? s.peers.filter((p) => p && p.id !== s.id).length
       : 0;
     const backHref = withAudience("index.html");
+    const hasPlanner =
+      Number(bookMeta.total_tests) > 0 || Number(bookMeta.total_pages) > 0;
 
     itemEl.innerHTML = `
       <article class="resource-detail resource-detail--rich">
+        <div class="rsc-back-bar">
+          <a class="rsc-back-link" href="${esc(backHref)}">
+            <span class="rsc-back-ico" aria-hidden="true">→</span>
+            بازگشت به بانک منابع
+          </a>
+        </div>
         <div class="resource-hero rsc-hero" style="--cover-tint:${esc(tint)}">
           <div class="rsc-hero-glow" aria-hidden="true"></div>
           ${coverBlock}
           <div class="resource-hero-copy">
-            <h1>${esc(s.name || "منبع")}</h1>
+            <h1>${esc(h1)}</h1>
             ${byline ? `<p class="rsc-byline">${esc(byline)}</p>` : ""}
             <div class="meta-row">${chips}</div>
             ${editorialBox(s, review, bookMeta)}
             <div class="resource-detail-actions rsc-hero-actions">
-              <a class="btn btn-primary" href="../index.html#download" data-download-open>ساخت برنامهٔ مطالعه</a>
+              ${
+                hasPlanner
+                  ? `<a class="btn btn-primary" href="#rsc-planner" data-scroll-planner>ساخت برنامهٔ مطالعه</a>`
+                  : `<a class="btn btn-primary" href="../index.html#download" data-download-open>ساخت برنامهٔ مطالعه</a>`
+              }
+              ${sampleCta}
               <button type="button" class="btn btn-ghost" data-open-compare>
                 مقایسه${peerCount ? ` (${esc(toFa(peerCount))})` : ""}
               </button>
@@ -1957,13 +2576,11 @@
           ${chartsHtml}
           ${prosConsHtml(review)}
           ${galleryHtml(gallery)}
-          ${chaptersHtml(s)}
           ${plannerHtml(s)}
+          ${chaptersHtml(s)}
+          ${advisorReviewHtml(s, review, bookMeta)}
           ${faqHtml(s)}
           ${peersHtml(s)}
-          <div class="resource-detail-actions">
-            <a class="btn btn-ghost" href="${esc(backHref)}">بازگشت به بانک منابع</a>
-          </div>
         </div>
       </article>`;
     bindItemActions(s);
@@ -1992,4 +2609,7 @@
         }
       });
   }
+
+  renderFilterBar();
+  wireAudienceLinks();
 })();

@@ -312,7 +312,6 @@ def build_page(
       </div>
       <div class="mega-bar">
         <p>© بلوک · <a href="https://bolokapp.ir/">bolokapp.ir</a></p>
-        <p class="mega-bar-note">محتوای آموزشی مکمل اپ است؛ تاریخ‌های رسمی را از سنجش چک کنید.</p>
       </div>
     </div>
   </footer>

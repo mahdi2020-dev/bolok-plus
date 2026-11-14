@@ -428,7 +428,6 @@ def mega_footer() -> str:
       </div>
       <div class="mega-bar">
         <p>© بلوک · <a href="{BASE}/">bolokapp.ir</a></p>
-        <p class="mega-bar-note">ضرایب و تاریخ‌ها را از دفترچه رسمی همان سال تأیید کنید.</p>
       </div>
     </div>
   </footer>

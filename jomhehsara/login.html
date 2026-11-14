@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="bolok-root" content="../" />
+  <title>ورود | جزوات بلوک</title>
+  <link rel="icon" href="../assets/bolok-logo.svg?v=59" type="image/svg+xml" />
+  <link rel="stylesheet" href="../assets/fonts/vazirmatn-fd.css?v=1" />
+  <link rel="stylesheet" href="../styles.css?v=64" />
+  <link rel="stylesheet" href="jomhehsara.css?v=40" />
+  <script src="../site-api.js?v=22" defer></script>
+  <script src="jomhehsara.js?v=36" defer></script>
+</head>
+<body class="jh-body jh-auth-body" data-jh-page="login">
+  <main class="jh-wrap jh-wrap--auth">
+    <div id="jh-auth-boot" class="jh-boot">در حال بررسی نشست…</div>
+    <div id="jh-auth-ui" hidden>
+      <header class="jh-shop-head">
+        <h1>ورود به جزوات بلوک</h1>
+      </header>
+      <div id="jh-vault" class="jh-vault" hidden></div>
+      <div id="jh-err" class="jh-msg" hidden></div>
+      <div class="jh-auth-card">
+        <section id="step-password" class="jh-form">
+          <label>شماره موبایل
+            <input id="phone" name="username" type="tel" dir="ltr" inputmode="numeric"
+              placeholder="۰۹xxxxxxxxx" autocomplete="username" />
+          </label>
+          <label>رمز عبور
+            <input id="password" name="password" type="password" dir="ltr"
+              autocomplete="current-password" />
+          </label>
+          <button class="jh-btn" type="button" id="btn-login-password">ورود</button>
+          <button class="jh-btn secondary" type="button" id="btn-goto-otp">ورود با پیامک</button>
+        </section>
+        <section id="step-phone" class="jh-form" hidden>
+          <label>شماره موبایل
+            <input id="phone_otp" name="username" type="tel" dir="ltr" inputmode="numeric"
+              placeholder="۰۹xxxxxxxxx" autocomplete="username" />
+          </label>
+          <button class="jh-btn" type="button" id="btn-send-otp">دریافت کد ورود</button>
+          <button class="jh-btn secondary" type="button" id="btn-goto-password">بازگشت به ورود با رمز</button>
+        </section>
+        <section id="step-code" class="jh-form" hidden>
+          <p class="jh-auth-step" id="code-hint">کد ارسال‌شده را وارد کن</p>
+          <label>کد ۶ رقمی
+            <input id="code" type="text" dir="ltr" inputmode="numeric" maxlength="6" autocomplete="one-time-code" />
+          </label>
+          <button class="jh-btn" type="button" id="btn-verify-otp">تأیید و ادامه</button>
+          <button class="jh-btn secondary" type="button" id="btn-edit-phone">ویرایش شماره</button>
+        </section>
+        <section id="step-set-password" class="jh-form" hidden>
+          <p class="jh-auth-step">رمز بگذار تا گوگل/مرورگر ذخیره کند</p>
+          <label>رمز جدید (حداقل ۸ کاراکتر)
+            <input id="new_password" name="new-password" type="password" dir="ltr" autocomplete="new-password" />
+          </label>
+          <label>تکرار رمز
+            <input id="new_password2" type="password" dir="ltr" autocomplete="new-password" />
+          </label>
+          <button class="jh-btn" type="button" id="btn-set-password">ذخیره رمز و ادامه</button>
+          <button class="jh-btn secondary" type="button" id="btn-skip-password">بعداً</button>
+        </section>
+        <section id="step-profile" class="jh-form" hidden>
+          <p class="jh-auth-step">برای انتشار جزوه، مشخصاتت را کامل کن</p>
+          <label>نام
+            <input id="profile_first" autocomplete="given-name" />
+          </label>
+          <label>نام خانوادگی
+            <input id="profile_last" autocomplete="family-name" />
+          </label>
+          <label>دانشگاه
+            <input id="profile_uni" value="دانشگاه علوم پزشکی شهید بهشتی" readonly />
+          </label>
+          <label>رشته
+            <select id="profile_major">
+              <option value="">انتخاب…</option>
+              <option value="علوم آزمایشگاهی">علوم آزمایشگاهی</option>
+              <option value="رادیولوژی">رادیولوژی</option>
+              <option value="رادیوتراپی">رادیوتراپی</option>
+            </select>
+          </label>
+          <button class="jh-btn" type="button" id="btn-complete-profile">ذخیره و ادامه</button>
+        </section>
+        <div class="jh-actions">
+          <a class="jh-btn secondary" href="index.html">بازگشت به فروشگاه</a>
+        </div>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

@@ -104,7 +104,6 @@
     if (href === "#download" || href.endsWith("#download") || /index\.html#download$/i.test(href)) {
       return a;
     }
-    if (a.classList.contains("mobile-download")) return a;
     return null;
   }
 

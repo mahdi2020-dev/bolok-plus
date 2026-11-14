@@ -284,7 +284,6 @@ def main() -> None:
       </div>
       <div class="mega-bar">
         <p>© بلوک · <a href="{BASE}/">bolokapp.ir</a></p>
-        <p class="mega-bar-note">تاریخ‌های رسمی را از سنجش چک کنید.</p>
       </div>
     </div>
   </footer>

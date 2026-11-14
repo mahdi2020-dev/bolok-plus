@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="bolok-root" content="../" />
+  <title>ثبت جزوه | جزوه‌سرا</title>
+  <link rel="icon" href="../assets/bolok-logo.svg?v=59" type="image/svg+xml" />
+  <link rel="stylesheet" href="../assets/fonts/vazirmatn-fd.css?v=1" />
+  <link rel="stylesheet" href="../styles.css?v=64" />
+  <link rel="stylesheet" href="jomhehsara.css?v=40" />
+  <script src="../site-api.js?v=22" defer></script>
+  <script src="jomhehsara.js?v=36" defer></script>
+</head>
+<body class="jh-body jh-focus-body" data-jh-page="submit">
+  <header class="jh-focus-bar">
+    <a class="jh-brand" href="account.html?tab=mine">
+      <img src="../assets/bolok-logo.svg?v=59" alt="بلوک" />
+      <span>جزوه‌سرا<em>ثبت جزوه</em></span>
+    </a>
+    <a class="jh-btn secondary" href="account.html?tab=mine">بازگشت به مدیریت ارسالی‌ها</a>
+  </header>
+  <main class="jh-wrap jh-wrap--focus">
+    <section class="jh-hero jh-hero--compact">
+      <h1>ثبت جزوه</h1>
+      <div class="jh-kicker">پایلوت پیراپزشکی بهشتی</div>
+    </section>
+
+    <div class="jh-rules-banner">
+      <p>
+        <strong>قوانین رو درست و کامل بخون.</strong>
+        با انتشار، تمام قوانین پذیرفته شده‌اند.
+      </p>
+      <a class="jh-btn secondary" href="guide.html">شرایط و مقررات</a>
+    </div>
+
+    <div id="jh-case-bar" class="jh-status-bar" hidden></div>
+
+    <ol class="jh-stepper" id="jh-stepper" aria-label="مراحل ثبت">
+      <li class="jh-step on" data-step-idx="1">
+        <span class="jh-step-mark" aria-hidden="true">۱</span>
+        <span class="jh-step-label">اطلاعات</span>
+      </li>
+      <li class="jh-step" data-step-idx="2">
+        <span class="jh-step-mark" aria-hidden="true">۲</span>
+        <span class="jh-step-label">عنوان و فایل</span>
+      </li>
+      <li class="jh-step" data-step-idx="3">
+        <span class="jh-step-mark" aria-hidden="true">۳</span>
+        <span class="jh-step-label">تعهد و ارسال</span>
+      </li>
+    </ol>
+
+    <div id="jh-err" class="jh-msg" hidden></div>
+
+    <div class="jh-panel on" data-step="1">
+      <div class="jh-form jh-form--wide">
+        <div class="jh-form-grid">
+          <label>دانشگاه
+            <input id="university" value="دانشگاه علوم پزشکی شهید بهشتی" readonly />
+          </label>
+          <label>دانشکده
+            <input id="faculty" value="پیراپزشکی" readonly />
+          </label>
+          <label>رشته *
+            <select id="major" data-jh-combo></select>
+          </label>
+          <label>درس *
+            <select id="course_name" data-jh-combo data-jh-combo-search></select>
+          </label>
+          <label class="jh-span-2">توضیح کوتاه محتویات فایل *
+            <textarea id="outline_text" rows="5" maxlength="800"
+              placeholder="مثلاً: جزوهٔ خلاصهٔ فصل‌های ۲ تا ۵ بیوشیمی برای مرور پایان‌ترم؛ شامل مسیرهای متابولیسم، جداول مقایسه‌ای، نکات پرتکرار امتحان، تعاریف کلیدی و چند نمونه سؤال تشریحی کوتاه. مناسب دانشجوهایی که می‌خواهند قبل از آزمون سریع جمع‌بندی کنند."></textarea>
+          </label>
+          <label>نوع محتوا
+            <select id="content_kind" data-jh-combo>
+              <option value="typed">تایپی</option>
+              <option value="handwritten">دست‌نویس / اسکن</option>
+            </select>
+          </label>
+          <label>پوشش درس
+            <select id="coverage" data-jh-combo>
+              <option value="partial">بخشی از درس</option>
+              <option value="full">کامل</option>
+            </select>
+          </label>
+          <label>سطح سختی
+            <select id="difficulty" data-jh-combo>
+              <option value="easy">ساده</option>
+              <option value="medium" selected>متوسط</option>
+              <option value="hard">سخت</option>
+            </select>
+          </label>
+          <label>مقطع <input id="degree_level" placeholder="کارشناسی" /></label>
+          <div class="jh-span-2 jh-term-year">
+            <span class="jh-term-year-title">ترم و سال</span>
+            <div class="jh-term-year-row">
+              <label>سال
+                <select id="academic_year" data-jh-combo>
+                  <option value="">انتخاب سال</option>
+                </select>
+              </label>
+              <label>ترم
+                <select id="academic_term" data-jh-combo>
+                  <option value="">انتخاب ترم</option>
+                </select>
+              </label>
+            </div>
+            <input type="hidden" id="term_year" value="" />
+          </div>
+          <label>استاد <input id="professor_name" /></label>
+          <label>نویسندگان <input id="authors_text" placeholder="نام نویسنده یا نویسندگان" /></label>
+        </div>
+        <button class="jh-btn" type="button" id="btn-next-1">ذخیره و ادامه</button>
+      </div>
+    </div>
+
+    <div class="jh-panel" data-step="2">
+      <div class="jh-form jh-form--wide">
+        <label>عنوان *
+          <input id="title" required placeholder="یکی از عنوان‌های پیشنهادی را انتخاب یا ویرایش کن" />
+        </label>
+        <div>
+          <p class="jh-auth-step">عنوان‌های پیشنهادی</p>
+          <div id="jh-suggest" class="jh-suggest"></div>
+        </div>
+        <label>توضیح کامل جزوه *
+          <textarea id="summary" placeholder="محدوده جزوه، مخاطب و نکته‌های مهم برای خریدار را بنویس…"></textarea>
+          <span class="jh-char-count" id="summary-count">۰ / ۷۰</span>
+        </label>
+        <label>خارج از پوشش
+          <textarea id="out_of_scope_text" placeholder="آنچه در این جزوه نیست…"></textarea>
+        </label>
+        <label>رفرنس‌ها
+          <textarea id="sources_text" rows="5" placeholder="هر منبعی که در نوشتن این جزوه از آن استفاده کرده‌ای را شفاف بنویس. اگر از ویس یا تدریس استادی کمک گرفته‌ای، نام استاد را بیاور. رفرنس مشخص (مثل فرهنگ معین) را دقیق ذکر کن. استفاده از جزوهٔ شخص دیگر حتماً باید گفته شود. مقاله، کتاب یا سایت علمی معتبر را هم کامل بنویس: عنوان، نویسنده و در صورت امکان سال یا نشانی."></textarea>
+        </label>
+
+        <div class="jh-upload-slots">
+          <div class="jh-upload-slot" id="slot-pdf">
+            <input id="file_pdf" class="jh-file-input" type="file" accept=".pdf,application/pdf" />
+            <button type="button" class="jh-drop-idle" data-pick="file_pdf">
+              <span class="jh-drop-badge jh-drop-badge--pdf">PDF</span>
+              <strong>فایل PDF جزوه <span class="jh-req">*</span></strong>
+              <span>برای انتخاب ضربه بزن · حداکثر ۱۰۰ مگابایت</span>
+            </button>
+            <div class="jh-drop-card" id="pdf-card" hidden>
+              <div class="jh-drop-head">
+                <div class="jh-page-preview" id="pdf-preview" hidden>
+                  <canvas id="pdf-canvas" aria-label="پیش‌نمایش صفحه اول"></canvas>
+                </div>
+                <div class="jh-drop-copy">
+                  <strong id="pdf-name"></strong>
+                  <span class="jh-meta" id="pdf-meta">انتخاب نشده</span>
+                </div>
+              </div>
+              <div class="jh-upload-progress" id="pdf-progress" hidden>
+                <div class="jh-upload-bar"><i id="pdf-bar"></i></div>
+                <span id="pdf-pct">۰٪</span>
+              </div>
+              <p class="jh-drop-state" id="pdf-state"></p>
+              <button type="button" class="jh-drop-change" data-pick="file_pdf">تغییر فایل</button>
+            </div>
+            <div id="pdf-status" class="jh-upload-status" hidden></div>
+          </div>
+          <div class="jh-upload-slot" id="slot-docx">
+            <input id="file_docx" class="jh-file-input" type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
+            <button type="button" class="jh-drop-idle" data-pick="file_docx">
+              <span class="jh-drop-badge jh-drop-badge--doc">ورد</span>
+              <strong>فایل Word</strong>
+              <span>اختیاری · حداکثر ۱۰۰ مگابایت</span>
+            </button>
+            <div class="jh-drop-card" id="docx-card" hidden>
+              <div class="jh-drop-head">
+                <div class="jh-page-preview jh-page-preview--doc" aria-hidden="true"><span>W</span></div>
+                <div class="jh-drop-copy">
+                  <strong id="docx-name"></strong>
+                  <span class="jh-meta" id="docx-meta">اختیاری</span>
+                </div>
+              </div>
+              <div class="jh-upload-progress" id="docx-progress" hidden>
+                <div class="jh-upload-bar"><i id="docx-bar"></i></div>
+                <span id="docx-pct">۰٪</span>
+              </div>
+              <p class="jh-drop-state" id="docx-state"></p>
+              <button type="button" class="jh-drop-change" data-pick="file_docx">تغییر فایل</button>
+            </div>
+            <div id="docx-status" class="jh-upload-status" hidden></div>
+          </div>
+          <div class="jh-upload-slot" id="slot-answer">
+            <input id="file_answer" class="jh-file-input" type="file" accept=".pdf,.docx,application/pdf" />
+            <button type="button" class="jh-drop-idle" data-pick="file_answer">
+              <span class="jh-drop-badge jh-drop-badge--ans">پاسخ</span>
+              <strong>پاسخنامه</strong>
+              <span>اختیاری · PDF یا Word · حداکثر ۱۰۰ مگابایت</span>
+            </button>
+            <div class="jh-drop-card" id="answer-card" hidden>
+              <div class="jh-drop-head">
+                <div class="jh-page-preview" id="answer-preview" hidden>
+                  <canvas id="answer-canvas" aria-label="پیش‌نمایش صفحه اول"></canvas>
+                  <span class="jh-doc-fallback" hidden>W</span>
+                </div>
+                <div class="jh-drop-copy">
+                  <strong id="answer-name"></strong>
+                  <span class="jh-meta" id="answer-meta">اختیاری</span>
+                </div>
+              </div>
+              <div class="jh-upload-progress" id="answer-progress" hidden>
+                <div class="jh-upload-bar"><i id="answer-bar"></i></div>
+                <span id="answer-pct">۰٪</span>
+              </div>
+              <p class="jh-drop-state" id="answer-state"></p>
+              <button type="button" class="jh-drop-change" data-pick="file_answer">تغییر فایل</button>
+            </div>
+            <div id="answer-status" class="jh-upload-status" hidden></div>
+          </div>
+        </div>
+
+        <fieldset class="jh-fieldset">
+          <legend>فایل‌های اضافه</legend>
+          <div id="jh-attach-list"></div>
+          <button type="button" class="jh-btn secondary" id="btn-add-attach">+ افزودن فایل اضافه</button>
+        </fieldset>
+
+        <section class="jh-price-block is-free" id="jh-price-block">
+          <div class="jh-price-head">
+            <strong>قیمت نهایی مد نظر</strong>
+            <label class="jh-toggle">
+              <input type="checkbox" id="price_free" checked />
+              <span>رایگان منتشر شود</span>
+            </label>
+          </div>
+          <label class="jh-price-field" id="jh-price-wrap">
+            <input id="price_irt_display" type="text" inputmode="numeric" dir="ltr" disabled placeholder="رایگان" autocomplete="off" />
+            <span class="jh-price-suffix">تومان</span>
+            <input type="hidden" id="price_irt" value="0" />
+          </label>
+          <p class="jh-price-note" id="jh-price-note">این جزوه بدون پرداخت در اختیار خریدار قرار می‌گیرد.</p>
+        </section>
+
+        <div class="jh-actions">
+          <button class="jh-btn secondary" type="button" id="btn-back-2">قبلی</button>
+          <button class="jh-btn" type="button" id="btn-next-2">ادامه</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="jh-panel" data-step="3">
+      <div class="jh-form jh-form--wide">
+        <div id="jh-upload-summary" class="jh-upload-status is-ok" hidden></div>
+        <label class="jh-check">
+          <input type="checkbox" id="rights" />
+          <span>حقوق انتشار این اثر متعلق به من است و مسئولیت کپی غیرمجاز با من است.</span>
+        </label>
+        <label class="jh-check">
+          <input type="checkbox" id="health" />
+          <span id="health_txt">نکات حوزه سلامت را می‌پذیرم.</span>
+        </label>
+        <div class="jh-actions">
+          <button class="jh-btn secondary" type="button" id="btn-back-3">قبلی</button>
+          <button class="jh-btn warm" type="button" id="btn-submit" disabled>ارسال برای بررسی</button>
+        </div>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

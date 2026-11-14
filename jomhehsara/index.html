@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="bolok-root" content="../" />
+  <title>فروشگاه جزوات | جزوه‌سرا بلوک</title>
+  <meta name="description" content="جست‌وجو و دریافت جزوه دانشجویان دانشکده پیراپزشکی — جزوه‌سرا بلوک." />
+  <link rel="icon" href="../assets/bolok-logo.svg?v=59" type="image/svg+xml" />
+  <link rel="stylesheet" href="../assets/fonts/vazirmatn-fd.css?v=1" />
+  <link rel="stylesheet" href="../styles.css?v=64" />
+  <link rel="stylesheet" href="jomhehsara.css?v=40" />
+  <script src="../site-api.js?v=22" defer></script>
+  <script src="jomhehsara.js?v=36" defer></script>
+</head>
+<body class="jh-body" data-jh-page="index">
+  <main class="jh-wrap">
+    <header class="jh-shop-head">
+      <h1>جزوه مناسب درس تو</h1>
+    </header>
+
+    <div class="jh-search-bar">
+      <label class="jh-search-wide">
+        <span class="visually-hidden">جست‌وجو</span>
+        <input id="filter-q" type="search" placeholder="نام درس، عنوان جزوه یا نویسنده" />
+      </label>
+      <button class="jh-btn" type="button" id="btn-filter">جست‌وجو</button>
+    </div>
+
+    <div class="jh-filters jh-filters--shop">
+      <label>رشته <select id="filter-major"><option value="">همه رشته‌ها</option></select></label>
+      <label>نوع محتوا
+        <select id="filter-kind">
+          <option value="">همه</option>
+          <option value="typed">تایپی</option>
+          <option value="handwritten">دست‌نویس</option>
+        </select>
+      </label>
+      <label>قیمت
+        <select id="filter-priced">
+          <option value="">همه</option>
+          <option value="free">رایگان</option>
+          <option value="paid">پولی</option>
+        </select>
+      </label>
+      <button class="jh-btn secondary" type="button" id="btn-clear-filters">پاک‌کردن فیلترها</button>
+    </div>
+
+    <div class="jh-results-meta" id="jh-results-meta" hidden></div>
+    <div id="jh-err" class="jh-msg" hidden></div>
+    <div id="jh-list"></div>
+
+    <aside class="jh-author-strip">
+      <div>
+        <strong>جزوه آماده داری؟</strong>
+        <span>بدون هزینه اولیه منتشر کن.</span>
+      </div>
+      <a class="jh-btn warm" href="submit.html">انتشار جزوه</a>
+    </aside>
+  </main>
+</body>
+</html>
