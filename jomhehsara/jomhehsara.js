@@ -9,7 +9,7 @@
     needs_revision: "نیازمند اصلاح",
     rejected: "غیرقابل پذیرش",
     pending_payment: "در انتظار پرداخت پیش‌فاکتور",
-    in_preparation: "در حال آماده‌سازی",
+    in_preparation: "در حال کمک جزوه‌نویسی",
     awaiting_author_approval: "تأیید نسخه نهایی",
     ready_to_publish: "آماده انتشار",
     published: "منتشرشده",
@@ -17,21 +17,141 @@
     stopped: "متوقف",
   };
 
+  function buzz(pattern = [35, 45, 55]) {
+    try {
+      if (typeof navigator !== "undefined" && navigator.vibrate) {
+        navigator.vibrate(pattern);
+      }
+    } catch (_) {}
+  }
+
+  function clearFieldErrors(root = document) {
+    root
+      .querySelectorAll(".is-field-error, .is-invalid")
+      .forEach((node) => {
+        node.classList.remove("is-field-error", "is-invalid");
+      });
+  }
+
+  function fieldFromErrorText(text) {
+    const t = String(text || "");
+    if (/رشته/.test(t)) return "#major";
+    if (/درس/.test(t)) return "#course_name";
+    if (/توضیح|محتویات|outline/i.test(t)) return "#outline_text";
+    if (/عنوان/.test(t)) return "#title";
+    if (/توضیحات|خلاصه|summary/i.test(t)) return "#summary";
+    if (/PDF|پی‌دی‌اف|فایل PDF/i.test(t)) return "#file_pdf";
+    if (/تعهد|حقوق|حقوقی|سلامت/.test(t)) return "#rights";
+    return null;
+  }
+
+  function friendlyErrText(text) {
+    const raw = String(text || "").trim();
+    if (!raw) return "خطا";
+    if (/failed to fetch|networkerror|load failed/i.test(raw)) {
+      return "ارتباط با سرور برقرار نشد. بعد از ۱ ساعت دوباره امتحان کنید.";
+    }
+    return raw;
+  }
+
+  function showStickyErr(text) {
+    let toast = document.getElementById("jh-sticky-err");
+    if (!toast) {
+      toast = document.createElement("div");
+      toast.id = "jh-sticky-err";
+      toast.className = "jh-sticky-err";
+      toast.setAttribute("role", "alert");
+      document.body.appendChild(toast);
+    }
+    toast.innerHTML = `<span class="jh-sticky-err-mark" aria-hidden="true">!</span><span class="jh-sticky-err-text">${S().esc(
+      friendlyErrText(text)
+    )}</span>`;
+    toast.hidden = false;
+    toast.classList.remove("is-out");
+    toast.classList.add("is-on", "is-shake");
+    window.clearTimeout(toast._hideTimer);
+    toast._hideTimer = window.setTimeout(() => {
+      toast.classList.add("is-out");
+      toast.classList.remove("is-on", "is-shake");
+      window.setTimeout(() => {
+        toast.hidden = true;
+      }, 220);
+    }, 4200);
+  }
+
+  function hideStickyErr() {
+    const toast = document.getElementById("jh-sticky-err");
+    if (!toast) return;
+    toast.classList.add("is-out");
+    toast.classList.remove("is-on", "is-shake");
+    toast.hidden = true;
+  }
+
   function msg(el, text, ok = false) {
     if (!el) return;
     const kind = ok ? "ok" : "err";
     const mark = ok ? "✓" : "!";
+    const shown = ok ? text || "" : friendlyErrText(text);
     el.className = `jh-msg ${kind}`;
     el.innerHTML = `<span class="jh-msg-mark" aria-hidden="true">${mark}</span><span class="jh-msg-text">${S().esc(
-      text || ""
+      shown
     )}</span>`;
     el.hidden = false;
-    el.setAttribute("role", "status");
+    el.setAttribute("role", ok ? "status" : "alert");
+    el.classList.remove("is-shake");
+
+    if (ok) {
+      hideStickyErr();
+      clearFieldErrors();
+      return;
+    }
+
+    // Error: vibrate + sticky top banner + scroll so user sees it without hunting
+    buzz();
+    showStickyErr(text);
+    void el.offsetWidth;
+    el.classList.add("is-shake");
+    const fieldSel = fieldFromErrorText(text);
+    clearFieldErrors();
+    const field = fieldSel ? document.querySelector(fieldSel) : null;
+    if (field) {
+      field.classList.add("is-field-error");
+      const wrap = field.closest("label") || field;
+      wrap.classList?.add("is-field-error");
+      try {
+        field.focus({ preventScroll: true });
+      } catch (_) {
+        try {
+          field.focus();
+        } catch (__) {}
+      }
+    }
+    requestAnimationFrame(() => {
+      const target = field?.closest("label") || field || el;
+      try {
+        target.scrollIntoView({ behavior: "smooth", block: "center" });
+      } catch (_) {
+        el.scrollIntoView({ block: "center" });
+      }
+      // Also keep the inline banner in view near the top of the form
+      try {
+        el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      } catch (_) {}
+    });
   }
 
   function money(n) {
     return Number(n || 0).toLocaleString("fa-IR") + " تومان";
   }
+
+  /** جزوه‌سرا payments: sandbox until live terminal is ready */
+  const PAY_ENV = "sandbox";
+  const PAYOUT_STATUS_FA = {
+    pending: "در انتظار بررسی",
+    approved: "تأیید شده",
+    paid: "پرداخت‌شده",
+    rejected: "رد شده",
+  };
 
   let _pdfjsLoading = null;
   function loadPdfJs() {
@@ -56,9 +176,18 @@
     return _pdfjsLoading;
   }
 
-  async function mountPreviewFlipper(host, pamphletId, fallbackHtml) {
+  async function mountPreviewFlipper(
+    host,
+    pamphletId,
+    fallbackHtml,
+    bookPages = 0
+  ) {
     if (!host || !pamphletId) return;
-    const maxPages = 4;
+    const bookTotal = Math.max(1, Math.floor(Number(bookPages) || 0) || 1);
+    /** Max 25% of pages, hard cap 4 (server preview also truncates). */
+    const PREVIEW_MAX = Math.max(1, Math.min(4, Math.ceil(bookTotal * 0.25)));
+    const clampPage = (n) =>
+      Math.max(1, Math.min(PREVIEW_MAX, Math.floor(Number(n) || 1)));
     host.innerHTML = `
       <div class="jh-flip" data-flip>
         <div class="jh-flip-stage">
@@ -66,41 +195,65 @@
           <div class="jh-flip-fallback">${fallbackHtml || ""}</div>
           <div class="jh-flip-loading">
             <span class="jh-flip-spinner" aria-hidden="true"></span>
-            <strong>در حال آماده‌سازی پیش‌نمایش</strong>
-            <span>صفحات ۱ تا ۴ فایل آپلودشده</span>
+            <strong>در حال آماده‌سازی…</strong>
+            <span>پیش‌نمایش رایگان تا ${toFaDigits(PREVIEW_MAX)} صفحه از ${toFaDigits(bookTotal)}</span>
           </div>
           <div class="jh-flip-error" hidden>
-            <strong>پیش‌نمایش فعلاً در دسترس نیست</strong>
+            <strong>پیش‌نمایش لود نشد</strong>
+            <span>اتصال را چک کن یا دوباره تلاش کن</span>
             <button type="button" class="jh-btn secondary" data-flip-retry>تلاش دوباره</button>
+          </div>
+          <div class="jh-flip-lock" data-flip-lock hidden>
+            <strong>ادامه بعد از خرید</strong>
+            <span>پیش‌نمایش رایگان فقط تا صفحه ${toFaDigits(PREVIEW_MAX)} است</span>
           </div>
         </div>
         <div class="jh-flip-bar">
-          <button type="button" class="jh-flip-btn" data-flip-prev aria-label="صفحه قبل">‹</button>
+          <button type="button" class="jh-flip-btn jh-flip-btn--prev" data-flip-prev aria-label="صفحه قبل" title="صفحه قبل">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+          </button>
           <div class="jh-flip-meta">
-            <span class="jh-flip-hint">پیش‌نمایش رایگان · صفحه <b data-flip-cur>۱</b> از <b data-flip-max>۴</b></span>
+            <div class="jh-flip-pager" dir="rtl">
+              صفحه <b data-flip-cur>۱</b>
+              <span class="jh-flip-pager-sep">از</span>
+              <b data-flip-book>${toFaDigits(bookTotal)}</b>
+            </div>
+            <div class="jh-flip-track" data-flip-track role="progressbar"
+              aria-valuemin="1" aria-valuemax="${PREVIEW_MAX}" aria-valuenow="1"
+              aria-label="پیش‌نمایش صفحات ۱ تا ${toFaDigits(PREVIEW_MAX)}">
+              <span class="jh-flip-track-fill" data-flip-fill></span>
+              <span class="jh-flip-track-knob" data-flip-knob></span>
+            </div>
             <div class="jh-flip-dots" data-flip-dots aria-hidden="true"></div>
           </div>
-          <button type="button" class="jh-flip-btn" data-flip-next aria-label="صفحه بعد">›</button>
+          <button type="button" class="jh-flip-btn jh-flip-btn--next" data-flip-next aria-label="صفحه بعد" title="صفحه بعد">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+          </button>
         </div>
       </div>`;
     const canvas = host.querySelector(".jh-flip-canvas");
     const fallback = host.querySelector(".jh-flip-fallback");
     const loading = host.querySelector(".jh-flip-loading");
     const errBox = host.querySelector(".jh-flip-error");
+    const lockBox = host.querySelector("[data-flip-lock]");
     const curEl = host.querySelector("[data-flip-cur]");
-    const maxEl = host.querySelector("[data-flip-max]");
+    const bookEl = host.querySelector("[data-flip-book]");
     const dotsEl = host.querySelector("[data-flip-dots]");
+    const fillEl = host.querySelector("[data-flip-fill]");
+    const knobEl = host.querySelector("[data-flip-knob]");
+    const trackEl = host.querySelector("[data-flip-track]");
     const prevBtn = host.querySelector("[data-flip-prev]");
     const nextBtn = host.querySelector("[data-flip-next]");
     const retryBtn = host.querySelector("[data-flip-retry]");
     let pdf = null;
     let pageNo = 1;
-    let total = maxPages;
+    let previewTotal = PREVIEW_MAX;
     let busy = false;
+    let lockFlash = null;
 
     const paintDots = () => {
       if (!dotsEl) return;
-      dotsEl.innerHTML = Array.from({ length: total }, (_, i) => {
+      dotsEl.innerHTML = Array.from({ length: previewTotal }, (_, i) => {
         const n = i + 1;
         return `<button type="button" class="jh-flip-dot${
           n === pageNo ? " on" : ""
@@ -108,18 +261,39 @@
       }).join("");
       dotsEl.querySelectorAll("[data-flip-goto]").forEach((btn) => {
         btn.addEventListener("click", () => {
-          const n = Number(btn.getAttribute("data-flip-goto") || 0);
-          if (n >= 1 && n <= total) renderPage(n);
+          const n = clampPage(btn.getAttribute("data-flip-goto"));
+          if (n <= previewTotal) renderPage(n);
         });
       });
     };
 
     const setUi = () => {
       if (curEl) curEl.textContent = toFaDigits(pageNo);
-      if (maxEl) maxEl.textContent = toFaDigits(total);
+      if (bookEl) bookEl.textContent = toFaDigits(bookTotal);
+      const pct =
+        previewTotal <= 1 ? 100 : ((pageNo - 1) / (previewTotal - 1)) * 100;
+      if (fillEl) fillEl.style.width = `${Math.max(8, pct)}%`;
+      if (knobEl) knobEl.style.insetInlineStart = `calc(${pct}% - 0.45rem)`;
+      if (trackEl) trackEl.setAttribute("aria-valuenow", String(pageNo));
       if (prevBtn) prevBtn.disabled = !pdf || pageNo <= 1 || busy;
-      if (nextBtn) nextBtn.disabled = !pdf || pageNo >= total || busy;
+      if (nextBtn) {
+        const atEnd = pageNo >= previewTotal;
+        const moreLocked = bookTotal > previewTotal;
+        nextBtn.disabled = !pdf || busy || (atEnd && !moreLocked);
+        nextBtn.classList.toggle("is-locked", !!pdf && atEnd && moreLocked);
+        nextBtn.title =
+          atEnd && moreLocked ? "ادامه بعد از خرید" : "صفحه بعد";
+      }
       paintDots();
+    };
+
+    const flashLock = () => {
+      if (!lockBox) return;
+      lockBox.hidden = false;
+      if (lockFlash) window.clearTimeout(lockFlash);
+      lockFlash = window.setTimeout(() => {
+        lockBox.hidden = true;
+      }, 1600);
     };
 
     const showState = (mode) => {
@@ -127,14 +301,16 @@
       if (errBox) errBox.hidden = mode !== "error";
       if (fallback) fallback.hidden = mode !== "fallback" && mode !== "error";
       if (canvas) canvas.hidden = mode !== "ready";
+      if (lockBox && mode !== "ready") lockBox.hidden = true;
     };
 
     const renderPage = async (n) => {
       if (!pdf || !canvas || busy) return;
+      const target = clampPage(Math.min(n, previewTotal));
       busy = true;
       setUi();
       try {
-        const page = await pdf.getPage(n);
+        const page = await pdf.getPage(target);
         const base = page.getViewport({ scale: 1 });
         const stage = host.querySelector(".jh-flip-stage");
         const wrapW = Math.max(
@@ -150,7 +326,7 @@
         ctx.fillStyle = "#ffffff";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         await page.render({ canvasContext: ctx, viewport: vp }).promise;
-        pageNo = n;
+        pageNo = target;
         showState("ready");
       } catch (_) {
         showState(pdf ? "ready" : "fallback");
@@ -164,36 +340,49 @@
       showState("loading");
       pdf = null;
       pageNo = 1;
-      total = maxPages;
+      previewTotal = PREVIEW_MAX;
       setUi();
+      const LOAD_MS = 12000;
+      let timedOut = false;
+      const timer = window.setTimeout(() => {
+        timedOut = true;
+      }, LOAD_MS);
       try {
         const lib = await loadPdfJs();
+        if (timedOut) throw new Error("timeout");
         const path = `/api/site/pamphlets/item/${encodeURIComponent(
           pamphletId
         )}/preview`;
         let buf;
-        if (typeof S().fetchPdfBlob === "function") {
-          const blob = await S().fetchPdfBlob(path);
-          buf = await blob.arrayBuffer();
-        } else {
-          const url = `${S().API_BASE}${path}`;
-          const res = await fetch(url, {
-            headers: { Accept: "application/pdf" },
-            mode: "cors",
-            credentials: "omit",
-          });
-          if (!res.ok) throw new Error(`preview_${res.status}`);
-          buf = await res.arrayBuffer();
-        }
+        const fetchBytes = S().fetchPdfBytes
+          ? S().fetchPdfBytes(path)
+          : (async () => {
+              const blob = await S().fetchPdfBlob(path);
+              return blob.arrayBuffer();
+            })();
+        buf = await Promise.race([
+          fetchBytes,
+          new Promise((_, reject) =>
+            window.setTimeout(() => reject(new Error("timeout")), LOAD_MS)
+          ),
+        ]);
+        if (timedOut) throw new Error("timeout");
         if (!buf || buf.byteLength < 8) throw new Error("empty");
         pdf = await lib.getDocument({ data: buf }).promise;
-        total = Math.min(maxPages, Math.max(1, pdf.numPages || 1));
+        if (timedOut) throw new Error("timeout");
+        previewTotal = Math.min(PREVIEW_MAX, Math.max(1, pdf.numPages || 1));
         setUi();
         await renderPage(1);
+        if (timedOut && loading && !loading.hidden) {
+          showState("error");
+        }
       } catch (_) {
         pdf = null;
         showState("error");
         setUi();
+      } finally {
+        window.clearTimeout(timer);
+        if (loading && !loading.hidden && !pdf) showState("error");
       }
     };
 
@@ -201,15 +390,17 @@
       if (pageNo > 1) renderPage(pageNo - 1);
     });
     nextBtn?.addEventListener("click", () => {
-      if (pageNo < total) renderPage(pageNo + 1);
+      if (pageNo < previewTotal) return renderPage(pageNo + 1);
+      if (bookTotal > previewTotal) flashLock();
     });
     retryBtn?.addEventListener("click", () => loadPreview());
 
     host.tabIndex = 0;
     host.addEventListener("keydown", (e) => {
-      if (e.key === "ArrowLeft" && pageNo < total) {
+      if (e.key === "ArrowLeft") {
         e.preventDefault();
-        renderPage(pageNo + 1);
+        if (pageNo < previewTotal) renderPage(pageNo + 1);
+        else if (bookTotal > previewTotal) flashLock();
       }
       if (e.key === "ArrowRight" && pageNo > 1) {
         e.preventDefault();
@@ -234,9 +425,11 @@
         const dx = x - touchX;
         touchX = null;
         if (Math.abs(dx) < 40) return;
-        // RTL: swipe right → previous page visually feels natural as next content on left
         if (dx > 0 && pageNo > 1) renderPage(pageNo - 1);
-        if (dx < 0 && pageNo < total) renderPage(pageNo + 1);
+        if (dx < 0) {
+          if (pageNo < previewTotal) renderPage(pageNo + 1);
+          else if (bookTotal > previewTotal) flashLock();
+        }
       },
       { passive: true }
     );
@@ -321,20 +514,27 @@
           <img src="${root}assets/bolok-logo.svg?v=59" alt="بلوک" />
           <span>جزوه‌سرا<em>بلوک</em></span>
         </a>
-        <nav class="jh-top-nav" aria-label="جزوات">
-          <a href="index.html" data-nav="index">فروشگاه</a>
-          <a href="learn.html" data-nav="learn">آموزش</a>
-          <a href="guide.html" data-nav="guide">راهنمای انتشار</a>
-          <a href="submit.html" data-nav="submit">انتشار جزوه</a>
-          <a class="jh-account-chip" href="login.html" data-nav="login" data-jh-account aria-busy="true">…</a>
-        </nav>
+        <div class="jh-topbar-actions">
+          <a class="jh-account-chip" href="login.html" data-nav="login" data-jh-account aria-busy="true">
+            <span class="jh-account-avatar" aria-hidden="true">?</span>
+            <span class="jh-account-name">…</span>
+          </a>
+          <button class="jh-nav-toggle" type="button" data-jh-nav-toggle aria-label="منو" aria-expanded="false" aria-controls="jh-nav-panel">
+            <span></span>
+          </button>
+        </div>
       </div>
-      <nav class="jh-mobile-nav" aria-label="موبایل">
-        <a href="index.html">فروشگاه</a>
-        <a href="learn.html">آموزش</a>
-        <a href="guide.html">راهنما</a>
-        <a href="submit.html">انتشار</a>
-        <a href="login.html" data-jh-account aria-busy="true">…</a>
+      <nav class="jh-top-nav" aria-label="جزوات">
+        <a href="index.html" data-nav="index">فروشگاه</a>
+        <a href="learn.html" data-nav="learn">آموزش و راهنما</a>
+        <a href="submit.html" data-nav="submit">انتشار</a>
+      </nav>
+      <div class="jh-nav-backdrop" data-jh-nav-backdrop hidden></div>
+      <nav class="jh-nav-panel" id="jh-nav-panel" data-jh-nav-panel aria-hidden="true">
+        <a href="index.html" data-nav="index">فروشگاه</a>
+        <a href="learn.html" data-nav="learn">آموزش و راهنما</a>
+        <a href="submit.html" data-nav="submit">انتشار</a>
+        <a href="${root}index.html">بازگشت به بلوک</a>
       </nav>`;
     document.body.prepend(bar);
     if (!$(".jh-aurora")) {
@@ -347,7 +547,44 @@
     $$(`[data-nav="${active}"]`).forEach((el) =>
       el.setAttribute("aria-current", "page")
     );
+    wireJhNavToggle(bar);
     refreshAccountChip();
+  }
+
+  function wireJhNavToggle(bar) {
+    const toggle = bar.querySelector("[data-jh-nav-toggle]");
+    const panel = bar.querySelector("[data-jh-nav-panel]");
+    const backdrop = bar.querySelector("[data-jh-nav-backdrop]");
+    if (!toggle || !panel) return;
+    const setOpen = (open) => {
+      panel.classList.toggle("is-open", open);
+      panel.setAttribute("aria-hidden", open ? "false" : "true");
+      toggle.setAttribute("aria-expanded", open ? "true" : "false");
+      bar.classList.toggle("is-nav-open", open);
+      document.body.classList.toggle("jh-nav-open", open);
+      if (backdrop) {
+        backdrop.hidden = !open;
+        backdrop.classList.toggle("is-on", open);
+      }
+    };
+    toggle.addEventListener("click", (e) => {
+      e.stopPropagation();
+      setOpen(!panel.classList.contains("is-open"));
+    });
+    backdrop?.addEventListener("click", () => setOpen(false));
+    panel.querySelectorAll("a").forEach((a) =>
+      a.addEventListener("click", () => setOpen(false))
+    );
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") setOpen(false);
+    });
+    window.addEventListener(
+      "resize",
+      () => {
+        if (window.matchMedia("(min-width: 721px)").matches) setOpen(false);
+      },
+      { passive: true }
+    );
   }
 
   let _restorePromise = null;
@@ -408,35 +645,94 @@
     return _restorePromise;
   }
 
-  async function refreshAccountChip() {
+  function paintAccountChip(me) {
     const chips = $$("[data-jh-account]");
     if (!chips.length) return;
     chips.forEach((el) => {
+      el.removeAttribute("aria-busy");
+      el.style.pointerEvents = "";
+      let avatar = el.querySelector(".jh-account-avatar");
+      let nameEl = el.querySelector(".jh-account-name");
+      if (!avatar || !nameEl) {
+        el.innerHTML =
+          `<span class="jh-account-avatar" aria-hidden="true">?</span><span class="jh-account-name"></span>`;
+        avatar = el.querySelector(".jh-account-avatar");
+        nameEl = el.querySelector(".jh-account-name");
+      }
+      if (me) {
+        const full =
+          `${me.first_name || ""} ${me.last_name || ""}`.trim() || "حساب من";
+        const short =
+          (me.first_name || "").trim() || full.split(/\s+/)[0] || "حساب";
+        const initial = (short.slice(0, 1) || "ب").toUpperCase();
+        if (avatar) avatar.textContent = initial;
+        if (nameEl) {
+          nameEl.textContent = short;
+          nameEl.title = full;
+        }
+        el.href = "account.html?tab=overview";
+        el.classList.add("is-on");
+        el.setAttribute("aria-label", full);
+        if (el.hasAttribute("data-nav")) el.setAttribute("data-nav", "account");
+      } else {
+        if (avatar) avatar.textContent = "و";
+        if (nameEl) {
+          nameEl.textContent = "ورود";
+          nameEl.removeAttribute("title");
+        }
+        el.href = "login.html";
+        el.classList.remove("is-on");
+        el.setAttribute("aria-label", "ورود");
+      }
+    });
+  }
+
+  function paintAccountChipPending() {
+    $$("[data-jh-account]").forEach((el) => {
       el.setAttribute("aria-busy", "true");
       el.style.pointerEvents = "none";
+      let avatar = el.querySelector(".jh-account-avatar");
+      let nameEl = el.querySelector(".jh-account-name");
+      if (!avatar || !nameEl) {
+        el.innerHTML =
+          `<span class="jh-account-avatar" aria-hidden="true">…</span><span class="jh-account-name"></span>`;
+        avatar = el.querySelector(".jh-account-avatar");
+        nameEl = el.querySelector(".jh-account-name");
+      }
+      if (avatar) avatar.textContent = "…";
+      if (nameEl) {
+        nameEl.textContent = "در حال اتصال";
+        nameEl.removeAttribute("title");
+      }
+      el.setAttribute("aria-label", "در حال بررسی نشست");
     });
+  }
+
+  async function refreshAccountChip() {
+    const chips = $$("[data-jh-account]");
+    if (!chips.length) return;
+    const hasToken = !!(S()?.getSiteSession?.() || "");
+    paintAccountChipPending();
     let me = null;
     try {
       me = await ensureSession();
     } catch (_) {
       me = null;
     }
-    chips.forEach((el) => {
-      el.removeAttribute("aria-busy");
-      el.style.pointerEvents = "";
-      if (me) {
-        const name =
-          `${me.first_name || ""} ${me.last_name || ""}`.trim() || "حساب من";
-        el.textContent = name;
-        el.href = "account.html?tab=overview";
-        el.classList.add("is-on");
-        if (el.hasAttribute("data-nav")) el.setAttribute("data-nav", "account");
-      } else {
-        el.textContent = "ورود";
-        el.href = "login.html";
-        el.classList.remove("is-on");
+    if (!me && hasToken) {
+      // Timeout/network: keep pending, one short retry — never flash «ورود»
+      try {
+        invalidateSessionCache();
+        me = await ensureSession();
+      } catch (_) {
+        me = null;
       }
-    });
+    }
+    if (!me && hasToken) {
+      paintAccountChipPending();
+      return;
+    }
+    paintAccountChip(me);
   }
 
   async function ensureSession({ requireProfile = false } = {}) {
@@ -454,21 +750,65 @@
     return res.data;
   }
 
-  function revealBoot(boot, ui, text) {
-    if (boot) {
-      boot.classList.remove("jh-boot--success");
-      if (text) boot.textContent = text;
-      boot.hidden = false;
+  function ensureBootShell(boot, title, note) {
+    if (!boot) return;
+    if (!boot.querySelector(".jh-boot-orb")) {
+      boot.innerHTML = `<div class="jh-boot-card">
+        <div class="jh-boot-orb" aria-hidden="true">
+          <span class="jh-boot-halo"></span>
+          <span class="jh-boot-ring jh-boot-ring--a"></span>
+          <span class="jh-boot-ring jh-boot-ring--b"></span>
+          <span class="jh-boot-ring jh-boot-ring--c"></span>
+          <span class="jh-boot-core"><em>ج</em></span>
+          <span class="jh-boot-spark jh-boot-spark--1"></span>
+          <span class="jh-boot-spark jh-boot-spark--2"></span>
+        </div>
+        <strong class="jh-boot-title"></strong>
+        <p class="jh-boot-note"></p>
+      </div>`;
     }
+    const t = boot.querySelector(".jh-boot-title");
+    const n = boot.querySelector(".jh-boot-note");
+    if (t && title != null) t.textContent = title;
+    if (n) {
+      if (note) {
+        n.innerHTML = `${S().esc(note)}<span class="jh-boot-dots" aria-hidden="true"><i></i><i></i><i></i></span>`;
+        n.hidden = false;
+      } else if (note === "") {
+        n.hidden = true;
+      }
+    }
+  }
+
+  function setBootLabel(boot, title, note) {
+    if (!boot) return;
+    boot.classList.remove("jh-boot--success", "is-leaving");
+    ensureBootShell(boot, title, note);
+    boot.hidden = false;
+  }
+
+  function dismissBoot(boot, ui) {
+    if (!boot) {
+      if (ui) ui.hidden = false;
+      return;
+    }
+    boot.classList.remove("jh-boot--success");
+    boot.classList.add("is-leaving");
+    const finish = () => {
+      boot.hidden = true;
+      boot.classList.remove("is-leaving");
+      if (ui) ui.hidden = false;
+    };
+    window.setTimeout(finish, 420);
+  }
+
+  function revealBoot(boot, ui, text) {
+    if (boot) setBootLabel(boot, text || "در حال بارگذاری…", "یه لحظه صبر کن");
     if (ui) ui.hidden = true;
   }
 
   function revealUi(boot, ui) {
-    if (boot) {
-      boot.classList.remove("jh-boot--success");
-      boot.hidden = true;
-    }
-    if (ui) ui.hidden = false;
+    dismissBoot(boot, ui);
   }
 
   function firstNameOf(account) {
@@ -491,29 +831,75 @@
     window.setTimeout(() => go(dest || "account.html?tab=overview"), 1400);
   }
 
-  function renderVault(host, { onPick } = {}) {
+  function vaultInitial(label, phone) {
+    const n = String(label || "").trim();
+    if (n) return n.slice(0, 1);
+    const p = String(phone || "").replace(/\D/g, "");
+    return p.slice(-2, -1) || "ب";
+  }
+
+  function renderVault(host, { onPick, onForget } = {}) {
     if (!host) return;
     const vault = S().listVault?.() || [];
     if (!vault.length) {
       host.hidden = true;
       host.innerHTML = "";
+      host.classList.remove("jh-vault--on");
       return;
     }
+    const active = S().getSiteSession?.() || "";
     host.hidden = false;
-    host.innerHTML =
-      `<p class="jh-auth-step">حساب‌های ذخیره‌شده</p>` +
-      vault
-        .map(
-          (v) => `<button type="button" class="jh-vault-item" data-token="${S().esc(
-            v.token
-          )}">
-          <strong>${S().esc(v.label || v.phone)}</strong>
-          <span dir="ltr">${S().esc(v.phone || "")}</span>
-        </button>`
-        )
-        .join("");
-    host.querySelectorAll("[data-token]").forEach((btn) => {
+    host.classList.add("jh-vault--on");
+    host.innerHTML = `
+      <header class="jh-vault-head">
+        <div>
+          <strong>حساب‌های ذخیره‌شده</strong>
+          <p>یک ضربه برای ورود سریع</p>
+        </div>
+        <span class="jh-vault-count">${toFaDigits(vault.length)}</span>
+      </header>
+      <ul class="jh-vault-list" role="list">
+        ${vault
+          .map((v, i) => {
+            const name = v.label || v.phone || "حساب";
+            const phoneFa = toFaDigits(v.phone || "");
+            const isActive = !!active && v.token === active;
+            const initial = vaultInitial(v.label, v.phone);
+            return `<li class="jh-vault-row${isActive ? " is-active" : ""}">
+              <button type="button" class="jh-vault-item" data-token="${S().esc(
+                v.token
+              )}" aria-label="ورود با ${S().esc(name)}">
+                <span class="jh-vault-avatar" aria-hidden="true" data-tone="${
+                  i % 4
+                }">${S().esc(initial)}</span>
+                <span class="jh-vault-meta">
+                  <strong>${S().esc(name)}</strong>
+                  <span dir="ltr">${S().esc(phoneFa)}</span>
+                </span>
+                <span class="jh-vault-go">${
+                  isActive ? "فعال" : "ورود"
+                }</span>
+              </button>
+              <button type="button" class="jh-vault-forget" data-forget="${S().esc(
+                v.id || v.token
+              )}" aria-label="حذف ${S().esc(name)} از این دستگاه" title="حذف از این دستگاه">×</button>
+            </li>`;
+          })
+          .join("")}
+      </ul>
+      <p class="jh-vault-or"><span>یا ورود با رمز / پیامک</span></p>`;
+    host.querySelectorAll(".jh-vault-item[data-token]").forEach((btn) => {
       btn.addEventListener("click", () => onPick?.(btn.dataset.token));
+    });
+    host.querySelectorAll(".jh-vault-forget[data-forget]").forEach((btn) => {
+      btn.addEventListener("click", (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        const key = btn.dataset.forget;
+        S().removeFromVault?.(key);
+        onForget?.(key);
+        renderVault(host, { onPick, onForget });
+      });
     });
   }
 
@@ -627,10 +1013,19 @@
     covers.forEach((el) => io.observe(el));
   }
 
+  function pamphletCreditLine(p) {
+    const author = (p.authors_text || "").trim();
+    const professor = (p.professor_name || "").trim();
+    if (professor && author) return `استاد: ${professor} · نویسنده: ${author}`;
+    if (professor) return `استاد: ${professor}`;
+    if (author) return `نویسنده: ${author}`;
+    return "";
+  }
+
   function cardHtml(p) {
     const kind = p.content_kind === "handwritten" ? "دست‌نویس" : "تایپی";
     const major = p.major || p.field_of_study || "پیراپزشکی";
-    const author = (p.authors_text || "").trim() || "نویسنده";
+    const credit = pamphletCreditLine(p);
     const pages = toFaDigits(p.pages_count || "—");
     const free = Number(p.price_irt || 0) <= 0;
     const price = free
@@ -640,16 +1035,15 @@
     return `<article class="jh-card jh-card-tall span-4">
       <a class="jh-tall-media" href="item.html?id=${S().esc(p.id)}">
         ${pamphletCoverInner(p)}
-        <span class="jh-tall-avatar" aria-hidden="true">${S().esc(
-          authorInitial(author)
-        )}</span>
         <span class="jh-pages-badge">${pages} صفحه</span>
       </a>
       <div class="jh-tall-body">
         <h3><a class="title-link" href="item.html?id=${S().esc(p.id)}">${S().esc(
       p.title
     )}</a></h3>
-        <p class="jh-meta">${S().esc(major)} · ${kind}</p>
+        <p class="jh-meta">${S().esc(major)} · ${kind}${
+      credit ? ` · ${S().esc(credit)}` : ""
+    }</p>
         <div class="jh-product-foot">
           ${price}
           <a class="jh-card-cta" href="item.html?id=${S().esc(p.id)}">${cta}</a>
@@ -660,19 +1054,27 @@
 
   function similarHtml(p) {
     const pages = toFaDigits(p.pages_count || "—");
-    const date = (p.published_at || p.updated_at || "").slice(0, 10) || "—";
-    const author = (p.authors_text || "").trim() || "نویسنده";
+    const priceN = Number(p.price_irt || 0);
+    const priceFa = priceN <= 0 ? "رایگان" : money(priceN);
+    const credit = pamphletCreditLine(p);
+    const course = (p.course_name || p.major || "").trim();
     return `<a class="jh-similar-item" href="item.html?id=${S().esc(p.id)}">
-      <div class="jh-similar-thumb">${pamphletCoverInner(p)}
-        <span class="jh-tall-avatar jh-tall-avatar--sm" aria-hidden="true">${S().esc(
-          authorInitial(author)
-        )}</span>
-      </div>
+      <div class="jh-similar-thumb">${pamphletCoverInner(p)}</div>
       <div class="jh-similar-text">
         <strong>${S().esc(p.title || "جزوه")}</strong>
+        ${
+          course
+            ? `<span class="jh-similar-course">${S().esc(course)}</span>`
+            : ""
+        }
+        ${
+          credit
+            ? `<span class="jh-similar-credit">${S().esc(credit)}</span>`
+            : ""
+        }
         <span class="jh-similar-meta">
           <em>${pages} صفحه</em>
-          <span>${S().esc(date)}</span>
+          <span class="jh-similar-price">${S().esc(priceFa)}</span>
         </span>
       </div>
     </a>`;
@@ -709,6 +1111,7 @@
                 ($("#profile_uni")?.value || "").trim() ||
                 "دانشگاه علوم پزشکی شهید بهشتی",
               field_of_study: major,
+              referral_code: ($("#profile_referral")?.value || "").trim(),
             }),
           });
           invalidateSessionCache();
@@ -770,20 +1173,32 @@
     const bindVault = () =>
       renderVault($("#jh-vault"), {
         onPick: async (token) => {
-          invalidateSessionCache();
-          S().setActiveAccount?.(token);
-          const restored = await restoreSessionOnce();
-          if (!restored?.ok || !restored.data) {
-            S().removeFromVault?.(token);
-            msg(err, "این نشست منقضی شده؛ دوباره وارد شو");
-            bindVault();
-            return;
+          const row = Array.from(
+            $("#jh-vault")?.querySelectorAll(".jh-vault-item") || []
+          ).find((b) => b.dataset.token === token);
+          row?.classList.add("is-busy");
+          try {
+            invalidateSessionCache();
+            S().setActiveAccount?.(token);
+            const restored = await restoreSessionOnce();
+            if (!restored?.ok || !restored.data) {
+              S().removeFromVault?.(token);
+              msg(err, "این نشست منقضی شده؛ دوباره وارد شو");
+              bindVault();
+              return;
+            }
+            if (restored.needs_profile) {
+              openProfileStep(restored.data);
+              return;
+            }
+            showLoginSuccess(boot, ui, restored.data, dest());
+          } catch (e) {
+            msg(err, e.message || "ورود با حساب ذخیره‌شده ناموفق بود");
+            row?.classList.remove("is-busy");
           }
-          if (restored.needs_profile) {
-            openProfileStep(restored.data);
-            return;
-          }
-          showLoginSuccess(boot, ui, restored.data, dest());
+        },
+        onForget: () => {
+          msg(err, "حساب از این دستگاه حذف شد", true);
         },
       });
     bindVault();
@@ -912,6 +1327,132 @@
     return s;
   }
 
+  function initWayLottie() {
+    const stage = $("#jh-way-stage") || $(".jh-way-stage");
+    const fallback = $(".jh-way-mascot");
+    if (!stage) return;
+    // Static illustrated center — no Lottie overlay
+    if (stage.querySelector(".jh-way-mascot") && !stage.querySelector("lottie-player")) {
+      return;
+    }
+
+    const sources = [
+      "assets/gumhead.json?v=2",
+      "https://assets.gumroad.com/images/about/gumhead.json",
+    ];
+
+    const showFallback = () => {
+      stage.querySelectorAll("lottie-player").forEach((el) => {
+        el.hidden = true;
+        el.style.visibility = "hidden";
+      });
+      if (fallback) {
+        fallback.hidden = false;
+        fallback.style.display = "block";
+      }
+      stage.classList.add("is-fallback");
+      stage.classList.remove("is-playing");
+    };
+
+    const showPlaying = (player) => {
+      if (fallback) {
+        fallback.hidden = true;
+        fallback.style.display = "none";
+      }
+      if (player) {
+        player.hidden = false;
+        player.style.visibility = "visible";
+      }
+      stage.classList.add("is-playing");
+      stage.classList.remove("is-fallback");
+      try {
+        player.play?.();
+      } catch (_) {}
+    };
+
+    const reduce = window.matchMedia?.(
+      "(prefers-reduced-motion: reduce)"
+    )?.matches;
+    if (reduce) {
+      showFallback();
+      return;
+    }
+
+    const mount = async () => {
+      try {
+        if (!customElements.get("lottie-player")) {
+          await Promise.race([
+            customElements.whenDefined("lottie-player"),
+            new Promise((_, rej) =>
+              window.setTimeout(() => rej(new Error("lottie-timeout")), 5000)
+            ),
+          ]);
+        }
+      } catch (_) {
+        showFallback();
+        return;
+      }
+
+      stage.querySelectorAll("lottie-player").forEach((el) => el.remove());
+
+      const player = document.createElement("lottie-player");
+      player.className = "jh-way-lottie";
+      player.id = "jh-way-lottie";
+      player.setAttribute("background", "transparent");
+      player.setAttribute("speed", "1");
+      player.setAttribute("loop", "");
+      player.setAttribute("autoplay", "");
+      player.setAttribute("aria-label", "کاراکتر جزوه‌سرا");
+      player.style.width = "100%";
+      player.style.height = "100%";
+      stage.appendChild(player);
+
+      let srcIdx = 0;
+      let settled = false;
+
+      const failTimer = window.setTimeout(() => {
+        if (!settled) showFallback();
+      }, 8000);
+
+      const tryLoad = (src) => {
+        const onReady = () => {
+          if (settled) return;
+          settled = true;
+          window.clearTimeout(failTimer);
+          showPlaying(player);
+        };
+        const onErr = () => {
+          srcIdx += 1;
+          if (srcIdx < sources.length) {
+            tryLoad(sources[srcIdx]);
+            return;
+          }
+          if (!settled) {
+            settled = true;
+            window.clearTimeout(failTimer);
+            showFallback();
+          }
+        };
+        player.removeEventListener("ready", onReady);
+        player.removeEventListener("load", onReady);
+        player.removeEventListener("error", onErr);
+        player.addEventListener("ready", onReady, { once: true });
+        player.addEventListener("load", onReady, { once: true });
+        player.addEventListener("error", onErr, { once: true });
+        try {
+          if (typeof player.load === "function") player.load(src);
+          else player.setAttribute("src", src);
+        } catch (_) {
+          onErr();
+        }
+      };
+
+      tryLoad(sources[0]);
+    };
+
+    mount();
+  }
+
   async function initIndex() {
     injectChrome("index");
     const list = $("#jh-list");
@@ -925,11 +1466,24 @@
     const urlPriced = (params0.get("priced") || "").trim();
     let loadSeq = 0;
     let debounceTimer = 0;
+    let majorsList = [];
 
+    let coursesList = [];
     try {
       const meta = await S().api("/api/site/pamphlets/meta");
       const majorSel = $("#filter-major");
-      (meta.data?.taxonomy?.majors || []).forEach((m) => {
+      const tax = meta.data?.taxonomy || {};
+      majorsList = tax.majors || [];
+      const byMajor = tax.courses_by_major || {};
+      const courseSet = new Set();
+      Object.values(byMajor).forEach((arr) => {
+        (arr || []).forEach((c) => {
+          const name = String(c || "").trim();
+          if (name) courseSet.add(name);
+        });
+      });
+      coursesList = [...courseSet];
+      majorsList.forEach((m) => {
         const o = document.createElement("option");
         o.value = m;
         o.textContent = m;
@@ -942,6 +1496,390 @@
     if ($("#filter-kind") && urlKind) $("#filter-kind").value = urlKind;
     if ($("#filter-priced") && urlPriced) $("#filter-priced").value = urlPriced;
 
+    // Full Beheshti paramed catalog for cloud + marquee (dense seamless loops)
+    const beheshtiCourseCatalog = [
+      "شیمی عمومی",
+      "آناتومی",
+      "بافت‌شناسی",
+      "بیوشیمی عمومی",
+      "زیست‌شناسی سلولی و مولکولی",
+      "فیزیولوژی",
+      "آمار حیاتی و روش تحقیق",
+      "فوریت‌های پزشکی",
+      "بهداشت عمومی و اپیدمیولوژی",
+      "مقدمات آزمایشگاه",
+      "میکروب‌شناسی عمومی",
+      "بیوشیمی پزشکی ۱",
+      "بیوشیمی پزشکی ۲",
+      "ویروس‌شناسی پزشکی",
+      "ایمنی‌شناسی پزشکی ۱",
+      "ایمنی‌شناسی پزشکی ۲",
+      "خون‌شناسی ۱",
+      "خون‌شناسی ۲",
+      "قارچ‌شناسی پزشکی",
+      "باکتری‌شناسی پزشکی",
+      "انگل‌شناسی ۱ (کرم‌ها)",
+      "انگل‌شناسی ۲ (تک‌یاخته و حشره)",
+      "ژنتیک پزشکی",
+      "ایمونوهماتولوژی و انتقال خون",
+      "آسیب‌شناسی عمومی",
+      "داروشناسی و سم‌شناسی",
+      "هورمون‌شناسی",
+      "تضمین کیفیت در آزمایشگاه",
+      "تکنیک‌های مولکولی و پیشرفته آزمایشگاهی",
+      "فیزیک پرتوها",
+      "روش‌های پرتونگاری ۱",
+      "روش‌های پرتونگاری ۲",
+      "روش‌های پرتونگاری ۳",
+      "روش‌های پرتونگاری اختصاصی",
+      "فیزیک پرتوشناسی تشخیصی",
+      "رادیوبیولوژی",
+      "آناتومی مقطعی",
+      "سی‌تی‌اسکن",
+      "ام‌آرآی",
+      "سونوگرافی",
+      "دوزیمتری پرتوهای یونیزان",
+      "ارزیابی تصاویر پزشکی ۱",
+      "ارزیابی تصاویر پزشکی ۲",
+      "حفاظت در برابر پرتوهای یونیزان",
+      "فیزیک تشعشع",
+      "دوزیمتری",
+      "دوزیمتری کلینیکی",
+      "مبانی انکولوژی",
+      "دستگاه‌های پرتودرمانی",
+      "کاربردهای بالینی پرتودرمانی ۱",
+      "کاربردهای بالینی پرتودرمانی ۲",
+      "سیمولیشن و لوکالیزاسیون",
+      "فیزیک براکی‌تراپی",
+      "تکنیک‌های براکی‌تراپی",
+      "انکولوژی اطفال",
+      "مدلینگ (قالب و فیکساتورسازی)",
+      "کنترل کیفی",
+      "روانشناسی بیماران سرطان",
+      "پاتولوژی بیماری‌های بدخیم",
+      "روند درمان و مراقبت‌های لازم در بیماران سرطانی",
+      "پزشکی هسته‌ای",
+      "بانک خون",
+      "فارماکولوژی",
+      "تکنیک‌های تصویربرداری",
+    ];
+
+    const collectCoursePool = (minSize = 36) => {
+      const pool = [];
+      const seen = new Set();
+      const pushUnique = (name) => {
+        const n = String(name || "").trim();
+        if (!n || seen.has(n)) return;
+        seen.add(n);
+        pool.push(n);
+      };
+      (coursesList || []).forEach(pushUnique);
+      beheshtiCourseCatalog.forEach(pushUnique);
+      let guard = 0;
+      while (pool.length < minSize && guard < 80) {
+        beheshtiCourseCatalog.forEach(pushUnique);
+        guard += 1;
+        if (pool.length >= minSize) break;
+      }
+      return pool;
+    };
+
+    const paintSubjectCloud = () => {
+      const cloud = $("#jh-subject-cloud");
+      if (!cloud) return;
+
+      const pool = collectCoursePool(24);
+      const stickers = [
+        "sticker-book.svg",
+        "sticker-brain.svg",
+        "sticker-microscope.svg",
+        "sticker-pen.svg",
+        "sticker-flask.svg",
+        "sticker-lamp.svg",
+        "discover/education.svg",
+        "discover/writing.svg",
+        "sticker-cap.svg",
+        "discover/design.svg",
+      ];
+      const rowCount = 4;
+      const reduceMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)"
+      ).matches;
+
+      const chunkRows = (items, n) => {
+        const rows = Array.from({ length: n }, () => []);
+        items.forEach((item, i) => rows[i % n].push(item));
+        return rows;
+      };
+
+      const renderSeq = (names, rowIndex, interactive) => {
+        const bits = [];
+        names.forEach((name, i) => {
+          const tagAttrs = interactive
+            ? `type="button" class="jh-cloud-tag" data-q="${S().esc(name)}"`
+            : `type="button" class="jh-cloud-tag is-static" tabindex="-1" aria-hidden="true"`;
+          bits.push(
+            `<button ${tagAttrs}>${S().esc(name)}</button>`
+          );
+          // denser stickers: roughly every 2 tags
+          if (i % 2 === 1) {
+            const src = stickers[(rowIndex * 3 + i) % stickers.length];
+            bits.push(
+              `<span class="jh-cloud-sticker" aria-hidden="true"><img src="assets/${src}?v=2" alt="" width="40" height="40" loading="lazy" decoding="async" /></span>`
+            );
+          }
+        });
+        return bits.join("");
+      };
+
+      const intro =
+        cloud.querySelector(".jh-cloud-intro")?.outerHTML ||
+        `<header class="jh-cloud-intro">
+          <h2 class="jh-cloud-kicker">از درس‌های پایه تا تخصصی، جای جزوه‌ات اینجاست.</h2>
+          <p class="jh-cloud-sub">جزوه‌های موردنیازت رو پیدا کن و منابع درسی‌ات رو کنار برنامهٔ مطالعه‌ات داشته باش.</p>
+        </header>`;
+
+      const rows = chunkRows(pool, rowCount);
+      const lanes = rows
+        .map((names, rowIndex) => {
+          let laneNames = names.slice();
+          if (laneNames.length < 6) {
+            for (const n of pool) {
+              if (laneNames.length >= 6) break;
+              if (!laneNames.includes(n)) laneNames.push(n);
+            }
+          }
+          const seq = renderSeq(laneNames, rowIndex, true);
+          const clone = reduceMotion
+            ? ""
+            : `<div class="jh-cloud-seq" aria-hidden="true">${renderSeq(
+                laneNames,
+                rowIndex,
+                false
+              )}</div>`;
+          return `<div class="jh-cloud-row" data-dir="${
+            rowIndex % 2 === 0 ? 1 : -1
+          }" data-speed="${0.26 + (rowIndex % 3) * 0.05}">
+            <div class="jh-cloud-track">
+              <div class="jh-cloud-seq">${seq}</div>
+              ${clone}
+            </div>
+          </div>`;
+        })
+        .join("");
+
+      cloud.innerHTML = `${intro}<div class="jh-cloud-lanes" aria-label="برچسب‌های درسی">${lanes}</div>`;
+
+      const activateTag = (btn) => {
+        const q = btn.getAttribute("data-q") || "";
+        if (!q || btn.classList.contains("is-static")) return;
+        if (qInput) qInput.value = q;
+        cloud.querySelectorAll(".jh-cloud-tag:not(.is-static)").forEach((b) =>
+          b.classList.toggle("is-on", b === btn)
+        );
+        syncClearBtn();
+        document
+          .getElementById("jh-shop")
+          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+        load({ immediate: true });
+      };
+
+      cloud.querySelectorAll(".jh-cloud-tag:not(.is-static)").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          if (btn.closest(".jh-cloud-row")?.dataset.suppressClick === "1") {
+            e.preventDefault();
+            return;
+          }
+          activateTag(btn);
+        });
+      });
+
+      if (reduceMotion) return;
+
+      const lanesEl = cloud.querySelector(".jh-cloud-lanes");
+      let hovering = false;
+
+      const states = Array.from(cloud.querySelectorAll(".jh-cloud-row")).map(
+        (row) => {
+          const track = row.querySelector(".jh-cloud-track");
+          const dir = Number(row.getAttribute("data-dir") || 1);
+          const speed = Number(row.getAttribute("data-speed") || 0.3);
+          return {
+            row,
+            track,
+            dir,
+            speed,
+            offset: 0,
+            dragging: false,
+            startX: 0,
+            startOffset: 0,
+            moved: false,
+            half: 0,
+            primed: false,
+          };
+        }
+      );
+
+      const measure = () => {
+        states.forEach((s) => {
+          const seq = s.track.querySelector(".jh-cloud-seq");
+          s.half = seq ? seq.offsetWidth : Math.floor(s.track.scrollWidth / 2);
+          if (!s.primed) {
+            s.offset = s.dir < 0 ? -s.half : 0;
+            s.primed = true;
+          }
+        });
+      };
+
+      const wrapOffset = (s) => {
+        if (!s.half) return;
+        while (s.offset <= -s.half) s.offset += s.half;
+        while (s.offset > 0) s.offset -= s.half;
+      };
+
+      const apply = (s) => {
+        s.track.style.transform = `translate3d(${s.offset}px, 0, 0)`;
+      };
+
+      const tick = () => {
+        states.forEach((s) => {
+          if (!s.dragging && !hovering) {
+            s.offset -= s.speed * s.dir;
+            wrapOffset(s);
+            apply(s);
+          }
+        });
+        cloud._jhCloudRaf = requestAnimationFrame(tick);
+      };
+
+      lanesEl?.addEventListener("pointerenter", (e) => {
+        if (e.pointerType === "mouse") hovering = true;
+      });
+      lanesEl?.addEventListener("pointerleave", (e) => {
+        if (e.pointerType === "mouse" && !states.some((s) => s.dragging)) {
+          hovering = false;
+        }
+      });
+
+      states.forEach((s) => {
+        const onDown = (e) => {
+          if (e.pointerType === "mouse" && e.button !== 0) return;
+          s.dragging = true;
+          s.moved = false;
+          s.startX = e.clientX;
+          s.startOffset = s.offset;
+          s.row.classList.add("is-dragging");
+          s.row.dataset.suppressClick = "0";
+          hovering = true;
+          try {
+            s.row.setPointerCapture(e.pointerId);
+          } catch (_) {}
+        };
+        const onMove = (e) => {
+          if (!s.dragging) return;
+          const dx = e.clientX - s.startX;
+          if (Math.abs(dx) > 6) {
+            s.moved = true;
+            s.row.dataset.suppressClick = "1";
+          }
+          s.offset = s.startOffset + dx;
+          wrapOffset(s);
+          apply(s);
+        };
+        const onUp = (e) => {
+          if (!s.dragging) return;
+          s.dragging = false;
+          s.row.classList.remove("is-dragging");
+          try {
+            s.row.releasePointerCapture(e.pointerId);
+          } catch (_) {}
+          if (s.moved) {
+            setTimeout(() => {
+              s.row.dataset.suppressClick = "0";
+            }, 120);
+          }
+          hovering =
+            e.pointerType === "mouse" && !!lanesEl?.matches(":hover");
+        };
+
+        s.row.addEventListener("pointerdown", onDown);
+        s.row.addEventListener("pointermove", onMove);
+        s.row.addEventListener("pointerup", onUp);
+        s.row.addEventListener("pointercancel", onUp);
+      });
+
+      measure();
+      states.forEach(apply);
+      window.addEventListener("resize", () => {
+        const prev = states.map((s) => ({
+          ratio: s.half ? s.offset / s.half : 0,
+        }));
+        measure();
+        states.forEach((s, i) => {
+          s.offset = (prev[i]?.ratio || 0) * s.half;
+          wrapOffset(s);
+          apply(s);
+        });
+      });
+      cloud._jhCloudRaf = requestAnimationFrame(tick);
+    };
+
+    const paintMarquee = () => {
+      const track = $("#jh-mkt-marquee");
+      if (!track) return;
+      const courseNames = collectCoursePool(36);
+
+      const base = [
+        { label: "علوم آزمایشگاهی", major: "علوم آزمایشگاهی" },
+        { label: "رادیولوژی", major: "رادیولوژی" },
+        { label: "رادیوتراپی", major: "رادیوتراپی" },
+        { label: "تایپی", kind: "typed" },
+        { label: "دست‌نویس", kind: "handwritten" },
+        { label: "رایگان", priced: "free" },
+        ...courseNames.map((c) => ({ label: c, q: c })),
+      ];
+      const renderTag = (t) => {
+        const attrs = [
+          t.q ? `data-q="${S().esc(t.q)}"` : "",
+          t.kind ? `data-kind="${S().esc(t.kind)}"` : "",
+          t.priced ? `data-priced="${S().esc(t.priced)}"` : "",
+          t.major ? `data-major="${S().esc(t.major)}"` : "",
+        ]
+          .filter(Boolean)
+          .join(" ");
+        return `<button type="button" class="jh-mkt-tag" ${attrs}>${S().esc(
+          t.label
+        )}</button>`;
+      };
+      // Triple copy + -33.333% animation = seamless, no white gap
+      const seq = base.map(renderTag).join("");
+      track.innerHTML = `
+        <div class="jh-mkt-marquee-seq">${seq}</div>
+        <div class="jh-mkt-marquee-seq" aria-hidden="true">${seq}</div>
+        <div class="jh-mkt-marquee-seq" aria-hidden="true">${seq}</div>
+      `;
+      track.querySelectorAll(".jh-mkt-tag").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const q = btn.getAttribute("data-q") || "";
+          const kind = btn.getAttribute("data-kind") || "";
+          const priced = btn.getAttribute("data-priced") || "";
+          const major = btn.getAttribute("data-major") || "";
+          if (qInput && q) qInput.value = q;
+          if ($("#filter-kind") && kind) $("#filter-kind").value = kind;
+          if ($("#filter-priced") && priced) $("#filter-priced").value = priced;
+          if ($("#filter-major") && major) $("#filter-major").value = major;
+          track.querySelectorAll(".jh-mkt-tag").forEach((b) =>
+            b.classList.toggle("is-on", b === btn)
+          );
+          syncClearBtn();
+          document
+            .getElementById("jh-shop")
+            ?.scrollIntoView({ behavior: "smooth", block: "start" });
+          load({ immediate: true });
+        });
+      });
+    };
+
     const readFilters = () => ({
       q: normSearchQuery(qInput?.value || ""),
       major: ($("#filter-major")?.value || "").trim(),
@@ -952,6 +1890,12 @@
     const hasActiveFilters = () => {
       const f = readFilters();
       return !!(f.q || f.major || f.priced || f.content_kind);
+    };
+
+    const syncClearBtn = () => {
+      const clearBtn = $("#btn-clear-filters");
+      if (!clearBtn) return;
+      clearBtn.hidden = !hasActiveFilters();
     };
 
     const syncUrl = (f) => {
@@ -1015,7 +1959,7 @@
             <strong>هنوز جزوه‌ای در فروشگاه منتشر نشده</strong>
             <p>به‌زودی جزوات پایلوت اینجا می‌آید. اگر فایل آماده داری می‌توانی منتشر کنی.</p>
             <div class="jh-actions">
-              <a class="jh-btn secondary" href="guide.html">راهنمای انتشار</a>
+              <a class="jh-btn secondary" href="learn.html#publish">آموزش و راهنما</a>
               <a class="jh-btn warm" href="submit.html">انتشار جزوه</a>
             </div>
           </div>`;
@@ -1047,29 +1991,56 @@
       if ($("#filter-major")) $("#filter-major").value = "";
       if ($("#filter-priced")) $("#filter-priced").value = "";
       if ($("#filter-kind")) $("#filter-kind").value = "";
+      $$(".jh-mkt-tag").forEach((b) => b.classList.remove("is-on"));
+      syncClearBtn();
       load({ immediate: true });
     }
 
-    $("#btn-filter")?.addEventListener("click", () => load({ immediate: true }));
+    paintSubjectCloud();
+    initWayLottie();
+
+    const jumpToShop = () => {
+      document
+        .getElementById("jh-shop")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+
+    $("#btn-filter")?.addEventListener("click", () => {
+      syncClearBtn();
+      load({ immediate: true });
+      jumpToShop();
+    });
     $("#btn-clear-filters")?.addEventListener("click", clearFilters);
     qInput?.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
         e.preventDefault();
         window.clearTimeout(debounceTimer);
+        syncClearBtn();
         load({ immediate: true });
+        jumpToShop();
       }
     });
-    qInput?.addEventListener("input", scheduleLoad);
-    qInput?.addEventListener("search", () => load({ immediate: true }));
-    ["filter-major", "filter-kind", "filter-priced"].forEach((id) => {
-      $(`#${id}`)?.addEventListener("change", () => load({ immediate: true }));
+    qInput?.addEventListener("input", () => {
+      syncClearBtn();
+      scheduleLoad();
     });
+    qInput?.addEventListener("search", () => {
+      syncClearBtn();
+      load({ immediate: true });
+    });
+    ["filter-major", "filter-kind", "filter-priced"].forEach((id) => {
+      $(`#${id}`)?.addEventListener("change", () => {
+        syncClearBtn();
+        load({ immediate: true });
+      });
+    });
+    syncClearBtn();
     await load({ immediate: true });
   }
 
   function formatBytesFa(n) {
     const v = Number(n) || 0;
-    if (v < 1024) return `${toFaDigits(v)} بایت`;
+    if (v < 1024) return `${toFaDigits(v)} B`;
     if (v < 1024 * 1024) return `${toFaDigits((v / 1024).toFixed(1))} KB`;
     return `${toFaDigits((v / (1024 * 1024)).toFixed(1))} MB`;
   }
@@ -1092,31 +2063,60 @@
       const me = await ensureSession();
       const priceNum = Number(p.price_irt || 0);
       const priceLabel = priceNum <= 0 ? "رایگان" : money(priceNum);
-      const owned = !!(p.purchase || p.is_author);
+      // فقط خریدار واقعی حق دانلود/مطالعه دارد — نویسنده از پنل خودش مدیریت می‌کند
+      const purchased = !!p.purchase;
+      const isAuthor = !!p.is_author;
       const authorName =
         (p.authors_text || "").trim() || "نویسنده جزوه‌سرا";
       const initial = authorInitial(authorName);
       const kindFa = p.content_kind === "handwritten" ? "دست‌نویس" : "تایپی";
-      const covFa = p.coverage === "full" ? "پوشش کامل" : "بخشی از درس";
+      const covFa =
+        ({
+          short: "بخش کوتاه",
+          midterm: "میان‌ترم",
+          final: "پایان‌ترم",
+          full: "پوشش کامل",
+          partial: "بخشی از درس",
+        })[p.coverage] || "بخش کوتاه";
       const topics = Array.isArray(p.topics) ? p.topics : [];
       const tags = [p.faculty || "پیراپزشکی", p.major, p.course_name, kindFa]
         .filter(Boolean)
         .map((t) => `<span class="jh-tag">${S().esc(t)}</span>`)
         .join("");
       const sizeFa = formatBytesFa(p.file_size_bytes || 0);
-      const pagesFa = toFaDigits(p.pages_count || "—");
       const viewsFa = toFaDigits(p.downloads || p.sales_count || 0);
-      const updatedFa =
-        (p.updated_at || p.published_at || "").slice(0, 10) || "—";
+      const updatedRaw = p.updated_at || p.published_at || "";
+      const updatedFa = formatJalaliDateFa(updatedRaw);
+      const updatedSlashFa = formatJalaliSlashFa(updatedRaw);
       const comments = commentsRes.data || [];
       const majorQ = encodeURIComponent(p.major || p.field_of_study || "");
       const courseQ = encodeURIComponent(p.course_name || "");
 
-      const relatedPromise = S()
-        .api(
-          `/api/site/pamphlets?major=${majorQ}&course=${courseQ}&limit=12`
-        )
-        .catch(() => ({ data: [] }));
+      const dedupeRelated = (list) => {
+        const seen = new Set();
+        return (list || []).filter((x) => {
+          const xid = String(x.id);
+          if (xid === String(id) || seen.has(xid)) return false;
+          seen.add(xid);
+          return true;
+        });
+      };
+      const relatedPromise = (async () => {
+        const same = await S()
+          .api(
+            `/api/site/pamphlets?major=${majorQ}&course=${courseQ}&limit=12`
+          )
+          .catch(() => ({ data: [] }));
+        const sameCourse = dedupeRelated(same.data || []);
+        let similar = [...sameCourse];
+        if (similar.length < 3 && majorQ) {
+          const byMajor = await S()
+            .api(`/api/site/pamphlets?major=${majorQ}&limit=12`)
+            .catch(() => ({ data: [] }));
+          similar = dedupeRelated([...similar, ...(byMajor.data || [])]);
+        }
+        return { sameCourse, similar };
+      })();
 
       const fallbackCover = `<div class="jh-hero-fallback">
             <span>${S().esc(p.major || "پیراپزشکی")}</span>
@@ -1124,6 +2124,8 @@
             <span>${S().esc(kindFa)}</span>
           </div>`;
 
+      const badgeLabel = [p.major, p.course_name].filter(Boolean).slice(0, 1)[0] ||
+        "جزوه";
       box.innerHTML = `
         <nav class="jh-crumb" aria-label="مسیر">
           <a href="index.html">فروشگاه</a>
@@ -1135,72 +2137,110 @@
           <span>${S().esc(p.course_name || "جزوه")}</span>
         </nav>
 
-        <div class="jh-item-layout">
-          <div class="jh-item-main">
+        <article class="jh-gama-card">
+          <div class="jh-gama-stage">
+            <div class="jh-gama-tools" role="group" aria-label="ابزارهای جزوه">
+              <span class="jh-vtool jh-vtool--stat" id="jh-dl-stat" title="تعداد دانلود موفق" aria-label="${viewsFa} دانلود موفق">
+                <span class="jh-vtool-ico" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 11 5 5 5-5"/><path d="M5 21h14"/></svg>
+                </span>
+                <span class="jh-vtool-val" id="jh-dl-count">${viewsFa}</span>
+                <span class="jh-vtool-lab">دانلود موفق</span>
+              </span>
+              <button type="button" class="jh-vtool jh-vtool--share" id="btn-share" aria-label="اشتراک‌گذاری" aria-expanded="false" aria-controls="jh-share-sheet">
+                <span class="jh-vtool-ico" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.5-4.1"/><path d="m8.2 13.2 7.5 4.1"/></svg>
+                </span>
+                <span class="jh-vtool-lab">اشتراک</span>
+              </button>
+              <div class="jh-share-sheet" id="jh-share-sheet" hidden>
+                <header class="jh-share-sheet-head">
+                  <strong>اشتراک‌گذاری جزوه</strong>
+                  <button type="button" class="jh-share-close" id="btn-share-close" aria-label="بستن">×</button>
+                </header>
+                <p class="jh-share-sheet-note" id="jh-share-note">لینک این صفحه را کپی کن یا با اپ‌ها بفرست.</p>
+                <div class="jh-share-link-row">
+                  <input class="jh-share-input" id="jh-share-url" type="text" readonly dir="ltr" />
+                  <button type="button" class="jh-btn" id="btn-share-copy">کپی لینک</button>
+                </div>
+                <div class="jh-share-apps" id="jh-share-apps">
+                  <a class="jh-share-app jh-share-app--tg" id="jh-share-tg" target="_blank" rel="noopener">تلگرام</a>
+                  <a class="jh-share-app jh-share-app--wa" id="jh-share-wa" target="_blank" rel="noopener">واتساپ</a>
+                  <button type="button" class="jh-share-app jh-share-app--sys" id="btn-share-native" hidden>اشتراک دستگاه</button>
+                </div>
+              </div>
+            </div>
             <div class="jh-hero-preview" id="jh-hero-preview">
               ${fallbackCover}
-              <span class="jh-page-pill">${pagesFa} صفحه</span>
+              <span class="jh-gama-badge">${S().esc(badgeLabel)}</span>
             </div>
+          </div>
 
+          <div class="jh-gama-info">
             <h1 class="jh-item-title">${S().esc(p.title)}</h1>
-
-            <div class="jh-item-toolbar">
-              <div class="jh-author-row">
-                <span class="jh-avatar" aria-hidden="true">${S().esc(
-                  initial
-                )}</span>
-                <strong>${S().esc(authorName)}</strong>
-              </div>
-              <div class="jh-item-tools">
-                <span class="jh-tool" title="بازدید / دریافت">${viewsFa}</span>
-                <button type="button" class="jh-tool" id="btn-share" title="اشتراک">↗</button>
-                <button type="button" class="jh-tool jh-tool--warn" id="btn-report" title="گزارش">!</button>
+            <div class="jh-author-row">
+              <span class="jh-avatar" aria-hidden="true">${S().esc(
+                initial
+              )}</span>
+              <div class="jh-author-meta">
+                <strong dir="rtl">${S().esc(authorName)}</strong>
+                <span class="jh-author-date" dir="rtl">
+                  <span class="jh-author-date-label">به‌روزرسانی</span>
+                  <time datetime="${S().esc(
+                    String(updatedRaw).slice(0, 10)
+                  )}">${S().esc(updatedFa)}</time>
+                </span>
+                ${
+                  p.professor_name
+                    ? `<span class="jh-author-prof" dir="rtl">استاد ${S().esc(
+                        p.professor_name
+                      )}</span>`
+                    : ""
+                }
               </div>
             </div>
 
-            <div class="jh-item-detail">
-              <div class="jh-item-detail-copy">
-                <div class="jh-tabs" role="tablist">
-                  <button type="button" class="jh-tab on" data-ptab="desc">توضیحات</button>
-                  <button type="button" class="jh-tab" data-ptab="topics">مباحث</button>
-                </div>
-                <div class="jh-ptab on" data-ptab-panel="desc">
-                  <div class="jh-budget">${S().esc(covFa)} · ${S().esc(
+            <div class="jh-tabs" role="tablist">
+              <button type="button" class="jh-tab on" data-ptab="desc">توضیحات</button>
+              <button type="button" class="jh-tab" data-ptab="topics">مباحث</button>
+            </div>
+            <div class="jh-ptab on" data-ptab-panel="desc">
+              <div class="jh-budget">${S().esc(covFa)} · ${S().esc(
         p.degree_level || "مقطع—"
-      )} · استاد ${S().esc(p.professor_name || "—")}</div>
-                  <p class="jh-note">${S().esc(p.summary || "بدون توضیح")}</p>
-                  <p class="jh-note"><strong>خارج از پوشش:</strong> ${S().esc(
-                    p.out_of_scope_text || "—"
-                  )}</p>
-                  <p class="jh-note jh-note--soft">${S().esc(
-                    metaRes.data?.health_disclaimer || ""
-                  )}</p>
-                  <div class="jh-tags">${tags}</div>
-                </div>
-                <div class="jh-ptab" data-ptab-panel="topics" hidden>
-                  <ul class="jh-guide-list">
-                    ${
-                      topics.length
-                        ? topics.map((t) => `<li>${S().esc(t)}</li>`).join("")
-                        : `<li>${S().esc(
-                            p.outline_text || "سرفصل ثبت نشده"
-                          )}</li>`
-                    }
-                  </ul>
-                </div>
-              </div>
-              <aside class="jh-product-cover">
-                <div class="jh-book-3d" aria-hidden="true">
-                  <span>${S().esc((p.course_name || "جزوه").slice(0, 18))}</span>
-                  <em>${S().esc(kindFa)}</em>
-                </div>
-                <p class="jh-meta">تاریخ به‌روزرسانی ${S().esc(updatedFa)}</p>
-              </aside>
+      )} · ${S().esc(kindFa)}</div>
+              <p class="jh-note" dir="rtl">${S().esc(p.summary || "بدون توضیح")}</p>
+              <p class="jh-note" dir="rtl"><strong>خارج از پوشش:</strong> ${S().esc(
+                p.out_of_scope_text || "—"
+              )}</p>
+              <p class="jh-note jh-note--soft" dir="rtl">${S().esc(
+                metaRes.data?.health_disclaimer || ""
+              )}</p>
+              <div class="jh-tags">${tags}</div>
+              <button type="button" class="jh-report-link" id="btn-report">گزارش تخلف یا خطا</button>
+            </div>
+            <div class="jh-ptab" data-ptab-panel="topics" hidden>
+              <ul class="jh-guide-list">
+                ${
+                  topics.length
+                    ? topics.map((t) => `<li>${S().esc(t)}</li>`).join("")
+                    : `<li>${S().esc(
+                        p.outline_text || "سرفصل ثبت نشده"
+                      )}</li>`
+                }
+              </ul>
+            </div>
+
+            <div class="jh-gama-meta">
+              <span class="jh-gama-chip">${S().esc(kindFa)}</span>
+              <span class="jh-gama-chip">${S().esc(covFa)}</span>
+              <span class="jh-gama-chip jh-gama-chip--muted" dir="rtl">به‌روزرسانی ${S().esc(
+                updatedSlashFa
+              )}</span>
             </div>
 
             ${
-              !me && !owned
-                ? `<div class="jh-login-hint">برای دریافت جزوه وارد حساب خود شوید.
+              !me && !purchased
+                ? `<div class="jh-login-hint">برای خرید و دریافت جزوه وارد حساب خود شوید.
                     <a href="login.html?next=${encodeURIComponent(
                       `item.html?id=${id}`
                     )}">ورود</a></div>`
@@ -1208,15 +2248,21 @@
             }
           </div>
 
-          <aside class="jh-similar" id="jh-similar">
-            <header class="jh-similar-head">
-              <strong>موارد مشابه</strong>
-            </header>
-            <div class="jh-similar-list" id="jh-similar-list">
-              <p class="jh-meta">در حال بارگذاری…</p>
+          <aside class="jh-gama-aside">
+            <div class="jh-gama-thumb" id="jh-gama-thumb">
+              ${pamphletCoverInner(p)}
+            </div>
+            <div class="jh-similar" id="jh-similar">
+              <header class="jh-similar-head">
+                <strong>موارد مشابه</strong>
+                <a class="jh-similar-more" href="index.html?major=${majorQ}">همه در این رشته</a>
+              </header>
+              <div class="jh-similar-list" id="jh-similar-list">
+                <p class="jh-meta">در حال بارگذاری…</p>
+              </div>
             </div>
           </aside>
-        </div>
+        </article>
 
         <section class="jh-comments" id="jh-comments">
           <header>
@@ -1224,11 +2270,11 @@
             <span id="jh-comments-count">${toFaDigits(comments.length)} نظر</span>
           </header>
           <div class="jh-comment-compose">
-            <input id="jh-comment-input" type="text" maxlength="500"
-              placeholder="…اولین نفر نظرتو بنویس" ${me ? "" : "disabled"} />
+            <input id="jh-comment-input" type="text" dir="rtl" lang="fa" maxlength="500"
+              placeholder="اولین نفر نظرتو بنویس…" ${me ? "" : "disabled"} />
             <button type="button" class="jh-comment-send" id="jh-comment-send" ${
               me ? "" : "disabled"
-            } aria-label="ارسال">➤</button>
+            } aria-label="ارسال نظر" title="ارسال">←</button>
           </div>
           <div id="jh-comments-list" class="jh-comments-list"></div>
         </section>
@@ -1251,10 +2297,17 @@
 
       const heroHost = $("#jh-hero-preview");
       if (heroHost) {
-        const pill = heroHost.querySelector(".jh-page-pill");
-        await mountPreviewFlipper(heroHost, id, fallbackCover);
-        if (pill) heroHost.appendChild(pill);
+        const badge = heroHost.querySelector(".jh-gama-badge");
+        await mountPreviewFlipper(
+          heroHost,
+          id,
+          fallbackCover,
+          p.pages_count || 0
+        );
+        if (badge) heroHost.appendChild(badge);
       }
+      const thumbHost = $("#jh-gama-thumb");
+      if (thumbHost) hydrateCardCovers(thumbHost);
 
       const renderComments = (list) => {
         const host = $("#jh-comments-list");
@@ -1264,9 +2317,9 @@
         host.innerHTML = list.length
           ? list
               .map(
-                (c) => `<article class="jh-comment">
+                (c) => `<article class="jh-comment" dir="rtl">
               <strong>${S().esc(c.author_name || "کاربر")}</strong>
-              <p>${S().esc(c.body || "")}</p>
+              <p dir="rtl">${S().esc(c.body || "")}</p>
               <span class="jh-meta">${S().esc(
                 (c.created_at || "").slice(0, 16)
               )}</span>
@@ -1308,6 +2361,54 @@
         const lab = btn.querySelector(".jh-dl-label");
         if (lab && label) lab.textContent = label;
       };
+      const bumpDownloadStat = () => {
+        const el = $("#jh-dl-count");
+        if (!el) return;
+        const raw = String(el.textContent || "")
+          .replace(/[^\d۰-۹٠-٩]/g, "")
+          .replace(/[۰-۹]/g, (d) => "۰۱۲۳۴۵۶۷۸۹".indexOf(d))
+          .replace(/[٠-٩]/g, (d) => "٠١٢٣٤٥٦٧٨٩".indexOf(d));
+        const n = Number(raw || 0) + 1;
+        el.textContent = toFaDigits(n);
+      };
+      const renderPurchasedDock = () => {
+        buy.innerHTML = `
+          <div class="jh-dock-actions">
+            <button type="button" class="jh-dl-cta jh-dl-cta--owned" id="btn-dl">
+              <span class="jh-dl-owned-badge">خریداری‌شده</span>
+              <span class="jh-dl-owned-main">
+                <span class="jh-dl-label">دانلود PDF</span>
+                <span class="jh-dl-owned-sub">فایل آماده‌ات</span>
+              </span>
+              <span class="jh-dl-file" dir="ltr"><span class="jh-dl-file-ico">PDF</span><span>${S().esc(
+                sizeFa
+              )}</span></span>
+            </button>
+            <a class="jh-dock-read" href="read.html?id=${S().esc(
+              id
+            )}">مطالعه</a>
+          </div>`;
+        $("#btn-dl")?.addEventListener("click", doDownload);
+      };
+      const renderBuyDock = () => {
+        const buyLabel =
+          priceNum <= 0 ? "دریافت رایگان PDF" : "خرید و دریافت PDF";
+        const testBadge =
+          priceNum > 0
+            ? `<span class="jh-pay-test-badge" title="درگاه آزمایشی زرین‌پال">پرداخت آزمایشی</span>`
+            : "";
+        buy.innerHTML = `
+          <div class="jh-dock-actions">
+            <button type="button" class="jh-dl-cta" id="btn-buy">
+              <span class="jh-dl-price">${S().esc(priceLabel)}${testBadge}</span>
+              <span class="jh-dl-label">${buyLabel}</span>
+              <span class="jh-dl-file" dir="ltr"><span class="jh-dl-file-ico">PDF</span><span>${S().esc(
+                sizeFa
+              )}</span></span>
+            </button>
+          </div>`;
+        $("#btn-buy")?.addEventListener("click", doBuy);
+      };
       const doDownload = async () => {
         setCtaBusy(true, "در حال دانلود…");
         try {
@@ -1322,6 +2423,7 @@
           a.click();
           a.remove();
           URL.revokeObjectURL(url);
+          bumpDownloadStat();
           msg(err, "دانلود شروع شد", true);
         } catch (e) {
           msg(err, e.message || "دانلود ناموفق");
@@ -1335,26 +2437,17 @@
           return (location.href = `login.html?next=${encodeURIComponent(
             `item.html?id=${id}`
           )}`);
-        setCtaBusy(true, priceNum <= 0 ? "در حال دریافت…" : "انتقال به پرداخت…");
+        setCtaBusy(
+          true,
+          priceNum <= 0 ? "در حال دریافت…" : "انتقال به درگاه امن…"
+        );
         try {
           const pay = await S().api(
             `/api/site/pamphlets/item/${encodeURIComponent(id)}/purchase`,
-            { method: "POST", body: JSON.stringify({ environment: "live" }) }
+            { method: "POST", body: JSON.stringify({ environment: PAY_ENV }) }
           );
           if (pay.data?.already_owned || pay.data?.free) {
-            setCtaBusy(false, "دانلود PDF");
-            buy.innerHTML = `
-              <button type="button" class="jh-dl-cta" id="btn-dl">
-                <span class="jh-dl-price">${S().esc(priceLabel)}</span>
-                <span class="jh-dl-label">دانلود PDF</span>
-                <span class="jh-dl-file"><span class="jh-dl-file-ico">PDF</span><span>${S().esc(
-                  sizeFa
-                )}</span></span>
-              </button>
-              <a class="jh-dock-read" href="read.html?id=${S().esc(
-                id
-              )}">مطالعه</a>`;
-            $("#btn-dl")?.addEventListener("click", doDownload);
+            renderPurchasedDock();
             await doDownload();
             return;
           }
@@ -1364,74 +2457,249 @@
         } catch (e) {
           msg(err, e.message || "خطای خرید");
         } finally {
-          const stillBuy = $("#btn-buy");
-          if (stillBuy) {
+          if ($("#btn-buy")) {
             setCtaBusy(
               false,
-              priceNum <= 0 ? "دریافت رایگان" : "دانلود PDF"
+              priceNum <= 0 ? "دریافت رایگان PDF" : "خرید و دریافت PDF"
             );
           }
         }
       };
 
-      if (owned) {
+      if (purchased) {
+        renderPurchasedDock();
+      } else if (isAuthor) {
         buy.innerHTML = `
-          <button type="button" class="jh-dl-cta" id="btn-dl">
-            <span class="jh-dl-price">${S().esc(priceLabel)}</span>
-            <span class="jh-dl-label">دانلود PDF</span>
-            <span class="jh-dl-file"><span class="jh-dl-file-ico">PDF</span><span>${S().esc(
-              sizeFa
-            )}</span></span>
-          </button>
-          <a class="jh-dock-read" href="read.html?id=${S().esc(
-            id
-          )}">مطالعه</a>`;
-        $("#btn-dl")?.addEventListener("click", doDownload);
+          <div class="jh-dock-actions">
+            <a class="jh-dl-cta jh-dl-cta--author" href="account.html?tab=mine">
+              <span class="jh-dl-price">نویسنده</span>
+              <span class="jh-dl-label">مدیریت در حساب من</span>
+              <span class="jh-dl-file" dir="ltr"><span class="jh-dl-file-ico">PDF</span><span>${S().esc(
+                sizeFa
+              )}</span></span>
+            </a>
+          </div>`;
       } else {
-        buy.innerHTML = `
-          <button type="button" class="jh-dl-cta" id="btn-buy">
-            <span class="jh-dl-price">${S().esc(priceLabel)}</span>
-            <span class="jh-dl-label">${
-              priceNum <= 0 ? "دریافت رایگان" : "دانلود PDF"
-            }</span>
-            <span class="jh-dl-file"><span class="jh-dl-file-ico">PDF</span><span>${S().esc(
-              sizeFa
-            )}</span></span>
-          </button>`;
-        $("#btn-buy")?.addEventListener("click", doBuy);
+        renderBuyDock();
       }
 
-      $("#btn-share")?.addEventListener("click", async () => {
-        const shareUrl = location.href;
-        try {
-          if (navigator.share) {
-            await navigator.share({ title: p.title || "جزوه", url: shareUrl });
-            return;
-          }
-        } catch (_) {
-          /* fall through */
+      const shareBtn = $("#btn-share");
+      const shareSheet = $("#jh-share-sheet");
+      const shareInput = $("#jh-share-url");
+      const shareNote = $("#jh-share-note");
+      const shareNativeBtn = $("#btn-share-native");
+      const preferNativeShare = () => {
+        if (typeof navigator.share !== "function") return false;
+        const ua = navigator.userAgent || "";
+        const mobileUa = /Android|iPhone|iPad|iPod|Mobile|webOS|BlackBerry/i.test(
+          ua
+        );
+        const coarse =
+          window.matchMedia &&
+          window.matchMedia("(pointer: coarse)").matches;
+        const narrow = window.matchMedia && window.matchMedia("(max-width: 820px)").matches;
+        return mobileUa || (coarse && narrow);
+      };
+      const closeShareSheet = () => {
+        if (!shareSheet) return;
+        shareSheet.hidden = true;
+        shareBtn?.setAttribute("aria-expanded", "false");
+      };
+      const openShareSheet = (shareUrl) => {
+        if (!shareSheet || !shareInput) return;
+        shareInput.value = shareUrl;
+        if (shareNote) {
+          shareNote.textContent = preferNativeShare()
+            ? "روی گوشی می‌تونی لینک را کپی کنی یا با اپ‌های زیر بفرستی."
+            : "لینک صفحه روی کامپیوتر — کپی کن یا در تلگرام/واتساپ باز کن.";
         }
+        const tg = $("#jh-share-tg");
+        const wa = $("#jh-share-wa");
+        const title = p.title || "جزوه جزوه‌سرا";
+        if (tg) {
+          tg.href = `https://t.me/share/url?url=${encodeURIComponent(
+            shareUrl
+          )}&text=${encodeURIComponent(title)}`;
+        }
+        if (wa) {
+          wa.href = `https://wa.me/?text=${encodeURIComponent(
+            `${title}\n${shareUrl}`
+          )}`;
+        }
+        if (shareNativeBtn) {
+          shareNativeBtn.hidden = typeof navigator.share !== "function";
+        }
+        shareSheet.hidden = false;
+        shareBtn?.setAttribute("aria-expanded", "true");
+        shareInput.focus();
+        shareInput.select();
+      };
+      const copyShareLink = async (shareUrl) => {
         try {
           await navigator.clipboard.writeText(shareUrl);
           msg(err, "لینک کپی شد", true);
+          shareBtn?.classList.add("is-done");
+          const lab = shareBtn?.querySelector(".jh-vtool-lab");
+          if (lab) lab.textContent = "کپی شد";
+          window.setTimeout(() => {
+            shareBtn?.classList.remove("is-done");
+            if (lab) lab.textContent = "اشتراک";
+          }, 1600);
+          return true;
         } catch (_) {
-          prompt("لینک را کپی کنید:", shareUrl);
+          if (shareInput) {
+            shareInput.focus();
+            shareInput.select();
+          }
+          msg(err, "لینک را دستی کپی کن");
+          return false;
+        }
+      };
+      shareBtn?.addEventListener("click", async () => {
+        const shareUrl = location.href.split("#")[0];
+        if (preferNativeShare() && typeof navigator.share === "function") {
+          try {
+            await navigator.share({
+              title: p.title || "جزوه",
+              text: p.title || "جزوه در جزوه‌سرا",
+              url: shareUrl,
+            });
+            shareBtn.classList.add("is-done");
+            const lab = shareBtn.querySelector(".jh-vtool-lab");
+            if (lab) lab.textContent = "ارسال شد";
+            window.setTimeout(() => {
+              shareBtn.classList.remove("is-done");
+              if (lab) lab.textContent = "اشتراک";
+            }, 1600);
+            return;
+          } catch (e) {
+            if (e && e.name === "AbortError") return;
+            // fall through to sheet if native share fails
+          }
+        }
+        if (shareSheet && !shareSheet.hidden) {
+          closeShareSheet();
+          return;
+        }
+        openShareSheet(shareUrl);
+      });
+      $("#btn-share-close")?.addEventListener("click", closeShareSheet);
+      $("#btn-share-copy")?.addEventListener("click", () =>
+        copyShareLink(shareInput?.value || location.href)
+      );
+      shareNativeBtn?.addEventListener("click", async () => {
+        const shareUrl = shareInput?.value || location.href;
+        try {
+          await navigator.share({
+            title: p.title || "جزوه",
+            text: p.title || "جزوه در جزوه‌سرا",
+            url: shareUrl,
+          });
+          closeShareSheet();
+        } catch (e) {
+          if (e && e.name === "AbortError") return;
+          await copyShareLink(shareUrl);
         }
       });
+      document.addEventListener("click", (ev) => {
+        if (!shareSheet || shareSheet.hidden) return;
+        const t = ev.target;
+        if (shareSheet.contains(t) || shareBtn?.contains(t)) return;
+        closeShareSheet();
+      });
 
-      $("#btn-report")?.addEventListener("click", async () => {
-        if (!(await ensureSession())) return (location.href = "login.html");
-        const reason = prompt("دلیل گزارش:");
-        if (!reason) return;
-        try {
-          await S().api(
-            `/api/site/pamphlets/item/${encodeURIComponent(id)}/report`,
-            { method: "POST", body: JSON.stringify({ reason, details: "" }) }
-          );
-          msg(err, "گزارش ثبت شد", true);
-        } catch (e) {
-          msg(err, e.message || "خطا");
+      const REPORT_OPTIONS = [
+        { code: "duplicate", label: "تکراری" },
+        { code: "copyright", label: "نقض کپی‌رایت" },
+        { code: "scientific", label: "غلط علمی" },
+        { code: "typo", label: "غلط تایپی" },
+      ];
+      const openReportSheet = () => {
+        let sheet = $("#jh-report-sheet");
+        if (!sheet) {
+          sheet = document.createElement("div");
+          sheet.id = "jh-report-sheet";
+          sheet.className = "jh-report-sheet";
+          sheet.hidden = true;
+          sheet.innerHTML = `
+            <div class="jh-report-panel" role="dialog" aria-modal="true" aria-labelledby="jh-report-title">
+              <header class="jh-report-head">
+                <strong id="jh-report-title">گزارش تخلف جزوه</strong>
+                <button type="button" class="jh-share-close" id="btn-report-close" aria-label="بستن">×</button>
+              </header>
+              <p class="jh-note">دلیل گزارش را انتخاب کن. تیم بلوک آن را در ادمین بررسی می‌کند.</p>
+              <div class="jh-report-options" id="jh-report-options">
+                ${REPORT_OPTIONS.map(
+                  (o) =>
+                    `<button type="button" class="jh-report-opt" data-reason="${o.code}">${o.label}</button>`
+                ).join("")}
+              </div>
+              <label class="jh-report-details">توضیح بیشتر (اختیاری)
+                <textarea id="jh-report-details" rows="3" maxlength="500" placeholder="جزئیات کوتاه…"></textarea>
+              </label>
+              <button type="button" class="jh-btn" id="btn-report-send" disabled>ثبت گزارش</button>
+            </div>`;
+          document.body.appendChild(sheet);
         }
+        const closeSheet = () => {
+          sheet.hidden = true;
+        };
+        sheet.hidden = false;
+        let selected = "";
+        const sync = () => {
+          $$(".jh-report-opt", sheet).forEach((b) =>
+            b.classList.toggle("on", b.dataset.reason === selected)
+          );
+          const send = $("#btn-report-send", sheet);
+          if (send) send.disabled = !selected;
+        };
+        $$(".jh-report-opt", sheet).forEach((b) => {
+          b.onclick = () => {
+            selected = b.dataset.reason || "";
+            sync();
+          };
+        });
+        $("#btn-report-close", sheet).onclick = closeSheet;
+        sheet.onclick = (ev) => {
+          if (ev.target === sheet) closeSheet();
+        };
+        $("#btn-report-send", sheet).onclick = async () => {
+          if (!selected) return;
+          const sendBtn = $("#btn-report-send", sheet);
+          if (sendBtn) sendBtn.disabled = true;
+          const details = ($("#jh-report-details", sheet)?.value || "").trim();
+          try {
+            await S().api(
+              `/api/site/pamphlets/item/${encodeURIComponent(id)}/report`,
+              {
+                method: "POST",
+                body: JSON.stringify({
+                  reason: selected,
+                  details: details.slice(0, 500),
+                }),
+              }
+            );
+            closeSheet();
+            msg(err, "گزارش ثبت شد و برای بررسی ادمین ارسال شد", true);
+            const btn = $("#btn-report");
+            if (btn) {
+              btn.classList.add("is-done");
+              btn.textContent = "گزارش ثبت شد";
+              btn.disabled = true;
+            }
+          } catch (e) {
+            msg(err, e.message || "خطا در ثبت گزارش");
+            sync();
+          }
+        };
+        sync();
+      };
+      $("#btn-report")?.addEventListener("click", async () => {
+        if (!(await ensureSession()))
+          return (location.href = `login.html?next=${encodeURIComponent(
+            `item.html?id=${id}`
+          )}`);
+        openReportSheet();
       });
 
       const postComment = async () => {
@@ -1462,30 +2730,46 @@
       });
 
       const relatedRes = await relatedPromise;
-      const related = (relatedRes.data || []).filter(
-        (x) => String(x.id) !== String(id)
-      );
+      const sameCourse = relatedRes.sameCourse || [];
+      const similar = relatedRes.similar || [];
       const similarHost = $("#jh-similar-list");
       if (similarHost) {
-        similarHost.innerHTML = related.length
-          ? related.slice(0, 8).map(similarHtml).join("")
-          : `<p class="jh-meta">جزوه مشابهی پیدا نشد.</p>`;
-        if (related.length) hydrateCardCovers(similarHost);
+        similarHost.innerHTML = similar.length
+          ? similar.slice(0, 8).map(similarHtml).join("")
+          : `<div class="jh-similar-empty">
+              <strong>فعلاً مورد مشابهی نیست</strong>
+              <p>جزوه‌های هم‌رشته را در فروشگاه ببین.</p>
+              <a class="jh-btn secondary" href="index.html?major=${majorQ}">رفتن به فروشگاه</a>
+            </div>`;
+        if (similar.length) hydrateCardCovers(similarHost);
       }
-      if (related.length) {
-        const rail = $("#jh-rail");
-        const track = $("#jh-rail-track");
-        if (rail && track) {
-          rail.hidden = false;
-          track.innerHTML = related.map(cardHtml).join("");
-          hydrateCardCovers(track);
-          $$("[data-rail]").forEach((btn) =>
-            btn.addEventListener("click", () => {
-              const dir = btn.getAttribute("data-rail") === "next" ? 1 : -1;
-              track.scrollBy({ left: dir * -280, behavior: "smooth" });
-            })
-          );
-        }
+      const rail = $("#jh-rail");
+      const track = $("#jh-rail-track");
+      if (rail && track && sameCourse.length) {
+        rail.hidden = false;
+        track.innerHTML = sameCourse.map(cardHtml).join("");
+        hydrateCardCovers(track);
+        $$("[data-rail]").forEach((btn) =>
+          btn.addEventListener("click", () => {
+            const dir = btn.getAttribute("data-rail") === "next" ? 1 : -1;
+            track.scrollBy({ left: dir * -280, behavior: "smooth" });
+          })
+        );
+      } else if (rail) {
+        rail.hidden = true;
+      }
+
+      // Sync header chip with known session (avoid «ورود» while author dock shows)
+      if (me) {
+        paintAccountChip(me);
+      } else if (
+        (isAuthor || purchased) &&
+        (S()?.getSiteSession?.() || "")
+      ) {
+        invalidateSessionCache();
+        const again = await ensureSession().catch(() => null);
+        if (again) paintAccountChip(again);
+        else paintAccountChipPending();
       }
     } catch (e) {
       msg(err, e.message || "یافت نشد");
@@ -1508,11 +2792,6 @@
         .join("");
       // Only ship images that exist under guide/learn/ (skip stale API paths like mathtype/visio).
       const LEARN_FIGS = new Set([
-        "guide/learn/word-page-size.webp",
-        "guide/learn/word-margins.webp",
-        "guide/learn/word-line-spacing.webp",
-        "guide/learn/word-table.webp",
-        "guide/learn/word-save-pdf.webp",
         "guide/learn/nitro-delete-page.webp",
         "guide/learn/nitro-watermark.webp",
         "guide/learn/nitro-header.webp",
@@ -1537,6 +2816,51 @@
               const steps = (b.steps || [])
                 .map((s, i) => `<li>${toFaDigits(i + 1)}. ${S().esc(s)}</li>`)
                 .join("");
+              const bullets = (b.bullets || [])
+                .map((x) => `<li>${S().esc(x)}</li>`)
+                .join("");
+              const examples = (b.examples || [])
+                .map((ex) => {
+                  const bad = ex.bad
+                    ? `<p class="jh-ex-bad"><span aria-hidden="true">❌</span> <span>${S().esc(
+                        ex.bad
+                      )}</span></p>`
+                    : "";
+                  const good = ex.good
+                    ? `<p class="jh-ex-good"><span aria-hidden="true">✅</span> <span>${S().esc(
+                        ex.good
+                      )}</span></p>`
+                    : "";
+                  const note = ex.note
+                    ? `<p class="jh-rule-note">${S().esc(ex.note)}</p>`
+                    : "";
+                  return `<div class="jh-rule-ex">${bad}${good}${note}</div>`;
+                })
+                .join("");
+              const pairs = (b.pairs || [])
+                .map(
+                  (p) => `<li class="jh-rule-pair">
+                    <span class="jh-pair-from">${S().esc(p.from || "")}</span>
+                    <span class="jh-pair-arrow" aria-hidden="true">→</span>
+                    <span class="jh-pair-to">${S().esc(p.to || "")}</span>
+                  </li>`
+                )
+                .join("");
+              const lead = b.lead
+                ? `<p class="jh-rule-lead">${S().esc(b.lead)}</p>`
+                : "";
+              const callout = b.callout
+                ? `<aside class="jh-rule-callout jh-rule-callout--${S().esc(
+                    b.callout.tone || "note"
+                  )}">
+                    ${
+                      b.callout.title
+                        ? `<strong>${S().esc(b.callout.title)}</strong>`
+                        : ""
+                    }
+                    <p>${S().esc(b.callout.body || "")}</p>
+                  </aside>`
+                : "";
               const table = b.use_content_type_table
                 ? `<table class="jh-type-table"><thead><tr><th>نوع</th><th>توضیح</th></tr></thead><tbody>${types
                     .map(
@@ -1547,13 +2871,22 @@
                     )
                     .join("")}</tbody></table>`
                 : "";
-              return `<div class="jh-learn-block">
+              return `<article class="jh-learn-block jh-rule-card">
                 ${b.heading ? `<h3>${S().esc(b.heading)}</h3>` : ""}
+                ${lead}
                 ${b.body ? `<p class="jh-note">${S().esc(b.body)}</p>` : ""}
+                ${callout}
+                ${bullets ? `<ul class="jh-guide-list">${bullets}</ul>` : ""}
                 ${steps ? `<ol class="jh-guide-list">${steps}</ol>` : ""}
+                ${examples ? `<div class="jh-rule-examples">${examples}</div>` : ""}
+                ${
+                  pairs
+                    ? `<ul class="jh-rule-pairs">${pairs}</ul>`
+                    : ""
+                }
                 ${table}
                 ${fig(b)}
-              </div>`;
+              </article>`;
             })
             .join("");
           return `<section class="jh-guide-section" id="${S().esc(sec.id)}">
@@ -1574,11 +2907,11 @@
       box.innerHTML = `
         <header class="jh-shop-head">
           <p class="jh-meta">${S().esc(learn.updated_fa || "")}</p>
-          <h1>${S().esc(learn.title || "آموزش")}</h1>
+          <h1>${S().esc(learn.title || "آموزش و راهنما")}</h1>
           <p class="jh-note">${S().esc(learn.intro || "")}</p>
         </header>
         <aside class="jh-learn-toc">
-          <strong>آنچه در این بخش خواهید خواند</strong>
+          <strong>آنچه در این بخش می‌خوانی</strong>
           <ol>${toc}</ol>
         </aside>
         ${sections}
@@ -1592,114 +2925,22 @@
           }
           ${secLinks}
         </div>`;
+      const hash = (location.hash || "").replace(/^#/, "");
+      if (hash) {
+        requestAnimationFrame(() => {
+          document.getElementById(hash)?.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+        });
+      }
     } catch (e) {
       msg(err, e.message || "خطا");
     }
   }
 
   async function initGuide() {
-    injectChrome("guide");
-    const box = $("#jh-guide");
-    try {
-      const meta = await S().api("/api/site/pamphlets/meta");
-      const tax = meta.data?.taxonomy || {};
-      const g = tax.guide || {};
-      const rules = tax.publish_rules || {};
-      const flow = tax.publish_flow || [];
-      const tips = tax.standards_tips || [];
-      const types = tax.content_type_table || [];
-      const ruleBlocks = Object.values(rules)
-        .map(
-          (r) => `<div class="jh-rules-block">
-            <h3>${S().esc(r.title || "")}</h3>
-            <ul class="jh-guide-list">${(r.items || [])
-              .map((x) => `<li>${S().esc(x)}</li>`)
-              .join("")}</ul>
-          </div>`
-        )
-        .join("");
-      box.innerHTML = `
-        <header class="jh-shop-head">
-          <h1>راهنمای انتشار جزوه</h1>
-          <p class="jh-note">پایلوت دانشکده پیراپزشکی دانشگاه علوم پزشکی شهید بهشتی — برای دانشجوهایی که می‌خواهند جزوهٔ خودشان را تمیز، قانونی و قابل‌فروش منتشر کنند.</p>
-          <div class="jh-actions">
-            <a class="jh-btn" href="submit.html">ثبت جزوه جدید</a>
-            <a class="jh-btn secondary" href="guide/template-typed.rtf" download>قالب Word</a>
-            <a class="jh-btn secondary" href="guide/sample-outline.pdf" download>نمونه ساختار</a>
-            <a class="jh-btn secondary" href="learn.html">آموزش صفحه‌آرایی</a>
-          </div>
-        </header>
-        <section class="jh-guide-section">
-          <h2>قبل از شروع</h2>
-          <p class="jh-note">${S().esc(meta.data?.publish_policy || "")}</p>
-          <p class="jh-note">این صفحه خلاصهٔ همان چیزهایی است که داور هنگام بررسی می‌بیند. اگر از همین‌جا شروع کنی، احتمال برگشت فایل برای اصلاح کمتر می‌شود.</p>
-        </section>
-
-        <section class="jh-guide-section">
-          <h2>از ثبت تا انتشار</h2>
-          <p class="jh-note">مسیر معمول انتشار این‌طور پیش می‌رود:</p>
-          <ol class="jh-guide-list">${flow
-            .map((x) => `<li>${S().esc(x)}</li>`)
-            .join("")}</ol>
-        </section>
-
-        <section class="jh-guide-section">
-          <h2>چه چیزهایی باعث تأیید یا رد می‌شود؟</h2>
-          <p class="jh-note">این‌ها معیارهای اصلی داوری‌اند. همه را یک‌بار بخوان؛ بعد فایل را بفرست.</p>
-          ${ruleBlocks}
-        </section>
-
-        <section class="jh-guide-section">
-          <h2>چطور جزوهٔ استاندارد بسازی؟</h2>
-          <p class="jh-note">این نکات برای کیفیت علمی و تجربهٔ مطالعهٔ دانشجوست؛ فقط ظاهر فایل کافی نیست.</p>
-          <ul class="jh-guide-list">${tips
-            .map((x) => `<li>${S().esc(x)}</li>`)
-            .join("")}</ul>
-          <div class="jh-grid" style="margin-top:1rem">
-            <article class="jh-card span-6">
-              <h3>چک‌لیست جزوه تایپی</h3>
-              <ul class="jh-guide-list">${(g.typed || [])
-                .map((x) => `<li>${S().esc(x)}</li>`)
-                .join("")}</ul>
-            </article>
-            <article class="jh-card span-6">
-              <h3>چک‌لیست دست‌نویس / اسکن</h3>
-              <ul class="jh-guide-list">${(g.handwritten || [])
-                .map((x) => `<li>${S().esc(x)}</li>`)
-                .join("")}</ul>
-            </article>
-          </div>
-        </section>
-
-        <section class="jh-guide-section">
-          <h2>انواع محتوایی که می‌توانی ثبت کنی</h2>
-          <table class="jh-type-table">
-            <thead><tr><th>نوع</th><th>توضیح</th></tr></thead>
-            <tbody>
-              ${types
-                .map(
-                  (r) =>
-                    `<tr><td><strong>${S().esc(
-                      r.title || ""
-                    )}</strong></td><td>${S().esc(r.desc || "")}</td></tr>`
-                )
-                .join("")}
-            </tbody>
-          </table>
-        </section>
-
-        <section class="jh-guide-section">
-          <h2>نکات مهم حوزه سلامت و خدمات آماده‌سازی</h2>
-          <div class="jh-rules-block">
-            <h3>مسئولیت محتوای آموزشی</h3>
-            <p class="jh-note">${S().esc(meta.data?.health_disclaimer || "")}</p>
-            <h3>خدمات آماده‌سازی</h3>
-            <p class="jh-note">${S().esc(meta.data?.service_scope || "")}</p>
-          </div>
-        </section>`;
-    } catch (e) {
-      msg($("#jh-err"), e.message || "خطا");
-    }
+    location.replace("learn.html" + (location.hash || ""));
   }
 
   const FA_DIGITS = "۰۱۲۳۴۵۶۷۸۹";
@@ -1733,6 +2974,435 @@
     return toFaDigits(num.toLocaleString("en-US"));
   }
 
+  const IR_BANK_CODES = {
+    "010": "مرکزی",
+    "011": "صنعت و معدن",
+    "012": "ملت",
+    "013": "رفاه",
+    "014": "مسکن",
+    "015": "سپه",
+    "016": "کشاورزی",
+    "017": "ملی",
+    "018": "تجارت",
+    "019": "صادرات",
+    "020": "توسعه صادرات",
+    "021": "پست‌بانک",
+    "022": "توسعه تعاون",
+    "051": "مؤسسه اعتباری توسعه",
+    "053": "کارآفرین",
+    "054": "پارسیان",
+    "055": "اقتصاد نوین",
+    "056": "سامان",
+    "057": "سرمایه",
+    "058": "پاسارگاد",
+    "059": "خاورمیانه",
+    "060": "مهر ایران",
+    "061": "شهر",
+    "062": "آینده",
+    "063": "انصار",
+    "064": "گردشگری",
+    "066": "دی",
+    "069": "ایران‌زمین",
+    "070": "رسالت",
+    "078": "خاورمیانه",
+    "080": "ملی (شعب خارج)",
+    "095": "ایران و ونزوئلا",
+  };
+
+  function onlyDigits(raw) {
+    return fromFaDigits(String(raw || "")).replace(/[^\d]/g, "");
+  }
+
+  function formatGroupedAmount(raw) {
+    const digits = onlyDigits(raw);
+    if (!digits) return "";
+    return toFaDigits(Number(digits).toLocaleString("en-US"));
+  }
+
+  function parseAmountInput(raw) {
+    const digits = onlyDigits(raw);
+    if (!digits) return 0;
+    return Math.max(0, Math.floor(Number(digits) || 0));
+  }
+
+  function amountToFaWords(n) {
+    const num = Math.max(0, Math.floor(Number(n) || 0));
+    if (!num) return "صفر تومان";
+    const ones = [
+      "",
+      "یک",
+      "دو",
+      "سه",
+      "چهار",
+      "پنج",
+      "شش",
+      "هفت",
+      "هشت",
+      "نه",
+    ];
+    const teens = [
+      "ده",
+      "یازده",
+      "دوازده",
+      "سیزده",
+      "چهارده",
+      "پانزده",
+      "شانزده",
+      "هفده",
+      "هجده",
+      "نوزده",
+    ];
+    const tens = [
+      "",
+      "",
+      "بیست",
+      "سی",
+      "چهل",
+      "پنجاه",
+      "شصت",
+      "هفتاد",
+      "هشتاد",
+      "نود",
+    ];
+    const hundreds = [
+      "",
+      "صد",
+      "دویست",
+      "سیصد",
+      "چهارصد",
+      "پانصد",
+      "ششصد",
+      "هفتصد",
+      "هشتصد",
+      "نهصد",
+    ];
+    const scales = ["", "هزار", "میلیون", "میلیارد", "تریلیون"];
+    const under1000 = (x) => {
+      const parts = [];
+      const h = Math.floor(x / 100);
+      const t = Math.floor((x % 100) / 10);
+      const o = x % 10;
+      if (h) parts.push(hundreds[h]);
+      if (t === 1) parts.push(teens[o]);
+      else {
+        if (t) parts.push(tens[t]);
+        if (o) parts.push(ones[o]);
+      }
+      return parts.join(" و ");
+    };
+    const chunks = [];
+    let rest = num;
+    let scale = 0;
+    while (rest > 0 && scale < scales.length) {
+      const chunk = rest % 1000;
+      if (chunk) {
+        const label = under1000(chunk);
+        chunks.unshift(scales[scale] ? `${label} ${scales[scale]}` : label);
+      }
+      rest = Math.floor(rest / 1000);
+      scale += 1;
+    }
+    return `${chunks.join(" و ")} تومان`;
+  }
+
+  function normalizeIban(raw) {
+    let s = String(raw || "")
+      .toUpperCase()
+      .replace(/[\s\-_.]/g, "");
+    s = s.replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)));
+    s = s.replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
+    if (s.startsWith("IR")) s = s.slice(2);
+    s = s.replace(/[^\d]/g, "").slice(0, 24);
+    return s;
+  }
+
+  function formatIbanDigits(digits) {
+    const d = normalizeIban(digits);
+    if (!d) return "";
+    // IR12 0540 1026 8002 1234 5678 90
+    const parts = [];
+    if (d.length) parts.push(d.slice(0, 2));
+    for (let i = 2; i < d.length; i += 4) parts.push(d.slice(i, i + 4));
+    return parts.filter(Boolean).join(" ");
+  }
+
+  function ibanMod97Ok(digits24) {
+    const d = normalizeIban(digits24);
+    if (d.length !== 24) return false;
+    // Move IR+check to end → BBAN + "1827" + checkDigits
+    const rearranged = `${d.slice(2)}1827${d.slice(0, 2)}`;
+    let rem = 0;
+    for (const ch of rearranged) {
+      rem = (rem * 10 + (ch.charCodeAt(0) - 48)) % 97;
+    }
+    return rem === 1;
+  }
+
+  function bankFromIban(digits24) {
+    const d = normalizeIban(digits24);
+    if (d.length < 5) return null;
+    const code = d.slice(2, 5);
+    const name = IR_BANK_CODES[code];
+    if (!name) return { code, name: `بانک کد ${code}` };
+    return { code, name: `بانک ${name}` };
+  }
+
+  function isValidNationalId(raw) {
+    const code = onlyDigits(raw);
+    if (!/^\d{10}$/.test(code)) return false;
+    if (/^(\d)\1{9}$/.test(code)) return false;
+    let sum = 0;
+    for (let i = 0; i < 9; i++) sum += Number(code[i]) * (10 - i);
+    const r = sum % 11;
+    const check = Number(code[9]);
+    return (r < 2 && check === r) || (r >= 2 && check === 11 - r);
+  }
+
+  function bindPayoutForm({
+    balance,
+    minPayout,
+    savedIban,
+    savedNationalId,
+    errEl,
+  }) {
+    const amountEl = $("#payout_amount");
+    const ibanEl = $("#iban_digits");
+    const nidEl = $("#national_id");
+    const nidWrap = $("#jh-nid-wrap");
+    const amountWords = $("#payout_amount_words");
+    const amountHint = $("#payout_amount_hint");
+    const ibanHint = $("#iban_hint");
+    const ibanBank = $("#iban_bank");
+    const nidHint = $("#nid_hint");
+    const btn = $("#btn-payout");
+    const maxBtn = $("#btn-payout-max");
+    const bal = Math.max(0, Math.floor(Number(balance) || 0));
+    const min = Math.max(0, Math.floor(Number(minPayout) || 200000));
+
+    const amountOk = () => {
+      const v = parseAmountInput(amountEl?.value || "");
+      return v >= min && v <= bal;
+    };
+    const ibanOk = () => {
+      const digits = normalizeIban(ibanEl?.value || "");
+      return digits.length === 24 && ibanMod97Ok(digits);
+    };
+    const nidOk = () => isValidNationalId(nidEl?.value || "");
+
+    const syncSubmitLock = () => {
+      if (!btn) return;
+      const ok = amountOk() && ibanOk() && nidOk();
+      btn.disabled = !ok;
+      btn.classList.toggle("is-locked", !ok);
+      btn.setAttribute(
+        "aria-disabled",
+        ok ? "false" : "true"
+      );
+      btn.title = ok
+        ? "ثبت درخواست تسویه"
+        : "ابتدا مبلغ، شبا و کد ملی معتبر را کامل کن";
+    };
+
+    const setAmount = (n) => {
+      const v = Math.max(0, Math.floor(Number(n) || 0));
+      if (amountEl) amountEl.value = v ? formatGroupedAmount(String(v)) : "";
+      if (amountWords) {
+        amountWords.className = "jh-amount-words";
+        if (!v) {
+          amountWords.textContent = "مبلغ را وارد کن";
+          amountWords.classList.add("is-muted");
+        } else if (v < min) {
+          amountWords.textContent = `معادل ${amountToFaWords(v)}`;
+          amountWords.classList.add("is-bad");
+        } else if (v > bal) {
+          amountWords.textContent = `معادل ${amountToFaWords(v)}`;
+          amountWords.classList.add("is-bad");
+        } else {
+          amountWords.textContent = `معادل ${amountToFaWords(v)}`;
+          amountWords.classList.add("is-ok");
+        }
+      }
+      if (amountHint) {
+        amountHint.textContent = "";
+        amountHint.className = "jh-field-hint";
+        amountHint.hidden = true;
+        if (v && v < min) {
+          amountHint.hidden = false;
+          amountHint.textContent = `حداقل تسویه ${money(min)} است`;
+          amountHint.classList.add("is-bad");
+        } else if (v && v > bal) {
+          amountHint.hidden = false;
+          amountHint.textContent = "بیشتر از موجودی قابل تسویه است";
+          amountHint.classList.add("is-bad");
+        }
+      }
+      syncSubmitLock();
+    };
+
+    const syncIban = () => {
+      if (!ibanEl) return;
+      const digits = normalizeIban(ibanEl.value);
+      const caretEnd = ibanEl.selectionStart === ibanEl.value.length;
+      ibanEl.value = formatIbanDigits(digits);
+      if (caretEnd) {
+        try {
+          ibanEl.setSelectionRange(ibanEl.value.length, ibanEl.value.length);
+        } catch (_) {}
+      }
+      const bank = bankFromIban(digits);
+      if (ibanBank) {
+        if (bank && digits.length >= 5) {
+          ibanBank.hidden = false;
+          ibanBank.innerHTML = `<span class="jh-bank-badge" data-code="${S().esc(
+            bank.code
+          )}">${S().esc(bank.code)}</span><strong>${S().esc(
+            bank.name
+          )}</strong>`;
+        } else {
+          ibanBank.hidden = true;
+          ibanBank.innerHTML = "";
+        }
+      }
+      if (ibanHint) {
+        ibanHint.className = "jh-field-hint";
+        if (!digits.length) {
+          ibanHint.textContent = "۲۴ رقم شبا را بدون IR وارد یا بچسبان";
+        } else if (digits.length < 24) {
+          ibanHint.textContent = `${toFaDigits(digits.length)} از ۲۴ رقم`;
+        } else if (!ibanMod97Ok(digits)) {
+          ibanHint.textContent =
+            "ساختار شماره شبا معتبر نیست (احتمالاً رقمی جابه‌جا شده)";
+          ibanHint.classList.add("is-bad");
+        } else {
+          ibanHint.textContent = "شبا معتبر است";
+          ibanHint.classList.add("is-ok");
+        }
+      }
+      ibanEl.classList.toggle("is-valid", ibanOk());
+      ibanEl.classList.toggle("is-invalid", digits.length === 24 && !ibanOk());
+      syncSubmitLock();
+    };
+
+    const syncNid = () => {
+      if (!nidEl) return;
+      const code = onlyDigits(nidEl.value).slice(0, 10);
+      nidEl.value = toFaDigits(code);
+      const valid = isValidNationalId(code);
+      nidWrap?.classList.toggle("is-valid", valid);
+      nidEl.classList.toggle("is-valid", valid);
+      nidEl.classList.toggle("is-invalid", code.length === 10 && !valid);
+      if (nidHint) {
+        nidHint.className = "jh-field-hint";
+        if (!code.length) {
+          nidHint.textContent = "۱۰ رقم، صفر ابتدایی حفظ می‌شود";
+        } else if (code.length < 10) {
+          nidHint.textContent = `${toFaDigits(code.length)} از ۱۰ رقم`;
+        } else if (!valid) {
+          nidHint.textContent = "کد ملی معتبر نیست";
+          nidHint.classList.add("is-bad");
+        } else {
+          nidHint.textContent = "";
+        }
+      }
+      syncSubmitLock();
+    };
+
+    if (savedIban) {
+      const dig = normalizeIban(savedIban);
+      if (ibanEl && dig) ibanEl.value = formatIbanDigits(dig);
+    }
+    if (savedNationalId && nidEl) {
+      nidEl.value = toFaDigits(onlyDigits(savedNationalId).slice(0, 10));
+    }
+    setAmount(min <= bal ? min : "");
+    syncIban();
+    syncNid();
+    syncSubmitLock();
+
+    amountEl?.addEventListener("input", () => {
+      const v = parseAmountInput(amountEl.value);
+      setAmount(v || "");
+    });
+    maxBtn?.addEventListener("click", () => {
+      if (bal < min) {
+        msg(errEl, `موجودی کمتر از حداقل تسویه (${money(min)}) است`);
+        return;
+      }
+      setAmount(bal);
+    });
+    ibanEl?.addEventListener("input", syncIban);
+    ibanEl?.addEventListener("paste", (ev) => {
+      ev.preventDefault();
+      const text = ev.clipboardData?.getData("text") || "";
+      ibanEl.value = normalizeIban(text);
+      syncIban();
+    });
+    nidEl?.addEventListener("input", syncNid);
+    nidEl?.addEventListener("paste", (ev) => {
+      ev.preventDefault();
+      const text = ev.clipboardData?.getData("text") || "";
+      nidEl.value = onlyDigits(text).slice(0, 10);
+      syncNid();
+    });
+
+    $$(".jh-payout-saved").forEach((card) => {
+      card.addEventListener("click", () => {
+        const dig = card.getAttribute("data-iban") || "";
+        const nid = card.getAttribute("data-nid") || "";
+        if (ibanEl && dig) {
+          ibanEl.value = normalizeIban(dig);
+          syncIban();
+        }
+        if (nidEl && nid) {
+          nidEl.value = onlyDigits(nid).slice(0, 10);
+          syncNid();
+        }
+        msg(errEl, "حساب تسویه انتخاب شد", true);
+      });
+    });
+
+    btn?.addEventListener("click", async () => {
+      if (!amountOk() || !ibanOk() || !nidOk()) {
+        syncSubmitLock();
+        if (!ibanOk()) {
+          ibanEl?.focus();
+          ibanEl?.classList.add("jh-shake");
+          window.setTimeout(() => ibanEl?.classList.remove("jh-shake"), 450);
+        } else if (!nidOk()) {
+          nidEl?.focus();
+          nidEl?.classList.add("jh-shake");
+          window.setTimeout(() => nidEl?.classList.remove("jh-shake"), 450);
+        } else {
+          amountEl?.focus();
+        }
+        return msg(errEl, "ابتدا فیلدهای تسویه را درست و کامل کن");
+      }
+      const amount = parseAmountInput(amountEl?.value || "");
+      const digits = normalizeIban(ibanEl?.value || "");
+      const nid = onlyDigits(nidEl?.value || "");
+      try {
+        btn.disabled = true;
+        btn.textContent = "در حال ثبت…";
+        await S().api("/api/site/pamphlets/wallet/payout", {
+          method: "POST",
+          body: JSON.stringify({
+            amount_irt: amount,
+            iban: `IR${digits}`,
+            national_id: nid,
+          }),
+        });
+        msg(errEl, "درخواست تسویه ثبت شد", true);
+        location.reload();
+      } catch (e) {
+        msg(errEl, e.message || "خطا در ثبت تسویه");
+        syncSubmitLock();
+      } finally {
+        btn.textContent = "ثبت درخواست تسویه";
+        syncSubmitLock();
+      }
+    });
+  }
+
   function gregorianToJalali(gy, gm, gd) {
     const g_d_m = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
     let jy = gy <= 1600 ? 0 : 979;
@@ -1758,6 +3428,53 @@
       days < 186 ? 1 + Math.floor(days / 31) : 7 + Math.floor((days - 186) / 30);
     const jd = 1 + (days < 186 ? days % 31 : (days - 186) % 30);
     return { jy, jm, jd };
+  }
+
+  /** ISO/date string → «۲۲ آبان ۱۴۰۴» (fa digits). */
+  function formatJalaliDateFa(raw) {
+    const s = String(raw || "").trim();
+    if (!s) return "—";
+    const m = s.match(/(\d{4})-(\d{2})-(\d{2})/);
+    let gy;
+    let gm;
+    let gd;
+    if (m) {
+      gy = +m[1];
+      gm = +m[2];
+      gd = +m[3];
+    } else {
+      const d = new Date(s);
+      if (Number.isNaN(d.getTime())) return toFaDigits(s.slice(0, 10));
+      gy = d.getFullYear();
+      gm = d.getMonth() + 1;
+      gd = d.getDate();
+    }
+    const { jy, jm, jd } = gregorianToJalali(gy, gm, gd);
+    const month = JALALI_MONTHS[jm - 1] || "";
+    return `${toFaDigits(jd)} ${month} ${toFaDigits(jy)}`;
+  }
+
+  function formatJalaliSlashFa(raw) {
+    const s = String(raw || "").trim();
+    if (!s) return "—";
+    const m = s.match(/(\d{4})-(\d{2})-(\d{2})/);
+    let gy;
+    let gm;
+    let gd;
+    if (m) {
+      gy = +m[1];
+      gm = +m[2];
+      gd = +m[3];
+    } else {
+      const d = new Date(s);
+      if (Number.isNaN(d.getTime())) return toFaDigits(s.slice(0, 10));
+      gy = d.getFullYear();
+      gm = d.getMonth() + 1;
+      gd = d.getDate();
+    }
+    const { jy, jm, jd } = gregorianToJalali(gy, gm, gd);
+    const pad = (n) => String(n).padStart(2, "0");
+    return toFaDigits(`${jy}/${pad(jm)}/${pad(jd)}`);
   }
 
   function jalaliDaysInMonth(jy, jm) {
@@ -2009,7 +3726,13 @@
     }
     const me = session.data;
     const err = $("#jh-err");
-    const meta = await S().api("/api/site/pamphlets/meta");
+    let meta;
+    try {
+      meta = await S().api("/api/site/pamphlets/meta");
+    } catch (e) {
+      msg(err, e.message || "بارگذاری اطلاعات فرم ناموفق بود");
+      return;
+    }
     const tax = meta.data?.taxonomy || {};
     const majors = tax.majors || [];
     const courses = tax.courses_by_major || {};
@@ -2051,6 +3774,8 @@
     const priceDisplay = $("#price_irt_display");
     const priceBlock = $("#jh-price-block");
     const priceNote = $("#jh-price-note");
+    const pricePerPage = $("#jh-price-perpage");
+    let draftPagesCount = 0;
     const syncPriceUi = () => {
       const free = !!freeToggle?.checked;
       priceBlock?.classList.toggle("is-free", free);
@@ -2062,13 +3787,52 @@
           priceDisplay.placeholder = "رایگان";
         }
         if (priceNote)
-          priceNote.textContent = "این جزوه بدون پرداخت در اختیار خریدار قرار می‌گیرد.";
+          priceNote.textContent =
+            "این جزوه بدون پرداخت در اختیار خریدار قرار می‌گیرد.";
+        if (pricePerPage) {
+          pricePerPage.hidden = true;
+          pricePerPage.textContent = "";
+          pricePerPage.className = "jh-price-perpage";
+        }
       } else if (priceDisplay && priceHidden) {
         priceDisplay.placeholder = "مثلاً ۱۵٬۰۰۰";
         const current = Number(priceHidden.value || 0);
         priceDisplay.value = current > 0 ? formatFaMoney(current) : "";
         if (priceNote)
-          priceNote.textContent = "مبلغی که برای خرید این جزوه در نظر داری، به تومان بنویس.";
+          priceNote.textContent =
+            "مبلغی که برای خرید این جزوه در نظر داری، به تومان بنویس.";
+        if (pricePerPage) {
+          if (current > 0 && draftPagesCount > 0) {
+            const per = Math.round(current / draftPagesCount);
+            let tone = "قیمت منطقی و رقابتی";
+            let cls = "jh-price-perpage is-ok";
+            if (per > 20000) {
+              tone = "نسبت به تعداد صفحه بالاست — یک صفر اضافه نزده باشی؟";
+              cls = "jh-price-perpage is-warn";
+            } else if (per > 8000) {
+              tone = "نسبتاً گران برای هر صفحه";
+              cls = "jh-price-perpage is-warn";
+            } else if (per < 200) {
+              tone = "خیلی پایین — اگر عمدی نیست، مبلغ را چک کن";
+              cls = "jh-price-perpage is-soft";
+            }
+            pricePerPage.hidden = false;
+            pricePerPage.className = cls;
+            pricePerPage.textContent = `معادل ${formatFaMoney(
+              per
+            )} تومان به ازای هر صفحه (${toFaDigits(
+              draftPagesCount
+            )} صفحه) — ${tone}`;
+          } else if (current > 0) {
+            pricePerPage.hidden = false;
+            pricePerPage.className = "jh-price-perpage";
+            pricePerPage.textContent =
+              "بعد از آپلود PDF، قیمت به ازای هر صفحه اینجا دیده می‌شود.";
+          } else {
+            pricePerPage.hidden = true;
+            pricePerPage.textContent = "";
+          }
+        }
       }
     };
     freeToggle?.addEventListener("change", () => {
@@ -2079,6 +3843,7 @@
       const n = fromFaDigits(priceDisplay.value) || "0";
       if (priceHidden) priceHidden.value = String(Number(n) || 0);
       priceDisplay.value = formatFaMoney(priceHidden?.value || 0);
+      syncPriceUi();
     });
     syncPriceUi();
 
@@ -2086,13 +3851,20 @@
       const host = $("#jh-suggest");
       if (!host) return;
       const kind = $("#content_kind")?.value || "typed";
-      const cov = $("#coverage")?.value || "partial";
+      const cov = $("#coverage")?.value || "midterm";
       const course = $("#course_name")?.value || "";
       const major = $("#major")?.value || "";
       syncTermYearField();
       const term = $("#term_year")?.value || "";
       const kindFa = kind === "typed" ? "تایپی" : "دست‌نویس";
-      const covFa = cov === "full" ? "کامل" : "بخشی";
+      const covFa =
+        ({
+          short: "بخش کوتاه",
+          midterm: "میان‌ترم",
+          final: "پایان‌ترم",
+          full: "کامل",
+          partial: "بخشی",
+        })[cov] || "بخش کوتاه";
       const titles = [
         `جزوه ${course || "درس"} — ${major || "پیراپزشکی"} — ${kindFa}`,
         `خلاصه ${course || "درس"} (${covFa}) — دانشکده پیراپزشکی بهشتی`,
@@ -2138,7 +3910,7 @@
 
     let step = 1;
     let currentId = new URLSearchParams(location.search).get("id") || "";
-    let uploaded = { pdf: null, docx: null, answer: null };
+    let uploaded = { pdf: null, docx: null, answer: null, consent: null };
 
     const showStep = (n) => {
       step = n;
@@ -2199,9 +3971,9 @@
         out_of_scope_text: ($("#out_of_scope_text")?.value || "").trim(),
         sources_text: ($("#sources_text")?.value || "").trim(),
         revision_date: "",
-        content_kind: ($("#content_kind")?.value || "typed").trim(),
-        coverage: ($("#coverage")?.value || "partial").trim(),
-        difficulty: ($("#difficulty")?.value || "medium").trim(),
+        content_kind: ($("#content_kind")?.value || "").trim(),
+        coverage: ($("#coverage")?.value || "").trim(),
+        difficulty: ($("#difficulty")?.value || "").trim(),
         topics: topicLines,
         wants_services: false,
         price_irt: Number($("#price_irt")?.value || 0),
@@ -2211,13 +3983,41 @@
       };
     };
 
-    const saveMeta = async () => {
-      const body = collect();
+    const validateStep1 = (body) => {
       if (!body.major) throw new Error("رشته را انتخاب کن");
       if (!body.course_name) throw new Error("درس را انتخاب کن");
       if (body.outline_text.length < 15)
         throw new Error("توضیح کوتاه محتویات فایل را بنویس (حداقل ۱۵ کاراکتر)");
-      if (!body.title && step >= 2) throw new Error("عنوان را وارد کن");
+      if (!body.content_kind) throw new Error("نوع جزوه را انتخاب کن");
+      if (!body.coverage) throw new Error("پوشش درس را انتخاب کن");
+      if (!body.difficulty) throw new Error("سطح سختی را انتخاب کن");
+      if (!body.degree_level) throw new Error("مقطع را بنویس");
+      if (!($("#academic_year")?.value || "").trim())
+        throw new Error("سال تحصیلی را انتخاب کن");
+      if (!($("#academic_term")?.value || "").trim())
+        throw new Error("ترم را انتخاب کن");
+      if (!body.term_year) throw new Error("ترم و سال را کامل کن");
+      if (!body.professor_name) throw new Error("نام استاد / اساتید را بنویس");
+      if (!body.authors_text) throw new Error("نویسنده / نویسندگان جزوه را بنویس");
+    };
+
+    const validateStep2 = (body) => {
+      if (!body.title) throw new Error("عنوان را وارد کن");
+      if (body.summary.length < 70)
+        throw new Error("توضیحات کامل باید حداقل ۷۰ کاراکتر باشد");
+      if (body.out_of_scope_text.length < 8)
+        throw new Error("خارج از پوشش را بنویس");
+      if (body.sources_text.length < 12)
+        throw new Error("رفرنس‌ها را بنویس");
+      const free = !!$("#price_free")?.checked;
+      if (!free && !(Number(body.price_irt) > 0))
+        throw new Error("قیمت را وارد کن یا رایگان را روشن بگذار");
+    };
+
+    const saveMeta = async () => {
+      const body = collect();
+      validateStep1(body);
+      if (step >= 2) validateStep2(body);
       if (!body.title) {
         body.title = `جزوه ${body.course_name} — ${body.major}`;
         if ($("#title")) $("#title").value = body.title;
@@ -2305,7 +4105,7 @@
       return pdfjsLoading;
     };
 
-    const showPdfPreview = async (file, canvas, wrap) => {
+    const showPdfPreview = async (file, canvas, wrap, { trackPages = false } = {}) => {
       if (!canvas || !wrap) return;
       const isPdf =
         file &&
@@ -2319,6 +4119,10 @@
         const lib = await loadPdfJs();
         const data = await file.arrayBuffer();
         const pdf = await lib.getDocument({ data }).promise;
+        if (trackPages) {
+          draftPagesCount = Math.max(0, Number(pdf.numPages) || 0);
+          syncPriceUi();
+        }
         const page = await pdf.getPage(1);
         const base = page.getViewport({ scale: 1 });
         const vp = page.getViewport({ scale: 240 / base.width });
@@ -2358,7 +4162,9 @@
       if (ui.preview) {
         if (isPdf) {
           ui.preview.classList.remove("jh-page-preview--doc");
-          showPdfPreview(file, ui.canvas, ui.preview);
+          showPdfPreview(file, ui.canvas, ui.preview, {
+            trackPages: ui.bucket === "pdf" || ui.role === "original",
+          });
         } else if (fallback) {
           ui.preview.hidden = false;
           ui.preview.classList.add("jh-page-preview--doc");
@@ -2382,6 +4188,29 @@
       status: $(`#${prefix}-status`),
     });
 
+    const isUploadAborted = (e) =>
+      e?.name === "UploadAborted" || e?.code === "UPLOAD_ABORTED";
+
+    const abortSlotUpload = (ui, { quiet = false } = {}) => {
+      if (!ui) return;
+      ui._token = (ui._token || 0) + 1;
+      try {
+        ui._upload?.abort?.();
+      } catch (_) {}
+      ui._upload = null;
+      ui._inflight = null;
+      ui._halt = true;
+      cancelAnimationFrame(ui._raf);
+      ui.slot?.classList.remove("is-uploading", "is-done", "is-err");
+      if (ui.progress) ui.progress.hidden = true;
+      paintPct(ui, 0);
+      if (!quiet && ui.state) {
+        ui.state.textContent = ui.input?.files?.[0]
+          ? "آپلود متوقف شد — می‌توانی دوباره آپلود کنی"
+          : "";
+      }
+    };
+
     const wireSlot = (ui) => {
       const input = ui.input;
       const slot = ui.slot;
@@ -2392,7 +4221,18 @@
         if (file) startSlotUpload(ui);
       });
       slot.querySelectorAll("[data-pick]").forEach((btn) => {
-        btn.addEventListener("click", () => input.click());
+        btn.addEventListener("click", () => {
+          abortSlotUpload(ui, { quiet: true });
+          input.click();
+        });
+      });
+      slot.querySelectorAll("[data-jh-abort-upload]").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          abortSlotUpload(ui);
+          msg(err, "آپلود متوقف شد", true);
+        });
       });
       ["dragenter", "dragover"].forEach((ev) =>
         slot.addEventListener(ev, (e) => {
@@ -2428,7 +4268,11 @@
       role: "answer",
       bucket: "answer",
     });
-    [pdfUi, docxUi, answerUi].forEach(wireSlot);
+    const consentUi = Object.assign(slotUi("consent", "file_consent"), {
+      role: "consent",
+      bucket: "consent",
+    });
+    [pdfUi, docxUi, answerUi, consentUi].forEach(wireSlot);
 
     const MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
 
@@ -2443,6 +4287,9 @@
         msg(err, "حداکثر حجم هر فایل ۱۰۰ مگابایت است");
         return;
       }
+      try {
+        ui._upload?.abort?.();
+      } catch (_) {}
       const token = (ui._token || 0) + 1;
       ui._token = token;
       ui._inflight = (async () => {
@@ -2454,7 +4301,9 @@
         uploaded[ui.bucket] = done;
         return done;
       })().catch((e) => {
-        if (ui._token === token) msg(err, e.message || "آپلود ناموفق");
+        if (ui._token === token && !isUploadAborted(e)) {
+          msg(err, e.message || "آپلود ناموفق");
+        }
         throw e;
       });
     };
@@ -2475,38 +4324,43 @@
       const fd = new FormData();
       fd.append("file", file);
       fd.append("file_role", role);
-      ui._halt = false;
+      ui._halt = true;
+      cancelAnimationFrame(ui._raf);
       ui._shown = 0;
-      ui._target = 4;
+      ui._target = 0;
       ui.slot?.classList.remove("is-done", "is-err");
       ui.slot?.classList.add("is-uploading");
       if (ui.progress) ui.progress.hidden = false;
       if (ui.state) ui.state.textContent = "در حال آپلود…";
       paintPct(ui, 0);
-      ui._target = 4;
-      runMeter(ui);
+      const req = S().apiFormProgress(
+        `/api/site/pamphlets/mine/${currentId}/upload`,
+        fd,
+        {
+          onProgress: ({ percent }) => {
+            if (token != null && ui._token !== token) return;
+            const p = Math.max(0, Math.min(99, percent));
+            ui._target = p;
+            paintPct(ui, p);
+          },
+        }
+      );
+      ui._upload = req;
       try {
-        await S().apiFormProgress(
-          `/api/site/pamphlets/mine/${currentId}/upload`,
-          fd,
-          {
-            onProgress: ({ percent }) => {
-              ui._target = Math.min(92, Math.max(ui._target || 0, percent));
-            },
-          }
-        );
-        ui._target = 100;
-        await untilFull(ui);
+        await req;
         if (token != null && ui._token !== token) return null;
+        ui._upload = null;
         ui.slot?.classList.remove("is-uploading");
         ui.slot?.classList.add("is-done");
         if (ui.state) ui.state.textContent = "آپلود شد";
         paintPct(ui, 100);
         return { name: file.name, size: file.size };
       } catch (e) {
-        ui._halt = true;
-        cancelAnimationFrame(ui._raf);
+        ui._upload = null;
         ui.slot?.classList.remove("is-uploading");
+        if (isUploadAborted(e) || (token != null && ui._token !== token)) {
+          return null;
+        }
         ui.slot?.classList.add("is-err");
         if (ui.state) ui.state.textContent = e.message || "آپلود ناموفق بود. دوباره تلاش کن.";
         throw e;
@@ -2605,9 +4459,8 @@
     $("#btn-next-2")?.addEventListener("click", async () => {
       try {
         const body = collect();
-        if (!body.title) return msg(err, "عنوان را وارد کن");
-        if (body.summary.length < 70)
-          return msg(err, "توضیحات باید حداقل ۷۰ کاراکتر باشد");
+        validateStep1(body);
+        validateStep2(body);
         await saveMeta();
         if (!currentId) return msg(err, "پرونده ساخته نشد");
         const ensureUploaded = async (ui) => {
@@ -2629,6 +4482,8 @@
         }
         await ensureUploaded(pdfUi);
         if (!uploaded.pdf) return msg(err, "فایل PDF هنوز آپلود نشده");
+        await ensureUploaded(consentUi);
+        if (!uploaded.consent) return msg(err, "برگه رضایت را آپلود کن");
         await ensureUploaded(docxUi);
         await ensureUploaded(answerUi);
         msg(err, "فایل‌ها آماده شد", true);
@@ -2678,8 +4533,13 @@
             $("#out_of_scope_text").value = p.out_of_scope_text || "";
           if ($("#sources_text")) $("#sources_text").value = p.sources_text || "";
           if ($("#content_kind")) $("#content_kind").value = p.content_kind || "typed";
-          if ($("#coverage")) $("#coverage").value = p.coverage || "partial";
-          if ($("#difficulty")) $("#difficulty").value = p.difficulty || "medium";
+          if ($("#coverage")) {
+            const cov = p.coverage || "";
+            // Map legacy values into the new coverage set
+            $("#coverage").value =
+              cov === "full" ? "final" : cov === "partial" ? "short" : cov;
+          }
+          if ($("#difficulty")) $("#difficulty").value = p.difficulty || "";
           refreshCombo($("#content_kind"));
           refreshCombo($("#coverage"));
           refreshCombo($("#difficulty"));
@@ -2691,6 +4551,7 @@
           const price = Number(p.price_irt || 0);
           if (priceHidden) priceHidden.value = String(price);
           if (freeToggle) freeToggle.checked = price <= 0;
+          draftPagesCount = Math.max(0, Number(p.pages_count) || 0);
           syncPriceUi();
           syncSummaryCount();
           refreshSuggest();
@@ -2705,6 +4566,10 @@
           if (p.answer_media_id) {
             uploaded.answer = { name: "پاسخنامه قبلی", size: 0 };
             markStored(answerUi, "پاسخنامه قبلی");
+          }
+          if (p.consent_media_id) {
+            uploaded.consent = { name: "برگه رضایت قبلی", size: 0 };
+            markStored(consentUi, "برگه رضایت قبلی");
           }
           renderAttachList(p.attachments || []);
           const bar = $("#jh-case-bar");
@@ -2761,7 +4626,7 @@
     try {
       me = await ensureSession();
       if (!me) {
-        if (boot) boot.textContent = "در حال رفتن به ورود…";
+        setBootLabel(boot, "در حال رفتن به ورود…", "الان منتقل می‌شی");
         go(
           "login.html?next=" +
             encodeURIComponent("account.html" + location.search)
@@ -2769,7 +4634,7 @@
         return;
       }
     } catch (_) {
-      if (boot) boot.textContent = "در حال رفتن به ورود…";
+      setBootLabel(boot, "در حال رفتن به ورود…", "الان منتقل می‌شی");
       go(
         "login.html?next=" +
           encodeURIComponent("account.html" + location.search)
@@ -2777,8 +4642,8 @@
       return;
     } finally {
       if (me) {
-        if (boot) boot.hidden = true;
-        if (dash) dash.hidden = false;
+        setBootLabel(boot, "حساب آماده‌ست", "خوش اومدی");
+        dismissBoot(boot, dash);
       }
     }
 
@@ -2788,8 +4653,6 @@
       `${me.first_name || ""} ${me.last_name || ""}`.trim() || "کاربر";
     const hello = $("#jh-hello");
     if (hello) hello.textContent = `سلام، ${displayName}`;
-    const walletHint = $("#jh-hello-sub");
-    if (walletHint) walletHint.textContent = "مدیریت کتابخانه، انتشار و پشتیبانی";
     S().rememberAuth?.({
       session_token: S().getSiteSession(),
       data: me,
@@ -2820,68 +4683,136 @@
 
     try {
       if (tab === "overview") {
-        const [lib, mine, wallet, ticks] = await Promise.all([
+        const [lib, mine, wallet] = await Promise.all([
           S().api("/api/site/pamphlets/library/me").catch(() => ({ data: [] })),
           S().api("/api/site/pamphlets/mine/list").catch(() => ({ data: [] })),
           S().api("/api/site/pamphlets/wallet/me").catch(() => ({ data: {} })),
-          S().api("/api/site/pamphlets/tickets").catch(() => ({ data: [] })),
         ]);
-        const libN = (lib.data || []).length;
+        const libItems = lib.data || [];
+        const libN = libItems.length;
+        const freeN = libItems.filter(
+          (p) =>
+            Number(p.price_irt || 0) <= 0 ||
+            p.purchase_status === "free_granted"
+        ).length;
+        const paidN = Math.max(0, libN - freeN);
         const mineList = mine.data || [];
         const actionMine = mineList.find((p) =>
-          ["needs_revision", "ready_to_publish", "awaiting_author_approval", "pending_payment"].includes(
-            p.status
-          )
+          [
+            "needs_revision",
+            "ready_to_publish",
+            "awaiting_author_approval",
+            "pending_payment",
+          ].includes(p.status)
         );
-        const openTickets = (ticks.data || []).filter((t) =>
-          ["open", "pending"].includes(t.status)
-        ).length;
-        const bal = wallet.data?.wallet_balance_irt || 0;
-        if (walletHint) {
-          walletHint.textContent = `موجودی قابل تسویه: ${money(bal)}`;
-        }
+        const publishedMine = mineList.filter((p) => p.status === "published")
+          .length;
+        const bal = Number(wallet.data?.wallet_balance_irt || 0);
+        const earned = Number(wallet.data?.earned_irt || 0);
+        const recentMine = mineList
+          .slice()
+          .sort(
+            (a, b) =>
+              new Date(b.updated_at || b.created_at || 0).getTime() -
+              new Date(a.updated_at || a.created_at || 0).getTime()
+          )
+          .slice(0, 3);
         $("#panel-overview").innerHTML = `
-          <div class="jh-dash-cards">
-            <a class="jh-dash-card" href="account.html?tab=library">
-              <span class="jh-dash-card-kicker">کتابخانه</span>
-              <strong>${libN.toLocaleString("fa-IR")}</strong>
-              <em>جزوه ذخیره‌شده</em>
+          <div class="jh-dash-cards jh-dash-cards--3">
+            <a class="jh-dash-card jh-dash-card--lib" href="account.html?tab=library">
+              <div class="jh-dash-card-top">
+                <span class="jh-dash-card-ico" aria-hidden="true">☰</span>
+                <span class="jh-dash-card-kicker">کتابخانه من</span>
+              </div>
+              <div class="jh-dash-card-body">
+                <strong>${toFaDigits(libN)}</strong>
+                <em>${
+                  libN
+                    ? `${toFaDigits(paidN)} خریده‌شده${
+                        freeN ? ` · ${toFaDigits(freeN)} رایگان` : ""
+                      }`
+                    : "جزوه‌های خریداری و رایگان"
+                }</em>
+              </div>
+              <span class="jh-dash-card-cta">مشاهده کتابخانه <span aria-hidden="true">←</span></span>
             </a>
-            <a class="jh-dash-card" href="account.html?tab=mine">
-              <span class="jh-dash-card-kicker">ارسالی‌ها</span>
-              <strong>${mineList.length.toLocaleString("fa-IR")}</strong>
-              <em>${actionMine ? STATUS_FA[actionMine.status] || "اقدام لازم" : "بدون اقدام فوری"}</em>
+            <a class="jh-dash-card jh-dash-card--mine" href="account.html?tab=mine">
+              <div class="jh-dash-card-top">
+                <span class="jh-dash-card-ico" aria-hidden="true">✎</span>
+                <span class="jh-dash-card-kicker">جزوه‌های من</span>
+              </div>
+              <div class="jh-dash-card-body">
+                <strong>${toFaDigits(mineList.length)}</strong>
+                <em>${
+                  actionMine
+                    ? STATUS_FA[actionMine.status] || "نیاز به اقدام"
+                    : publishedMine
+                      ? `${toFaDigits(publishedMine)} منتشرشده`
+                      : "پرونده‌های ارسالی شما"
+                }</em>
+              </div>
+              <span class="jh-dash-card-cta">مدیریت جزوه‌ها <span aria-hidden="true">←</span></span>
             </a>
-            <a class="jh-dash-card" href="account.html?tab=wallet">
-              <span class="jh-dash-card-kicker">موجودی</span>
-              <strong>${money(bal)}</strong>
-              <em>قابل تسویه</em>
-            </a>
-            <a class="jh-dash-card" href="account.html?tab=tickets">
-              <span class="jh-dash-card-kicker">تیکت باز</span>
-              <strong>${openTickets.toLocaleString("fa-IR")}</strong>
-              <em>پشتیبانی جزوات</em>
+            <a class="jh-dash-card jh-dash-card--wallet" href="account.html?tab=wallet">
+              <div class="jh-dash-card-top">
+                <span class="jh-dash-card-ico" aria-hidden="true">◎</span>
+                <span class="jh-dash-card-kicker">موجودی قابل تسویه</span>
+              </div>
+              <div class="jh-dash-card-body">
+                <strong>${money(bal)}</strong>
+                <em>${
+                  earned > 0
+                    ? `کل درآمد فروش تا امروز: ${money(earned)}`
+                    : "هنوز درآمد فروشی ثبت نشده"
+                }</em>
+              </div>
+              <span class="jh-dash-card-cta">جزئیات درآمد <span aria-hidden="true">←</span></span>
             </a>
           </div>
           ${
             actionMine
-              ? `<div class="jh-card jh-dash-next">
-                  <h3>اقدام بعدی</h3>
-                  <p class="jh-note">${S().esc(actionMine.title)} — ${
-                    STATUS_FA[actionMine.status] || actionMine.status
-                  }</p>
-                  <p class="jh-meta">${S().esc(actionMine.next_action || "")}</p>
-                  <div class="jh-actions">
-                    <a class="jh-btn" href="account.html?tab=mine">مشاهده پرونده‌ها</a>
+              ? `<div class="jh-dash-next jh-dash-next--action">
+                  <div class="jh-dash-next-copy">
+                    <p class="jh-dash-next-eyebrow">اقدام بعدی</p>
+                    <h3>${S().esc(actionMine.title)}</h3>
+                    <p class="jh-note">${S().esc(
+                      STATUS_FA[actionMine.status] || actionMine.status
+                    )}${
+                      actionMine.next_action
+                        ? ` — ${S().esc(actionMine.next_action)}`
+                        : ""
+                    }</p>
                   </div>
+                  <a class="jh-btn" href="account.html?tab=mine">مشاهده پرونده</a>
                 </div>`
-              : `<div class="jh-empty jh-dash-next">
-                  <strong>همه‌چیز به‌روز است</strong>
-                  <p>از فروشگاه جزوه پیدا کن یا جزوه جدید منتشر کن.</p>
-                  <div class="jh-actions">
-                    <a class="jh-btn secondary" href="index.html">فروشگاه</a>
-                    <a class="jh-btn" href="submit.html">انتشار جزوه</a>
+              : `<div class="jh-dash-next jh-dash-next--idle">
+                  <div class="jh-dash-next-copy">
+                    <p class="jh-dash-next-eyebrow">وضعیت امروز</p>
+                    <h3>پرونده معلقی نداری</h3>
+                    <p class="jh-note">${
+                      recentMine.length
+                        ? "آخرین جزوه‌هایت را ببین یا از فروشگاه منبع تازه بگیر."
+                        : "اولین جزوه‌ات را بنویس یا از فروشگاه جزوه ذخیره کن."
+                    }</p>
                   </div>
+                  ${
+                    recentMine.length
+                      ? `<ul class="jh-dash-recent">
+                          ${recentMine
+                            .map(
+                              (p) => `<li>
+                              <a href="account.html?tab=mine">
+                                <strong>${S().esc(p.title || "بدون عنوان")}</strong>
+                                <span>${S().esc(
+                                  STATUS_FA[p.status] || p.status || ""
+                                )}</span>
+                              </a>
+                            </li>`
+                            )
+                            .join("")}
+                        </ul>`
+                      : `<a class="jh-dash-next-link" href="account.html?tab=services">راهنمای کمک جزوه‌نویسی ←</a>`
+                  }
                 </div>`
           }`;
       }
@@ -2989,7 +4920,7 @@
               <p>فایل آماده و استاندارد داری؟ ثبت و بررسی انتشار هزینه اولیه ندارد.</p>
               <div class="jh-actions">
                 <a class="jh-btn" href="submit.html">ثبت جزوه جدید</a>
-                <a class="jh-btn secondary" href="guide.html">شرایط و مقررات</a>
+                <a class="jh-btn secondary" href="learn.html#publish">شرایط و مقررات</a>
               </div>
             </div>`;
             return;
@@ -3004,22 +4935,22 @@
                 <td>${toFaDigits(i + 1)}</td>
                 <td dir="ltr">${toFaDigits(p.content_code || "—")}</td>
                 <td class="jh-mine-title">
-                  <strong>${S().esc(p.title || "بدون عنوان")}</strong>
+                  <strong class="jh-mine-title-main">${S().esc(p.title || "بدون عنوان")}</strong>
                   ${
                     p.review_note
-                      ? `<span class="jh-meta">${S().esc(p.review_note)}</span>`
+                      ? `<span class="jh-mine-sub">${S().esc(p.review_note)}</span>`
                       : ""
                   }
-                  ${checklist ? `<ul class="jh-guide-list">${checklist}</ul>` : ""}
-                  <div class="jh-meta" data-order-box="${S().esc(p.id)}"></div>
+                  ${checklist ? `<ul class="jh-guide-list jh-mine-check">${checklist}</ul>` : ""}
+                  <div class="jh-mine-orders" data-order-box="${S().esc(p.id)}" hidden></div>
                 </td>
-                <td>${p.quality_grade ? S().esc(p.quality_grade) : "—"}</td>
-                <td>${toFaDigits(p.downloads || p.sales_count || 0)}</td>
-                <td>${faDate(p.updated_at || p.created_at)}</td>
-                <td><span class="${toneClass(p.status_tone)}">${S().esc(
+                <td class="jh-mine-num">${p.quality_grade ? S().esc(p.quality_grade) : "—"}</td>
+                <td class="jh-mine-num">${toFaDigits(p.downloads || p.sales_count || 0)}</td>
+                <td class="jh-mine-date">${faDate(p.updated_at || p.created_at)}</td>
+                <td class="jh-mine-status"><span class="${toneClass(p.status_tone)}">${S().esc(
                   p.status_label || STATUS_FA[p.status] || p.status
                 )}</span></td>
-                <td class="jh-mine-ops">${opsHtml(p)}</td>
+                <td class="jh-mine-ops"><div class="jh-mine-ops-row">${opsHtml(p)}</div></td>
               </tr>`;
             })
             .join("");
@@ -3145,16 +5076,18 @@
               const host = box.querySelector(
                 `[data-order-box="${btn.dataset.orders}"]`
               );
+              if (!host) return;
               try {
                 const o = await S().api(
                   `/api/site/pamphlets/mine/${btn.dataset.orders}/service-orders`
                 );
                 const orders = o.data || [];
+                host.hidden = false;
                 host.innerHTML = orders.length
                   ? orders
                       .map(
                         (x) =>
-                          `<div style="margin-top:.5rem">پیش‌فاکتور ${money(
+                          `<div class="jh-mine-order-line">پیش‌فاکتور ${money(
                             x.quoted_amount_irt || x.amount_irt
                           )} · ${S().esc(x.status)}
                           ${
@@ -3168,7 +5101,7 @@
                           }</div>`
                       )
                       .join("")
-                  : "پیش‌فاکتوری نیست";
+                  : `<span class="jh-mine-sub">پیش‌فاکتوری نیست</span>`;
                 $$("[data-pay-order]", host).forEach((b) =>
                   b.addEventListener("click", async () => {
                     try {
@@ -3176,7 +5109,7 @@
                         `/api/site/pamphlets/service-orders/${b.dataset.payOrder}/pay`,
                         {
                           method: "POST",
-                          body: JSON.stringify({ environment: "live" }),
+                          body: JSON.stringify({ environment: PAY_ENV }),
                         }
                       );
                       if (pay.data?.start_pay_url)
@@ -3188,6 +5121,7 @@
                   })
                 );
               } catch (e) {
+                host.hidden = false;
                 host.textContent = e.message || "خطا";
               }
             })
@@ -3213,14 +5147,47 @@
         );
         const orders = chunks.flat();
         const box = $("#panel-services");
-        box.innerHTML = orders.length
-          ? orders
-              .map(
-                (o) => `<article class="jh-card">
+        const helpIntro = `
+          <section class="jh-help-write">
+            <header class="jh-help-write-head">
+              <p class="jh-help-write-kicker">کمک جزوه‌نویسی</p>
+              <h2>از ایده تا جزوهٔ قابل انتشار</h2>
+              <p>اینجا برای نظم‌دادن به نوشتن، رفع ایراد داوری و در صورت نیاز گرفتن کمک تخصصی است — نه مسیر اجباری.</p>
+            </header>
+            <div class="jh-help-write-grid">
+              <article class="jh-help-card">
+                <span class="jh-help-card-num" aria-hidden="true">۱</span>
+                <h3>ساختار را روشن کن</h3>
+                <p>سرفصل، ترتیب فصل‌ها و هدف هر بخش را قبل از تایپ کامل بنویس تا داوری سریع‌تر جلو برود.</p>
+              </article>
+              <article class="jh-help-card">
+                <span class="jh-help-card-num" aria-hidden="true">۲</span>
+                <h3>استاندارد انتشار</h3>
+                <p>فونت خوانا، صفحه‌بندی تمیز و منبع مشخص؛ جزئیات را در آموزش و راهنما ببین.</p>
+              </article>
+              <article class="jh-help-card">
+                <span class="jh-help-card-num" aria-hidden="true">۳</span>
+                <h3>کمک تخصصی</h3>
+                <p>اگر به ویرایش، تایپ یا آماده‌سازی فایل نیاز داری، از پشتیبانی پیش‌فاکتور بگیر؛ اختیاری است.</p>
+              </article>
+            </div>
+            <div class="jh-help-write-actions">
+              <a class="jh-btn" href="submit.html">شروع / ادامه نوشتن</a>
+              <a class="jh-btn secondary" href="learn.html#publish">آموزش و راهنما</a>
+              <a class="jh-btn secondary" href="account.html?tab=tickets">درخواست کمک از پشتیبانی</a>
+            </div>
+          </section>`;
+        const ordersHtml = orders.length
+          ? `<section class="jh-help-orders">
+              <h3 class="jh-help-orders-title">سفارش‌های فعال کمک جزوه‌نویسی</h3>
+              <div class="jh-help-orders-list">
+              ${orders
+                .map(
+                  (o) => `<article class="jh-card jh-help-order-card">
               <h3>${S().esc(o.pamphlet_title || "")}</h3>
               <div class="jh-meta">${money(o.amount_irt)} · ${S().esc(
-                  o.status
-                )} · ETA ${o.eta_days || "—"} روز</div>
+                    o.status
+                  )} · ETA ${o.eta_days || "—"} روز</div>
               <p class="jh-note">${S().esc(o.quote_note || o.description || "")}</p>
               <div class="jh-actions">
                 ${
@@ -3230,20 +5197,23 @@
                       )}" type="button">پرداخت پیش‌فاکتور</button>`
                     : ""
                 }
-                <a class="jh-btn secondary" href="account.html?tab=mine">پرونده</a>
+                <a class="jh-btn secondary" href="account.html?tab=mine">پرونده جزوه</a>
               </div>
             </article>`
-              )
-              .join("")
-          : '<p class="jh-note">سفارش خدماتی ندارید. خدمات آماده‌سازی اختیاری است و فقط با پیش‌فاکتور پشتیبان شروع می‌شود.</p>';
-        $$("[data-pay-order]").forEach((b) =>
+                )
+                .join("")}
+              </div>
+            </section>`
+          : `<p class="jh-help-empty">هنوز سفارش کمکی ثبت نشده. می‌توانی خودت بنویسی و منتشر کنی؛ کمک تخصصی فقط با پیش‌فاکتور پشتیبانی شروع می‌شود.</p>`;
+        box.innerHTML = `${helpIntro}${ordersHtml}`;
+        $$("[data-pay-order]", box).forEach((b) =>
           b.addEventListener("click", async () => {
             try {
               const pay = await S().api(
                 `/api/site/pamphlets/service-orders/${b.dataset.payOrder}/pay`,
                 {
                   method: "POST",
-                  body: JSON.stringify({ environment: "live" }),
+                  body: JSON.stringify({ environment: PAY_ENV }),
                 }
               );
               if (pay.data?.start_pay_url) location.href = pay.data.start_pay_url;
@@ -3256,9 +5226,97 @@
       }
       if (tab === "wallet") {
         const res = await S().api("/api/site/pamphlets/wallet/me");
-        const d = res.data;
+        const d = res.data || {};
+        const acc = d.account || {};
+        const refCode = (acc.referral_code || "").trim();
+        const payouts = d.payouts || [];
+        const affEarned = Number(d.affiliate_earned_irt || 0);
+        const salesEarned = Number(d.earned_irt || 0);
+        const incomeTotal = Math.max(
+          0,
+          Number(d.income_sources?.total_irt || salesEarned + affEarned) || 0
+        );
+        const salesPct =
+          incomeTotal <= 0
+            ? 100
+            : Math.round((salesEarned / incomeTotal) * 100);
+        const refPct = incomeTotal <= 0 ? 0 : Math.max(0, 100 - salesPct);
+        const byPam = d.sales_by_pamphlet || [];
+        const maxPam = Math.max(
+          1,
+          ...byPam.map((x) => Number(x.earned_irt || 0))
+        );
+        const pamBars = byPam.length
+          ? byPam
+              .slice(0, 8)
+              .map((row) => {
+                const w = Math.max(
+                  4,
+                  Math.round((Number(row.earned_irt || 0) / maxPam) * 100)
+                );
+                return `<div class="jh-wallet-bar-row">
+                  <div class="jh-wallet-bar-meta">
+                    <strong>${S().esc(row.title || "جزوه")}</strong>
+                    <span>${money(row.earned_irt)} · ${toFaDigits(
+                      row.sales_count || 0
+                    )} فروش</span>
+                  </div>
+                  <div class="jh-wallet-bar-track" aria-hidden="true">
+                    <i style="width:${w}%"></i>
+                  </div>
+                </div>`;
+              })
+              .join("")
+          : `<p class="jh-note">هنوز فروشی ثبت نشده؛ بعد از فروش جزوه‌هایت اینجا می‌آید.</p>`;
+        const recentRows = (d.recent_sales || []).length
+          ? (d.recent_sales || [])
+              .map((r) => {
+                const when = String(r.verified_at || "").slice(0, 10);
+                return `<li class="jh-wallet-sale-row">
+                  <div>
+                    <strong>${S().esc(r.pamphlet_title || "جزوه")}</strong>
+                    <span class="jh-meta">${S().esc(when)}</span>
+                  </div>
+                  <em>+${money(r.author_share_irt)}</em>
+                </li>`;
+              })
+              .join("")
+          : `<li class="jh-note">فروش اخیری نیست.</li>`;
+        const payoutRows = payouts.length
+          ? payouts
+              .map((p) => {
+                const st = PAYOUT_STATUS_FA[p.status] || p.status;
+                const when = String(p.created_at || "").slice(0, 10);
+                let receipt = String(p.receipt_url || "").trim();
+                if (receipt.startsWith("/")) {
+                  receipt = `${S().API_BASE || ""}${receipt}`;
+                }
+                const receiptHtml = receipt
+                  ? `<a class="jh-payout-receipt" href="${S().esc(
+                      receipt
+                    )}" target="_blank" rel="noopener noreferrer">
+                      <img src="${S().esc(
+                        receipt
+                      )}" alt="فیش واریز" loading="lazy" />
+                      <span>مشاهده فیش واریز</span>
+                    </a>`
+                  : "";
+                return `<li class="jh-wallet-payout-row">
+                  <div>
+                    <strong>${money(p.amount_irt)}</strong>
+                    <span class="jh-wallet-payout-status jh-wallet-payout-status--${S().esc(
+                      p.status || "pending"
+                    )}">${S().esc(st)}</span>
+                    ${receiptHtml}
+                  </div>
+                  <span class="jh-meta">${S().esc(when)}</span>
+                </li>`;
+              })
+              .join("")
+          : `<li class="jh-note">هنوز درخواست تسویه‌ای ثبت نشده.</li>`;
         $("#panel-wallet").innerHTML = `
           <div class="jh-card jh-wallet-card">
+            <p class="jh-wallet-kicker">درآمد و تسویه</p>
             <h3>موجودی قابل تسویه</h3>
             <p class="jh-wallet-balance">${money(d.wallet_balance_irt)}</p>
             <div class="jh-wallet-stats" role="list">
@@ -3269,10 +5327,12 @@
                 )}</strong>
               </div>
               <div class="jh-wallet-stat" role="listitem">
-                <span class="jh-wallet-stat-label">سهم شما</span>
-                <strong class="jh-wallet-stat-value">${money(
-                  d.earned_irt
-                )}</strong>
+                <span class="jh-wallet-stat-label">درآمد فروش</span>
+                <strong class="jh-wallet-stat-value">${money(salesEarned)}</strong>
+              </div>
+              <div class="jh-wallet-stat" role="listitem">
+                <span class="jh-wallet-stat-label">درآمد معرف</span>
+                <strong class="jh-wallet-stat-value">${money(affEarned)}</strong>
               </div>
               <div class="jh-wallet-stat" role="listitem">
                 <span class="jh-wallet-stat-label">حداقل تسویه</span>
@@ -3281,28 +5341,137 @@
                 )}</strong>
               </div>
             </div>
+            <p class="jh-note jh-wallet-share-note">از هر فروش: ${toFaDigits(
+              d.author_share_pct || 60
+            )}٪ نویسنده${
+              affEarned > 0 || refCode
+                ? ` · با کد معرف، ${toFaDigits(
+                    d.affiliate_share_pct || 10
+                  )}٪ سهم رابط`
+                : ""
+            }</p>
           </div>
-          <div class="jh-form" style="margin-top:1rem">
-            <label>مبلغ <input id="payout_amount" type="number" min="200000" /></label>
-            <label>شبا <input id="iban" /></label>
-            <label>کد ملی <input id="national_id" /></label>
-            <button class="jh-btn" type="button" id="btn-payout">درخواست تسویه</button>
-          </div>`;
-        $("#btn-payout")?.addEventListener("click", async () => {
-          try {
-            await S().api("/api/site/pamphlets/wallet/payout", {
-              method: "POST",
-              body: JSON.stringify({
-                amount_irt: Number($("#payout_amount")?.value || 0),
-                iban: ($("#iban")?.value || "").trim(),
-                national_id: ($("#national_id")?.value || "").trim(),
-              }),
-            });
-            msg(err, "درخواست ثبت شد", true);
-            location.reload();
-          } catch (e) {
-            msg(err, e.message || "خطا");
+          <div class="jh-card jh-wallet-chart-card">
+            <h3>منبع درآمد</h3>
+            <p class="jh-note">سهم فروش جزوه در برابر درآمد معرف (رفرال).</p>
+            <div class="jh-wallet-donut" style="--sales:${salesPct};--ref:${refPct}">
+              <div class="jh-wallet-donut-ring" aria-hidden="true"></div>
+              <div class="jh-wallet-donut-center">
+                <strong>${money(salesEarned + affEarned)}</strong>
+                <span>کل درآمد</span>
+              </div>
+            </div>
+            <ul class="jh-wallet-legend">
+              <li><i class="jh-dot jh-dot--sales"></i>فروش جزوه · ${money(
+                salesEarned
+              )} · ${toFaDigits(salesPct)}٪</li>
+              <li><i class="jh-dot jh-dot--ref"></i>کد معرف · ${money(
+                affEarned
+              )} · ${toFaDigits(refPct)}٪</li>
+            </ul>
+          </div>
+          <div class="jh-card jh-wallet-bars-card">
+            <h3>درآمد به تفکیک جزوه</h3>
+            <div class="jh-wallet-bars">${pamBars}</div>
+          </div>
+          <div class="jh-card">
+            <h3>فروش‌های اخیر</h3>
+            <ul class="jh-wallet-sale-list">${recentRows}</ul>
+          </div>
+          ${
+            refCode
+              ? `<div class="jh-card jh-wallet-referral">
+            <h3>کد معرف شما</h3>
+            <p class="jh-note">این کد را به نویسنده‌های جدید بده؛ از فروش جزوه‌هایشان سهم رابط می‌گیری.</p>
+            <div class="jh-wallet-ref-row">
+              <code class="jh-wallet-ref-code" id="jh-ref-code" dir="ltr">${S().esc(
+                refCode
+              )}</code>
+              <button type="button" class="jh-btn secondary" id="btn-copy-ref">کپی</button>
+            </div>
+          </div>`
+              : ""
           }
+          <div class="jh-card jh-wallet-payout-form">
+            <header class="jh-payout-head">
+              <div>
+                <h3>درخواست تسویه</h3>
+                <p class="jh-note">موجودی قابل تسویه: <strong>${money(
+                  d.wallet_balance_irt
+                )}</strong></p>
+              </div>
+            </header>
+            ${
+              acc.iban || acc.national_id
+                ? `<button type="button" class="jh-payout-saved" data-iban="${S().esc(
+                    acc.iban || ""
+                  )}" data-nid="${S().esc(acc.national_id || "")}">
+              <span class="jh-payout-saved-kicker">حساب ذخیره‌شده</span>
+              <strong dir="ltr">${S().esc(
+                formatIbanDigits(normalizeIban(acc.iban || "")) || "شبا ثبت‌شده"
+              )}</strong>
+              <span>${
+                acc.national_id
+                  ? `کد ملی ${toFaDigits(onlyDigits(acc.national_id))}`
+                  : "کد ملی ذخیره‌شده نیست"
+              }</span>
+            </button>`
+                : ""
+            }
+            <div class="jh-form jh-payout-fields jh-payout-fields--compact">
+              <label class="jh-payout-amount-label">مبلغ (تومان)
+                <div class="jh-payout-amount-row">
+                  <input id="payout_amount" class="jh-input-ltr-right" type="text" inputmode="numeric"
+                    autocomplete="off" dir="ltr" placeholder="${toFaDigits(
+                      (d.min_payout_irt || 200000).toLocaleString("en-US")
+                    )}" />
+                  <button type="button" class="jh-chip" id="btn-payout-max">حداکثر برداشت</button>
+                </div>
+                <span class="jh-amount-words is-muted" id="payout_amount_words">مبلغ را وارد کن</span>
+                <span class="jh-field-hint" id="payout_amount_hint" hidden></span>
+              </label>
+              <label>شبا
+                <div class="jh-iban-field" dir="ltr">
+                  <span class="jh-iban-prefix" aria-hidden="true">IR</span>
+                  <input id="iban_digits" type="text" inputmode="numeric"
+                    autocomplete="off" spellcheck="false"
+                    placeholder="12 0540 1026 8002 1234 5678 90"
+                    maxlength="34" />
+                </div>
+                <div class="jh-iban-bank" id="iban_bank" hidden></div>
+                <span class="jh-field-hint" id="iban_hint">۲۴ رقم شبا را بدون IR وارد یا بچسبان</span>
+              </label>
+              <label>کد ملی
+                <div class="jh-nid-wrap" id="jh-nid-wrap">
+                  <input id="national_id" class="jh-input-ltr-right" type="text" dir="ltr" inputmode="numeric"
+                    autocomplete="off" maxlength="10"
+                    placeholder="۰۰۱۲۳۴۵۶۷۸" />
+                  <span class="jh-nid-check" aria-hidden="true">✓</span>
+                </div>
+                <span class="jh-field-hint" id="nid_hint">۱۰ رقم، صفر ابتدایی حفظ می‌شود</span>
+              </label>
+              <p class="jh-payout-warn">شماره شبا باید متعلق به همان کد ملی باشد؛ در غیر این صورت پایا/ساتنا برگشت می‌خورد.</p>
+              <button class="jh-btn is-locked" type="button" id="btn-payout" disabled>ثبت درخواست تسویه</button>
+            </div>
+          </div>
+          <div class="jh-card jh-wallet-payouts">
+            <h3>وضعیت درخواست‌ها</h3>
+            <ul class="jh-wallet-payout-list">${payoutRows}</ul>
+          </div>`;
+        $("#btn-copy-ref")?.addEventListener("click", async () => {
+          try {
+            await navigator.clipboard.writeText(refCode);
+            msg(err, "کد معرف کپی شد", true);
+          } catch (_) {
+            msg(err, "کپی نشد؛ دستی کپی کن");
+          }
+        });
+        bindPayoutForm({
+          balance: d.wallet_balance_irt,
+          minPayout: d.min_payout_irt || 200000,
+          savedIban: acc.iban || "",
+          savedNationalId: acc.national_id || "",
+          errEl: err,
         });
       }
       if (tab === "certs") {
@@ -3339,7 +5508,7 @@
             <label>دسته
               <select id="t_cat">
                 <option value="review">بررسی و انتشار</option>
-                <option value="services">خدمات</option>
+                <option value="services">کمک جزوه‌نویسی</option>
                 <option value="purchase">خرید</option>
                 <option value="payout">تسویه</option>
                 <option value="rights">مالکیت</option>
@@ -3402,6 +5571,20 @@
                   ${majorOpts}
                 </select>
               </label>
+              ${
+                me.has_referrer
+                  ? `<p class="jh-note">کد معرف قبلاً ثبت شده و قابل تغییر نیست.</p>`
+                  : `<label>کد معرف رابط <span class="jh-optional">(اختیاری، یک‌بار)</span>
+                <input id="pf_referral" dir="ltr" autocomplete="off" placeholder="کد معرف" />
+              </label>`
+              }
+              ${
+                me.referral_code
+                  ? `<p class="jh-note">کد معرف شما برای معرفی دیگران: <code dir="ltr">${S().esc(
+                      me.referral_code
+                    )}</code></p>`
+                  : ""
+              }
               <button class="jh-btn" type="button" id="btn-save-profile">ذخیره مشخصات</button>
             </div>
           </div>
@@ -3432,6 +5615,7 @@
                   ($("#pf_uni")?.value || "").trim() ||
                   "دانشگاه علوم پزشکی شهید بهشتی",
                 field_of_study: ($("#pf_major")?.value || "").trim(),
+                referral_code: ($("#pf_referral")?.value || "").trim(),
               }),
             });
             msg(err, "ذخیره شد", true);
@@ -3478,22 +5662,176 @@
     injectChrome("account");
     const id = new URLSearchParams(location.search).get("id");
     const err = $("#jh-err");
+    const bar = $("#jh-read-bar");
+    const back = $("#jh-read-back");
+    const dlBtn = $("#jh-read-dl");
+    const meta = $("#jh-read-meta");
+    const boot = $("#jh-reader-boot");
+    const pagesHost = $("#jh-reader-pages");
+    const zoomLab = $("#jh-read-zoom-lab");
     const me = await ensureSession();
     if (!me)
       return (location.href = `login.html?next=${encodeURIComponent(
         `read.html?id=${id}`
       )}`);
-    $("#jh-wm") &&
-      ($("#jh-wm").textContent = `نسخه اختصاصی · ${me.first_name || ""} ${
-        me.last_name || ""
-      }`);
-    try {
-      const blob = await S().fetchPdfBlob(
-        `/api/site/pamphlets/item/${encodeURIComponent(id)}/read`
+    if (!id) {
+      msg(err, "شناسه جزوه نامعتبر است");
+      return;
+    }
+    if (back) back.href = `item.html?id=${encodeURIComponent(id)}`;
+    if (bar) bar.hidden = false;
+
+    let pdfDoc = null;
+    let zoom = 1;
+    let renderToken = 0;
+    let cachedBytes = null;
+
+    const setBoot = (title, note) => {
+      if (!boot) return;
+      boot.hidden = false;
+      if (pagesHost) pagesHost.hidden = true;
+      boot.innerHTML = `<span class="jh-reader-spin" aria-hidden="true"></span>
+        <strong>${S().esc(title)}</strong>
+        ${note ? `<p>${S().esc(note)}</p>` : ""}`;
+    };
+    const setMeta = (text) => {
+      if (meta) meta.textContent = text;
+    };
+    const setZoomLab = () => {
+      if (zoomLab) zoomLab.textContent = `${toFaDigits(Math.round(zoom * 100))}٪`;
+    };
+
+    const downloadWatermarked = async () => {
+      try {
+        if (dlBtn) {
+          dlBtn.disabled = true;
+          dlBtn.textContent = "در حال آماده‌سازی…";
+        }
+        const blob =
+          cachedBytes != null
+            ? new Blob([cachedBytes], { type: "application/pdf" })
+            : await S().fetchPdfBlob(
+                `/api/site/pamphlets/item/${encodeURIComponent(id)}/download`
+              );
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "bolok-pamphlet.pdf";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        msg(err, "دانلود شروع شد", true);
+      } catch (e) {
+        msg(err, e.message || "دانلود ناموفق");
+      } finally {
+        if (dlBtn) {
+          dlBtn.disabled = false;
+          dlBtn.textContent = "دانلود PDF";
+        }
+      }
+    };
+    dlBtn?.addEventListener("click", downloadWatermarked);
+
+    const renderPages = async () => {
+      if (!pdfDoc || !pagesHost) return;
+      const token = ++renderToken;
+      const total = pdfDoc.numPages || 0;
+      setMeta(`${toFaDigits(total)} صفحه · زوم ${toFaDigits(Math.round(zoom * 100))}٪`);
+      setZoomLab();
+      pagesHost.hidden = false;
+      if (boot) boot.hidden = true;
+      pagesHost.innerHTML = "";
+
+      const shellW = Math.max(
+        280,
+        ($("#jh-reader-shell")?.clientWidth || window.innerWidth) - 32
       );
-      $("#jh-reader").src = URL.createObjectURL(blob);
+
+      for (let n = 1; n <= total; n++) {
+        if (token !== renderToken) return;
+        const page = await pdfDoc.getPage(n);
+        if (token !== renderToken) return;
+        const base = page.getViewport({ scale: 1 });
+        const fit = Math.min(2.6, (shellW * zoom) / base.width);
+        const vp = page.getViewport({ scale: fit });
+        const wrap = document.createElement("article");
+        wrap.className = "jh-reader-page";
+        wrap.dataset.page = String(n);
+        const label = document.createElement("span");
+        label.className = "jh-reader-page-no";
+        label.textContent = `صفحه ${toFaDigits(n)}`;
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.floor(vp.width);
+        canvas.height = Math.floor(vp.height);
+        wrap.appendChild(label);
+        wrap.appendChild(canvas);
+        pagesHost.appendChild(wrap);
+        await page.render({
+          canvasContext: canvas.getContext("2d", { alpha: false }),
+          viewport: vp,
+        }).promise;
+        if (n === 1) setMeta(`${toFaDigits(total)} صفحه`);
+      }
+    };
+
+    $("#jh-read-zoom-in")?.addEventListener("click", () => {
+      zoom = Math.min(2.4, Math.round((zoom + 0.15) * 100) / 100);
+      renderPages();
+    });
+    $("#jh-read-zoom-out")?.addEventListener("click", () => {
+      zoom = Math.max(0.55, Math.round((zoom - 0.15) * 100) / 100);
+      renderPages();
+    });
+
+    try {
+      setBoot("در حال بارگذاری جزوه…", "نسخهٔ واترمارک‌شده برای مطالعه آنلاین");
+      setMeta("دریافت فایل…");
+      let bytes;
+      try {
+        bytes = S().fetchPdfBytes
+          ? await S().fetchPdfBytes(
+              `/api/site/pamphlets/item/${encodeURIComponent(id)}/read`
+            )
+          : await (await S().fetchPdfBlob(
+              `/api/site/pamphlets/item/${encodeURIComponent(id)}/read`
+            )).arrayBuffer();
+      } catch (readErr) {
+        // Fallback to download endpoint (same watermarked bytes)
+        setBoot("تلاش مجدد…", "در حال آماده‌سازی از مسیر دانلود");
+        bytes = S().fetchPdfBytes
+          ? await S().fetchPdfBytes(
+              `/api/site/pamphlets/item/${encodeURIComponent(id)}/download`
+            )
+          : await (await S().fetchPdfBlob(
+              `/api/site/pamphlets/item/${encodeURIComponent(id)}/download`
+            )).arrayBuffer();
+        if (!bytes) throw readErr;
+      }
+      cachedBytes = bytes;
+      setBoot("در حال رسم صفحات…", "چند لحظه صبر کن");
+      const lib = await loadPdfJs();
+      pdfDoc = await lib.getDocument({ data: bytes }).promise;
+      await renderPages();
+      msg(err, "آمادهٔ مطالعه", true);
+      setTimeout(() => {
+        if (err) err.hidden = true;
+      }, 1200);
     } catch (e) {
-      msg(err, e.message || "دسترسی ندارید");
+      const text = e.message || "دسترسی ندارید";
+      msg(err, text);
+      if (boot) {
+        boot.hidden = false;
+        boot.innerHTML = `<strong>نمایش آنلاین ممکن نشد</strong>
+          <p>${S().esc(text)}</p>`;
+      }
+      if (pagesHost) pagesHost.hidden = true;
+      if (/تهیه|خرید|دسترسی|403|Unauthorized|Forbidden/i.test(text)) {
+        setTimeout(() => {
+          location.href = `item.html?id=${encodeURIComponent(id)}`;
+        }, 1600);
+        return;
+      }
     }
   }
 
@@ -3539,19 +5877,50 @@
     const ok = q.get("ok") === "1";
     const kind = q.get("kind") || "";
     const pamphlet = q.get("pamphlet") || "";
-    $("#jh-pay").innerHTML = ok
-      ? `<div class="jh-msg ok">پرداخت ${
-          kind === "service" ? "خدمات" : "خرید"
-        } ثبت شد.</div>
-         <div class="jh-actions">
-           <a class="jh-btn" href="${
-             kind === "purchase" && pamphlet
-               ? `read.html?id=${encodeURIComponent(pamphlet)}`
-               : "account.html?tab=mine"
-           }">ادامه</a>
-         </div>`
-      : `<div class="jh-msg err">پرداخت انجام نشد.</div>
-         <div class="jh-actions"><a class="jh-btn secondary" href="account.html">بازگشت</a></div>`;
+    const isService = kind === "service";
+    const continueHref =
+      ok && kind === "purchase" && pamphlet
+        ? `read.html?id=${encodeURIComponent(pamphlet)}`
+        : ok
+          ? "account.html?tab=mine"
+          : "account.html";
+    const title = ok
+      ? isService
+        ? "پرداخت خدمات موفق بود"
+        : "خرید با موفقیت انجام شد"
+      : isService
+        ? "پرداخت خدمات انجام نشد"
+        : "خرید انجام نشد";
+    const sub = ok
+      ? isService
+        ? "مبلغ پیش‌فاکتور تأیید شد. می‌توانی پروندهٔ جزوه را در حسابت دنبال کنی."
+        : "جزوه به کتابخانهٔ تو اضافه شد. همین حالا مطالعه یا دانلود کن."
+      : "اگر مبلغی از حسابت کم شده، تا چند دقیقه دیگر وضعیت را دوباره چک کن یا با پشتیبانی در تماس باش.";
+    const cta = ok
+      ? kind === "purchase" && pamphlet
+        ? "شروع مطالعه"
+        : "رفتن به حساب من"
+      : "بازگشت به حساب";
+    $("#jh-pay").innerHTML = `
+      <article class="jh-pay-result ${ok ? "jh-pay-result--ok" : "jh-pay-result--err"}">
+        <div class="jh-pay-result-glow" aria-hidden="true"></div>
+        <div class="jh-pay-result-icon" aria-hidden="true">
+          <span class="jh-pay-result-mark">${ok ? "✓" : "!"}</span>
+        </div>
+        <p class="jh-pay-result-eyebrow">${ok ? "پرداخت تأیید شد" : "نتیجه پرداخت"}</p>
+        <h1 class="jh-pay-result-title">${S().esc(title)}</h1>
+        <p class="jh-pay-result-sub">${S().esc(sub)}</p>
+        <div class="jh-pay-result-actions">
+          <a class="jh-btn jh-pay-result-cta" href="${S().esc(continueHref)}">${S().esc(cta)}</a>
+          ${
+            ok && kind === "purchase" && pamphlet
+              ? `<a class="jh-btn secondary" href="item.html?id=${encodeURIComponent(
+                  pamphlet
+                )}">صفحه جزوه</a>`
+              : `<a class="jh-btn secondary" href="index.html">فروشگاه</a>`
+          }
+        </div>
+      </article>`;
   }
 
   async function waitForSite(ms = 4000) {

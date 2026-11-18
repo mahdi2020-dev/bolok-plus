@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
   <meta charset="UTF-8" />
@@ -7,10 +7,10 @@
   <title>ثبت جزوه | جزوه‌سرا</title>
   <link rel="icon" href="../assets/bolok-logo.svg?v=59" type="image/svg+xml" />
   <link rel="stylesheet" href="../assets/fonts/vazirmatn-fd.css?v=1" />
-  <link rel="stylesheet" href="../styles.css?v=64" />
-  <link rel="stylesheet" href="jomhehsara.css?v=40" />
-  <script src="../site-api.js?v=22" defer></script>
-  <script src="jomhehsara.js?v=36" defer></script>
+  <link rel="stylesheet" href="../styles.css?v=80" />
+  <link rel="stylesheet" href="jomhehsara.css?v=104" />
+  <script src="../site-api.js?v=26" defer></script>
+  <script src="jomhehsara.js?v=104" defer></script>
 </head>
 <body class="jh-body jh-focus-body" data-jh-page="submit">
   <header class="jh-focus-bar">
@@ -23,7 +23,7 @@
   <main class="jh-wrap jh-wrap--focus">
     <section class="jh-hero jh-hero--compact">
       <h1>ثبت جزوه</h1>
-      <div class="jh-kicker">پایلوت پیراپزشکی بهشتی</div>
+      <div class="jh-kicker">پایلوت دانشگاه علوم پزشکی شهید بهشتی</div>
     </section>
 
     <div class="jh-rules-banner">
@@ -31,7 +31,7 @@
         <strong>قوانین رو درست و کامل بخون.</strong>
         با انتشار، تمام قوانین پذیرفته شده‌اند.
       </p>
-      <a class="jh-btn secondary" href="guide.html">شرایط و مقررات</a>
+      <a class="jh-btn secondary" href="learn.html#publish">شرایط و مقررات</a>
     </div>
 
     <div id="jh-case-bar" class="jh-status-bar" hidden></div>
@@ -43,11 +43,11 @@
       </li>
       <li class="jh-step" data-step-idx="2">
         <span class="jh-step-mark" aria-hidden="true">۲</span>
-        <span class="jh-step-label">عنوان و فایل</span>
+        <span class="jh-step-label">فایل‌ها</span>
       </li>
       <li class="jh-step" data-step-idx="3">
         <span class="jh-step-mark" aria-hidden="true">۳</span>
-        <span class="jh-step-label">تعهد و ارسال</span>
+        <span class="jh-step-label">ارسال نهایی</span>
       </li>
     </ol>
 
@@ -56,60 +56,69 @@
     <div class="jh-panel on" data-step="1">
       <div class="jh-form jh-form--wide">
         <div class="jh-form-grid">
-          <label>دانشگاه
-            <input id="university" value="دانشگاه علوم پزشکی شهید بهشتی" readonly />
+          <label>دانشگاه *
+            <input id="university" value="دانشگاه علوم پزشکی شهید بهشتی" readonly required />
           </label>
-          <label>دانشکده
-            <input id="faculty" value="پیراپزشکی" readonly />
+          <label>دانشکده *
+            <input id="faculty" value="پیراپزشکی" readonly required />
           </label>
           <label>رشته *
-            <select id="major" data-jh-combo></select>
+            <select id="major" data-jh-combo required></select>
           </label>
           <label>درس *
-            <select id="course_name" data-jh-combo data-jh-combo-search></select>
+            <select id="course_name" data-jh-combo data-jh-combo-search required></select>
           </label>
           <label class="jh-span-2">توضیح کوتاه محتویات فایل *
-            <textarea id="outline_text" rows="5" maxlength="800"
-              placeholder="مثلاً: جزوهٔ خلاصهٔ فصل‌های ۲ تا ۵ بیوشیمی برای مرور پایان‌ترم؛ شامل مسیرهای متابولیسم، جداول مقایسه‌ای، نکات پرتکرار امتحان، تعاریف کلیدی و چند نمونه سؤال تشریحی کوتاه. مناسب دانشجوهایی که می‌خواهند قبل از آزمون سریع جمع‌بندی کنند."></textarea>
+            <textarea id="outline_text" rows="5" maxlength="800" required
+              placeholder="مثلاً: خلاصهٔ فصل‌های ۲ تا ۵ بیوشیمی برای میان‌ترم — مسیرهای مهم، جدول‌ها و نکات پرتکرار."></textarea>
           </label>
-          <label>نوع محتوا
-            <select id="content_kind" data-jh-combo>
+          <label>نوع جزوه *
+            <select id="content_kind" data-jh-combo required>
               <option value="typed">تایپی</option>
               <option value="handwritten">دست‌نویس / اسکن</option>
             </select>
           </label>
-          <label>پوشش درس
-            <select id="coverage" data-jh-combo>
-              <option value="partial">بخشی از درس</option>
-              <option value="full">کامل</option>
+          <label>پوشش درس *
+            <select id="coverage" data-jh-combo required>
+              <option value="">انتخاب کن…</option>
+              <option value="short">بخش کوتاه</option>
+              <option value="midterm">میان‌ترم</option>
+              <option value="final">پایان‌ترم</option>
             </select>
           </label>
-          <label>سطح سختی
-            <select id="difficulty" data-jh-combo>
+          <label>سطح سختی جزوه برای خوندن *
+            <select id="difficulty" data-jh-combo required>
+              <option value="">انتخاب کن…</option>
               <option value="easy">ساده</option>
-              <option value="medium" selected>متوسط</option>
+              <option value="medium">متوسط</option>
               <option value="hard">سخت</option>
             </select>
           </label>
-          <label>مقطع <input id="degree_level" placeholder="کارشناسی" /></label>
+          <label>مقطع *
+            <input id="degree_level" placeholder="کارشناسی" required />
+          </label>
           <div class="jh-span-2 jh-term-year">
-            <span class="jh-term-year-title">ترم و سال</span>
+            <span class="jh-term-year-title">ترم و سال *</span>
             <div class="jh-term-year-row">
-              <label>سال
-                <select id="academic_year" data-jh-combo>
+              <label>سال *
+                <select id="academic_year" data-jh-combo required>
                   <option value="">انتخاب سال</option>
                 </select>
               </label>
-              <label>ترم
-                <select id="academic_term" data-jh-combo>
+              <label>ترم *
+                <select id="academic_term" data-jh-combo required>
                   <option value="">انتخاب ترم</option>
                 </select>
               </label>
             </div>
             <input type="hidden" id="term_year" value="" />
           </div>
-          <label>استاد <input id="professor_name" /></label>
-          <label>نویسندگان <input id="authors_text" placeholder="نام نویسنده یا نویسندگان" /></label>
+          <label>نام استاد / اساتید *
+            <input id="professor_name" placeholder="مثلاً دکتر …" required />
+          </label>
+          <label>نویسنده / نویسندگان جزوه (فرد اصلی در ابتدا نوشته شود) *
+            <input id="authors_text" placeholder="نام نویسندهٔ اصلی، سپس بقیه" required />
+          </label>
         </div>
         <button class="jh-btn" type="button" id="btn-next-1">ذخیره و ادامه</button>
       </div>
@@ -125,14 +134,14 @@
           <div id="jh-suggest" class="jh-suggest"></div>
         </div>
         <label>توضیح کامل جزوه *
-          <textarea id="summary" placeholder="محدوده جزوه، مخاطب و نکته‌های مهم برای خریدار را بنویس…"></textarea>
+          <textarea id="summary" required placeholder="محدوده جزوه، مخاطب و نکته‌های مهم برای خریدار را بنویس…"></textarea>
           <span class="jh-char-count" id="summary-count">۰ / ۷۰</span>
         </label>
-        <label>خارج از پوشش
-          <textarea id="out_of_scope_text" placeholder="آنچه در این جزوه نیست…"></textarea>
+        <label>خارج از پوشش *
+          <textarea id="out_of_scope_text" required placeholder="آنچه در این جزوه نیست…"></textarea>
         </label>
-        <label>رفرنس‌ها
-          <textarea id="sources_text" rows="5" placeholder="هر منبعی که در نوشتن این جزوه از آن استفاده کرده‌ای را شفاف بنویس. اگر از ویس یا تدریس استادی کمک گرفته‌ای، نام استاد را بیاور. رفرنس مشخص (مثل فرهنگ معین) را دقیق ذکر کن. استفاده از جزوهٔ شخص دیگر حتماً باید گفته شود. مقاله، کتاب یا سایت علمی معتبر را هم کامل بنویس: عنوان، نویسنده و در صورت امکان سال یا نشانی."></textarea>
+        <label>رفرنس‌ها *
+          <textarea id="sources_text" rows="5" required placeholder="هر منبعی که در نوشتن این جزوه از آن استفاده کرده‌ای را شفاف بنویس. اگر از ویس یا تدریس استادی کمک گرفته‌ای، نام استاد را بیاور. رفرنس مشخص (مثل فرهنگ معین) را دقیق ذکر کن. استفاده از جزوهٔ شخص دیگر حتماً باید گفته شود. مقاله، کتاب یا سایت علمی معتبر را هم کامل بنویس: عنوان، نویسنده و در صورت امکان سال یا نشانی."></textarea>
         </label>
 
         <div class="jh-upload-slots">
@@ -158,7 +167,10 @@
                 <span id="pdf-pct">۰٪</span>
               </div>
               <p class="jh-drop-state" id="pdf-state"></p>
-              <button type="button" class="jh-drop-change" data-pick="file_pdf">تغییر فایل</button>
+              <div class="jh-drop-actions">
+                <button type="button" class="jh-drop-change" data-pick="file_pdf">تغییر فایل</button>
+                <button type="button" class="jh-drop-abort" data-jh-abort-upload>توقف بارگذاری</button>
+              </div>
             </div>
             <div id="pdf-status" class="jh-upload-status" hidden></div>
           </div>
@@ -182,7 +194,10 @@
                 <span id="docx-pct">۰٪</span>
               </div>
               <p class="jh-drop-state" id="docx-state"></p>
-              <button type="button" class="jh-drop-change" data-pick="file_docx">تغییر فایل</button>
+              <div class="jh-drop-actions">
+                <button type="button" class="jh-drop-change" data-pick="file_docx">تغییر فایل</button>
+                <button type="button" class="jh-drop-abort" data-jh-abort-upload>توقف بارگذاری</button>
+              </div>
             </div>
             <div id="docx-status" class="jh-upload-status" hidden></div>
           </div>
@@ -209,10 +224,43 @@
                 <span id="answer-pct">۰٪</span>
               </div>
               <p class="jh-drop-state" id="answer-state"></p>
-              <button type="button" class="jh-drop-change" data-pick="file_answer">تغییر فایل</button>
+              <div class="jh-drop-actions">
+                <button type="button" class="jh-drop-change" data-pick="file_answer">تغییر فایل</button>
+                <button type="button" class="jh-drop-abort" data-jh-abort-upload>توقف بارگذاری</button>
+              </div>
             </div>
             <div id="answer-status" class="jh-upload-status" hidden></div>
           </div>
+        </div>
+
+        <div class="jh-upload-slot" id="slot-consent">
+          <input id="file_consent" class="jh-file-input" type="file" accept=".pdf,application/pdf" />
+          <button type="button" class="jh-drop-idle" data-pick="file_consent">
+            <span class="jh-drop-badge jh-drop-badge--consent">رضایت</span>
+            <strong>برگه رضایت <span class="jh-req">*</span></strong>
+            <span>PDF · حداکثر ۱۰۰ مگابایت</span>
+          </button>
+          <div class="jh-drop-card" id="consent-card" hidden>
+            <div class="jh-drop-head">
+              <div class="jh-page-preview" id="consent-preview" hidden>
+                <canvas id="consent-canvas" aria-label="پیش‌نمایش برگه رضایت"></canvas>
+              </div>
+              <div class="jh-drop-copy">
+                <strong id="consent-name"></strong>
+                <span class="jh-meta" id="consent-meta">انتخاب نشده</span>
+              </div>
+            </div>
+            <div class="jh-upload-progress" id="consent-progress" hidden>
+              <div class="jh-upload-bar"><i id="consent-bar"></i></div>
+              <span id="consent-pct">۰٪</span>
+            </div>
+            <p class="jh-drop-state" id="consent-state"></p>
+            <div class="jh-drop-actions">
+              <button type="button" class="jh-drop-change" data-pick="file_consent">تغییر فایل</button>
+              <button type="button" class="jh-drop-abort" data-jh-abort-upload>توقف بارگذاری</button>
+            </div>
+          </div>
+          <div id="consent-status" class="jh-upload-status" hidden></div>
         </div>
 
         <fieldset class="jh-fieldset">
@@ -223,7 +271,7 @@
 
         <section class="jh-price-block is-free" id="jh-price-block">
           <div class="jh-price-head">
-            <strong>قیمت نهایی مد نظر</strong>
+            <strong>قیمت نهایی مد نظر *</strong>
             <label class="jh-toggle">
               <input type="checkbox" id="price_free" checked />
               <span>رایگان منتشر شود</span>
@@ -234,6 +282,7 @@
             <span class="jh-price-suffix">تومان</span>
             <input type="hidden" id="price_irt" value="0" />
           </label>
+          <p class="jh-price-perpage" id="jh-price-perpage" hidden></p>
           <p class="jh-price-note" id="jh-price-note">این جزوه بدون پرداخت در اختیار خریدار قرار می‌گیرد.</p>
         </section>
 
@@ -248,12 +297,12 @@
       <div class="jh-form jh-form--wide">
         <div id="jh-upload-summary" class="jh-upload-status is-ok" hidden></div>
         <label class="jh-check">
-          <input type="checkbox" id="rights" />
-          <span>حقوق انتشار این اثر متعلق به من است و مسئولیت کپی غیرمجاز با من است.</span>
+          <input type="checkbox" id="rights" required />
+          <span>حقوق انتشار این اثر متعلق به من است و مسئولیت کپی غیرمجاز با من است. *</span>
         </label>
         <label class="jh-check">
-          <input type="checkbox" id="health" />
-          <span id="health_txt">نکات حوزه سلامت را می‌پذیرم.</span>
+          <input type="checkbox" id="health" required />
+          <span id="health_txt">نکات حوزه سلامت را می‌پذیرم. *</span>
         </label>
         <div class="jh-actions">
           <button class="jh-btn secondary" type="button" id="btn-back-3">قبلی</button>

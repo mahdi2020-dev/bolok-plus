@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
   <meta charset="UTF-8" />
@@ -7,21 +7,35 @@
   <title>ورود | جزوات بلوک</title>
   <link rel="icon" href="../assets/bolok-logo.svg?v=59" type="image/svg+xml" />
   <link rel="stylesheet" href="../assets/fonts/vazirmatn-fd.css?v=1" />
-  <link rel="stylesheet" href="../styles.css?v=64" />
-  <link rel="stylesheet" href="jomhehsara.css?v=40" />
-  <script src="../site-api.js?v=22" defer></script>
-  <script src="jomhehsara.js?v=36" defer></script>
+  <link rel="stylesheet" href="../styles.css?v=80" />
+  <link rel="stylesheet" href="jomhehsara.css?v=94" />
+  <script src="../site-api.js?v=25" defer></script>
+  <script src="jomhehsara.js?v=94" defer></script>
 </head>
 <body class="jh-body jh-auth-body" data-jh-page="login">
   <main class="jh-wrap jh-wrap--auth">
-    <div id="jh-auth-boot" class="jh-boot">در حال بررسی نشست…</div>
+    <div id="jh-auth-boot" class="jh-boot" role="status" aria-live="polite">
+      <div class="jh-boot-card">
+        <div class="jh-boot-orb" aria-hidden="true">
+          <span class="jh-boot-halo"></span>
+          <span class="jh-boot-ring jh-boot-ring--a"></span>
+          <span class="jh-boot-ring jh-boot-ring--b"></span>
+          <span class="jh-boot-ring jh-boot-ring--c"></span>
+          <span class="jh-boot-core"><em>ج</em></span>
+          <span class="jh-boot-spark jh-boot-spark--1"></span>
+          <span class="jh-boot-spark jh-boot-spark--2"></span>
+        </div>
+        <strong class="jh-boot-title">در حال بررسی نشست…</strong>
+        <p class="jh-boot-note">صبر کن، داریم چک می‌کنیم<span class="jh-boot-dots" aria-hidden="true"><i></i><i></i><i></i></span></p>
+      </div>
+    </div>
     <div id="jh-auth-ui" hidden>
       <header class="jh-shop-head">
         <h1>ورود به جزوات بلوک</h1>
       </header>
-      <div id="jh-vault" class="jh-vault" hidden></div>
       <div id="jh-err" class="jh-msg" hidden></div>
       <div class="jh-auth-card">
+        <div id="jh-vault" class="jh-vault" hidden></div>
         <section id="step-password" class="jh-form">
           <label>شماره موبایل
             <input id="phone" name="username" type="tel" dir="ltr" inputmode="numeric"
@@ -79,6 +93,9 @@
               <option value="رادیولوژی">رادیولوژی</option>
               <option value="رادیوتراپی">رادیوتراپی</option>
             </select>
+          </label>
+          <label>کد معرف رابط <span class="jh-optional">(اختیاری)</span>
+            <input id="profile_referral" dir="ltr" autocomplete="off" placeholder="مثلاً a1b2c3d4" />
           </label>
           <button class="jh-btn" type="button" id="btn-complete-profile">ذخیره و ادامه</button>
         </section>

@@ -160,20 +160,66 @@
   };
   ensureSiteAccountHeader();
 
-  // Nav drawer (mobile) — backdrop, body lock, header state, resize close
+  // Nav drawer (mobile) — portal to body so header transform/filter can't trap fixed
   const drawer = document.querySelector("[data-nav-drawer]");
   const toggle = document.querySelector("[data-nav-toggle]");
   const backdrop = document.querySelector("[data-nav-backdrop]");
   const siteHeaderEl = document.querySelector(".site-header");
+  let navLockY = 0;
   if (toggle && drawer) {
+    // Move drawer + backdrop to <body> for true viewport-fixed positioning
+    if (drawer.parentElement !== document.body) {
+      drawer.classList.add("nav-drawer--portal");
+      document.body.appendChild(drawer);
+    }
+    if (backdrop && backdrop.parentElement !== document.body) {
+      backdrop.classList.add("nav-drawer-backdrop--portal");
+      document.body.appendChild(backdrop);
+    }
+
+    const syncDrawerOffset = () => {
+      const header = siteHeaderEl || document.querySelector(".site-header");
+      if (!header) return;
+      const rect = header.getBoundingClientRect();
+      const offset = Math.max(48, Math.ceil(rect.bottom));
+      document.documentElement.style.setProperty(
+        "--site-header-offset",
+        `${offset}px`,
+      );
+      document.documentElement.style.setProperty(
+        "--header-h-v36",
+        `${Math.ceil(rect.height)}px`,
+      );
+    };
+
+    const lockScroll = () => {
+      navLockY = Math.max(0, window.scrollY || window.pageYOffset || 0);
+      document.body.classList.add("is-nav-scroll-locked");
+      document.body.style.top = `-${navLockY}px`;
+    };
+    const unlockScroll = () => {
+      document.body.classList.remove("is-nav-scroll-locked");
+      document.body.style.top = "";
+      window.scrollTo(0, navLockY);
+    };
+
     toggle.setAttribute("aria-expanded", "false");
     const setDrawer = (open) => {
+      if (open) {
+        siteHeaderEl?.classList.remove("is-header-hidden");
+        document.documentElement.classList.remove("header-is-hidden");
+        syncDrawerOffset();
+        lockScroll();
+      } else {
+        unlockScroll();
+      }
       drawer.classList.toggle("open", open);
       backdrop?.classList.toggle("is-on", open);
       toggle.setAttribute("aria-expanded", open ? "true" : "false");
       document.body.classList.toggle("nav-open", open);
       document.documentElement.classList.toggle("nav-open", open);
       siteHeaderEl?.classList.toggle("is-open", open);
+      requestAnimationFrame(syncDrawerOffset);
     };
     const closeDrawer = () => setDrawer(false);
     toggle.addEventListener("click", (e) => {
@@ -205,32 +251,86 @@
       () => {
         // Match CSS: desktop inline nav from 901px up
         if (window.matchMedia("(min-width: 901px)").matches) closeDrawer();
+        else if (drawer.classList.contains("open")) syncDrawerOffset();
       },
       { passive: true },
     );
   }
 
-  // Header shadow on scroll + dynamic sticky offset from real shell height
+  // Smart Sticky header: hide on scroll down, show on scroll up + compact glass
   const siteHeader = document.querySelector(".site-header");
   if (siteHeader) {
     let ticking = false;
+    let lastY = Math.max(0, window.scrollY || 0);
+    let hidden = false;
+    const hideAfter = 72;
+    const deltaMin = 6;
+    const prefersReduce = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    const isMobileNav = () =>
+      window.matchMedia("(max-width: 900px)").matches;
+    const drawerOpen = () =>
+      document.body.classList.contains("nav-open") ||
+      siteHeader.classList.contains("is-open");
+
     const syncHeaderHeight = () => {
+      const rect = siteHeader.getBoundingClientRect();
       const shell = siteHeader.querySelector(".header-shell") || siteHeader;
       const h = Math.ceil(shell.getBoundingClientRect().height);
-      // Full sticky header (padding + shell) — drawer items must clear the brand.
-      const full = Math.ceil(siteHeader.getBoundingClientRect().height);
+      const full = Math.ceil(rect.height);
+      const bottom = Math.ceil(rect.bottom);
       if (h > 0) {
         document.documentElement.style.setProperty("--header-h-v36", `${h}px`);
       }
+      // While mobile drawer is open, pin offset to header bottom in the viewport
+      if (drawerOpen() && isMobileNav()) {
+        document.documentElement.style.setProperty(
+          "--site-header-offset",
+          `${Math.max(48, bottom)}px`,
+        );
+        return;
+      }
       if (full > 0) {
-        document.documentElement.style.setProperty("--site-header-offset", `${full}px`);
+        document.documentElement.style.setProperty(
+          "--site-header-offset",
+          `${hidden && !isMobileNav() ? 0 : Math.max(full, bottom)}px`,
+        );
       }
     };
+
+    const setHidden = (next) => {
+      if (hidden === next) return;
+      hidden = next;
+      siteHeader.classList.toggle("is-header-hidden", hidden);
+      document.documentElement.classList.toggle("header-is-hidden", hidden);
+      syncHeaderHeight();
+    };
+
     const syncHeader = () => {
-      siteHeader.classList.toggle("is-scrolled", window.scrollY > 8);
+      const y = Math.max(0, window.scrollY || 0);
+      const scrolled = y > 8;
+      siteHeader.classList.toggle("is-scrolled", scrolled);
+      siteHeader.classList.toggle("is-compact", scrolled);
+
+      if (drawerOpen() || prefersReduce) {
+        setHidden(false);
+      } else if (isMobileNav()) {
+        // Mobile: keep header available (search/profile); only compact
+        setHidden(false);
+      } else if (y <= hideAfter) {
+        setHidden(false);
+      } else if (y - lastY > deltaMin) {
+        setHidden(true);
+      } else if (lastY - y > deltaMin) {
+        setHidden(false);
+      }
+
+      lastY = y;
       syncHeaderHeight();
       ticking = false;
     };
+
     syncHeader();
     window.addEventListener(
       "scroll",
@@ -242,7 +342,14 @@
       },
       { passive: true },
     );
-    window.addEventListener("resize", syncHeaderHeight, { passive: true });
+    window.addEventListener(
+      "resize",
+      () => {
+        setHidden(false);
+        syncHeaderHeight();
+      },
+      { passive: true },
+    );
     if (typeof ResizeObserver !== "undefined") {
       const ro = new ResizeObserver(syncHeaderHeight);
       ro.observe(siteHeader.querySelector(".header-shell") || siteHeader);
@@ -506,24 +613,32 @@
 
     const meta = [
       {
-        title: "جدول روز — ۱۴ خانه",
-        text: "از ۵ صبح تا ۵ صبح فردا برنامه‌ات را مثل یک جدول کاری می‌چینی؛ هر خانه یک بلوک تمرکز است.",
+        title: "منوی برنامه‌ریزی",
+        text: "همه‌چیز یک‌جا: منابع، اهداف، برنامه‌سازی، ثبت انجام، آمار و فروشگاه — بلوک با برنامه بچین.",
       },
       {
-        title: "بانک منابع",
-        text: "کتاب، جزوه و ویدیو را یک‌بار بساز؛ فصل و بازهٔ صفحه/تست را وصل کن تا پیشرفت دقیق بماند.",
+        title: "برنامه‌سازی پیشرفته و مدرن",
+        text: "عنوان، منبع، صفحات و بازهٔ ساعت را دقیق می‌چینی؛ پیش‌نمایش زنده قبل از ثبت بلوک.",
+      },
+      {
+        title: "همیشه در حال پیشرفت",
+        text: "از Day Off و دستاورد تا هوش بلوک، مشاوره، چالش و ترکر رفتار — بلوک خسته نمی‌شود.",
+      },
+      {
+        title: "مینی بلوک‌ساز",
+        text: "سریع و سبک: نام منبع، حجم صفحه و تست، ساعت مطالعه و رنگ بلوک — دیگه از این راحت‌تر؟",
+      },
+      {
+        title: "جبران هوشمند شکست‌ها",
+        text: "ثبت‌های ناقص را هوشمند منتقل کن؛ انعطاف‌پذیر بمون و ناامید نشو.",
+      },
+      {
+        title: "آمار پیشرفته و کاربردی",
+        text: "بازه‌ها، میانگین روزانه، یادآور استراحت و گرید فعالیت — آمار و همه‌نوع نمودار.",
       },
       {
         title: "ثبت و انجام",
-        text: "بعد از مطالعه واقعی، زمان را با کرنومتر یا دستی ثبت کن و وضعیت خانه را به‌روز کن.",
-      },
-      {
-        title: "اهداف و هوش بلوک",
-        text: "هدف کوتاه و بلند بساز؛ هوش بلوک کمک می‌کند برنامهٔ زمانی تا آزمون را بچینی — تو تأیید می‌کنی.",
-      },
-      {
-        title: "پرمیوم و ارز",
-        text: "نسخه رایگان برای شروع کافی است؛ پرمیوم منابع نامحدود و امکانات بیشتر می‌دهد.",
+        text: "با کرنومتر یا ثبت دستی، زمان واقعی مطالعه را دقیق ثبت کن.",
       },
     ];
 
@@ -574,7 +689,10 @@
     let startX = 0;
     let deltaX = 0;
     let dragging = false;
-    const screen = root.querySelector(".phone-screen");
+    const screen =
+      root.querySelector(".phone-screen") ||
+      root.querySelector(".shot-frame") ||
+      root.querySelector(".slides--shots");
     screen?.addEventListener(
       "touchstart",
       (e) => {

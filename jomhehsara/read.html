@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
   <meta charset="UTF-8" />
@@ -7,16 +7,36 @@
   <title>مطالعه | جزوه‌سرا</title>
   <link rel="icon" href="../assets/bolok-logo.svg?v=59" type="image/svg+xml" />
   <link rel="stylesheet" href="../assets/fonts/vazirmatn-fd.css?v=1" />
-  <link rel="stylesheet" href="../styles.css?v=64" />
-  <link rel="stylesheet" href="jomhehsara.css?v=25" />
-  <script src="../site-api.js?v=22" defer></script>
-  <script src="jomhehsara.js?v=26" defer></script>
+  <link rel="stylesheet" href="../styles.css?v=80" />
+  <link rel="stylesheet" href="jomhehsara.css?v=83" />
+  <script src="../site-api.js?v=24" defer></script>
+  <script src="jomhehsara.js?v=83" defer></script>
 </head>
-<body class="jh-body" data-jh-page="read">
-  <main class="jh-wrap">
+<body class="jh-body jh-read-body" data-jh-page="read">
+  <main class="jh-wrap jh-wrap--read">
     <div id="jh-err" class="jh-msg" hidden></div>
-    <div class="jh-watermark-hint" id="jh-wm">نسخه اختصاصی</div>
-    <iframe class="jh-reader" id="jh-reader" title="مطالعه جزوه"></iframe>
+    <div class="jh-read-bar" id="jh-read-bar" hidden>
+      <div class="jh-read-bar-start">
+        <a class="jh-btn secondary" id="jh-read-back" href="item.html">بازگشت</a>
+        <span class="jh-read-meta" id="jh-read-meta">در حال آماده‌سازی…</span>
+      </div>
+      <div class="jh-read-bar-end">
+        <div class="jh-read-zoom" role="group" aria-label="بزرگ‌نمایی">
+          <button type="button" class="jh-read-tool" id="jh-read-zoom-out" title="کوچک‌تر" aria-label="کوچک‌تر">−</button>
+          <span id="jh-read-zoom-lab">۱۰۰٪</span>
+          <button type="button" class="jh-read-tool" id="jh-read-zoom-in" title="بزرگ‌تر" aria-label="بزرگ‌تر">+</button>
+        </div>
+        <button type="button" class="jh-btn" id="jh-read-dl">دانلود PDF</button>
+      </div>
+    </div>
+    <section class="jh-reader-shell" id="jh-reader-shell" aria-live="polite">
+      <div class="jh-reader-boot" id="jh-reader-boot">
+        <span class="jh-reader-spin" aria-hidden="true"></span>
+        <strong>در حال بارگذاری جزوه…</strong>
+        <p>نسخهٔ واترمارک‌شده برای مطالعه آنلاین آماده می‌شود</p>
+      </div>
+      <div class="jh-reader-pages" id="jh-reader-pages" hidden></div>
+    </section>
   </main>
 </body>
 </html>

@@ -70,6 +70,29 @@
     return true;
   }
 
+  function friendlyNetworkError(err) {
+    const raw = String(err?.message || err || "");
+    if (/failed to fetch|networkerror|load failed|network request failed/i.test(raw)) {
+      return "ارتباط با سرور برقرار نشد. بعد از ۱ ساعت دوباره امتحان کنید.";
+    }
+    if (/abort/i.test(raw)) return "درخواست لغو شد؛ دوباره تلاش کن.";
+    return raw || "خطای شبکه";
+  }
+
+  function extractApiError(data, status) {
+    const detail = data && (data.detail ?? data.message);
+    if (typeof detail === "string" && detail.trim()) return detail;
+    if (Array.isArray(detail) && detail.length) {
+      const first = detail[0];
+      if (typeof first === "string") return first;
+      if (first && typeof first.msg === "string") return first.msg;
+    }
+    if (status === 401 || status === 403) return "نشست منقضی شده؛ دوباره وارد شو.";
+    if (status === 413) return "حجم فایل زیاد است.";
+    if (status >= 500) return "سرور موقتاً در دسترس نیست؛ کمی بعد دوباره تلاش کن.";
+    return `HTTP ${status}`;
+  }
+
   async function api(path, opts = {}) {
     const headers = {
       Accept: "application/json",
@@ -80,10 +103,15 @@
     if (session && !headers["X-Bolok-Site-Session"]) {
       headers["X-Bolok-Site-Session"] = session;
     }
-    const res = await fetch(`${API_BASE}${path}`, {
-      ...opts,
-      headers,
-    });
+    let res;
+    try {
+      res = await fetch(`${API_BASE}${path}`, {
+        ...opts,
+        headers,
+      });
+    } catch (err) {
+      throw new Error(friendlyNetworkError(err));
+    }
     let data = null;
     try {
       data = await res.json();
@@ -91,8 +119,7 @@
       data = null;
     }
     if (!res.ok) {
-      const msg = (data && (data.detail || data.message)) || `HTTP ${res.status}`;
-      throw new Error(typeof msg === "string" ? msg : "خطای سرور");
+      throw new Error(extractApiError(data, res.status));
     }
     return data;
   }
@@ -104,8 +131,10 @@
   function apiFormProgress(path, formData, opts = {}) {
     const onProgress =
       typeof opts.onProgress === "function" ? opts.onProgress : null;
-    return new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
+    let settled = false;
+    let xhr = null;
+    const promise = new Promise((resolve, reject) => {
+      xhr = new XMLHttpRequest();
       xhr.open("POST", `${API_BASE}${path}`, true);
       xhr.setRequestHeader("Accept", "application/json");
       const session = getSiteSession();
@@ -125,7 +154,28 @@
           });
         };
       }
-      xhr.onerror = () => reject(new Error("خطای شبکه در آپلود"));
+      const settleReject = (err) => {
+        if (settled) return;
+        settled = true;
+        reject(err);
+      };
+      const settleResolve = (data) => {
+        if (settled) return;
+        settled = true;
+        resolve(data);
+      };
+      xhr.onerror = () =>
+        settleReject(
+          new Error(
+            "اتصال آپلود برقرار نشد. اینترنت و بک‌اند لیارا را چک کن."
+          )
+        );
+      xhr.onabort = () => {
+        const err = new Error("آپلود متوقف شد");
+        err.name = "UploadAborted";
+        err.code = "UPLOAD_ABORTED";
+        settleReject(err);
+      };
       xhr.onload = () => {
         let data = null;
         try {
@@ -134,15 +184,19 @@
           data = null;
         }
         if (xhr.status < 200 || xhr.status >= 300) {
-          const msg =
-            (data && (data.detail || data.message)) || `HTTP ${xhr.status}`;
-          reject(new Error(typeof msg === "string" ? msg : "خطای سرور"));
+          settleReject(new Error(extractApiError(data, xhr.status)));
           return;
         }
-        resolve(data);
+        settleResolve(data);
       };
       xhr.send(formData);
     });
+    promise.abort = () => {
+      try {
+        xhr?.abort();
+      } catch (_) {}
+    };
+    return promise;
   }
 
   function rootPrefix() {
@@ -185,7 +239,21 @@
       } catch (_) {}
       throw new Error(typeof msg === "string" ? msg : "خطای دریافت فایل");
     }
-    return await res.blob();
+    const buf = await res.arrayBuffer();
+    if (!buf || buf.byteLength < 8) {
+      throw new Error("فایل PDF خالی برگشت");
+    }
+    const head = new Uint8Array(buf, 0, Math.min(5, buf.byteLength));
+    const sig = String.fromCharCode(...head);
+    if (!sig.startsWith("%PDF")) {
+      throw new Error("پاسخ سرور PDF معتبر نیست");
+    }
+    return new Blob([buf], { type: "application/pdf" });
+  }
+
+  async function fetchPdfBytes(path) {
+    const blob = await fetchPdfBlob(path);
+    return await blob.arrayBuffer();
   }
 
   function rememberAuth(res) {
@@ -218,5 +286,6 @@
     rememberAuth,
     pdfUrl,
     fetchPdfBlob,
+    fetchPdfBytes,
   };
 })();

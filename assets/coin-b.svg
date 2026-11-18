@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Bolok coin">
+  <defs>
+    <linearGradient id="bCoin" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FFB8F0"/>
+      <stop offset="55%" stop-color="#FF90E8"/>
+      <stop offset="100%" stop-color="#F472D0"/>
+    </linearGradient>
+  </defs>
+  <circle cx="100" cy="104" r="86" fill="#000"/>
+  <circle cx="100" cy="96" r="86" fill="url(#bCoin)" stroke="#000" stroke-width="6"/>
+  <circle cx="100" cy="96" r="70" fill="none" stroke="#000" stroke-width="3" opacity="0.35"/>
+  <text x="100" y="108" text-anchor="middle" dominant-baseline="central" font-family="Tahoma, Arial, Segoe UI, sans-serif" font-size="92" font-weight="900" fill="#000">&#1576;</text>
+</svg>

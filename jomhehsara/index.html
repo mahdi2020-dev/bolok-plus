@@ -1,62 +1,294 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="bolok-root" content="../" />
   <title>فروشگاه جزوات | جزوه‌سرا بلوک</title>
-  <meta name="description" content="جست‌وجو و دریافت جزوه دانشجویان دانشکده پیراپزشکی — جزوه‌سرا بلوک." />
+  <meta name="description" content="جزوهٔ تیزهوشان ششم به هفتم و نهم به دهم — جست‌وجو، خرید و انتشار در جزوه‌سرا بلوک." />
   <link rel="icon" href="../assets/bolok-logo.svg?v=59" type="image/svg+xml" />
   <link rel="stylesheet" href="../assets/fonts/vazirmatn-fd.css?v=1" />
-  <link rel="stylesheet" href="../styles.css?v=64" />
-  <link rel="stylesheet" href="jomhehsara.css?v=40" />
-  <script src="../site-api.js?v=22" defer></script>
-  <script src="jomhehsara.js?v=36" defer></script>
+  <link rel="stylesheet" href="../styles.css?v=80" />
+  <link rel="stylesheet" href="jomhehsara.css?v=104" />
+  <script src="../site-api.js?v=26" defer></script>
+  <script src="assets/vendor/lottie-player.js?v=2" defer></script>
+  <script src="jomhehsara.js?v=104" defer></script>
 </head>
 <body class="jh-body" data-jh-page="index">
   <main class="jh-wrap">
-    <header class="jh-shop-head">
-      <h1>جزوه مناسب درس تو</h1>
-    </header>
+    <section class="jh-mkt-hero" aria-label="معرفی جزوه‌سرا">
+      <div class="jh-mkt-hero-bg" aria-hidden="true">
+        <img src="assets/jozveh-hero-bg.jpg" alt="" width="1600" height="900" decoding="async" />
+      </div>
+      <div class="jh-mkt-coins" aria-hidden="true">
+        <img class="jh-mkt-coin jh-mkt-coin--a" src="assets/coin-j.svg" alt="" width="120" height="120" />
+        <img class="jh-mkt-coin jh-mkt-coin--b" src="assets/coin-j.svg" alt="" width="120" height="120" />
+        <img class="jh-mkt-coin jh-mkt-coin--c" src="assets/coin-j.svg" alt="" width="80" height="80" />
+      </div>
+      <p class="jh-mkt-hero-brand">جزوه‌سرا <em>بلوک</em></p>
+      <h1>دانشگاه علوم پزشکی<br />شهید بهشتی<br />جهشی در آموزش</h1>
+      <p>دیگه برای یه جزوه، منت هیچ‌کس رو نکش! بروزترین جزوه‌ها رو با یه کلیک بردار و با خیال راحت، بالاترین نمره رو بگیر.</p>
+      <div class="jh-mkt-cta">
+        <div class="jh-mkt-cta-actions">
+          <div class="jh-btn-offset">
+            <span class="jh-btn-offset-shade" aria-hidden="true"></span>
+            <span class="jh-btn-offset-shade jh-btn-offset-shade--mid" aria-hidden="true"></span>
+            <a class="jh-btn-offset-face" href="submit.html">انتشار جزوه</a>
+          </div>
+          <a class="jh-mkt-shop-jump" href="#jh-shop">
+            <span>برو به فروشگاه</span>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+          </a>
+        </div>
+        <div class="jh-search-bar jh-search-bar--inline">
+          <label class="jh-search-combo">
+            <span class="visually-hidden">جست‌وجو در فروشگاه</span>
+            <input id="filter-q" type="search" placeholder="جست‌وجو در فروشگاه… نام درس، جزوه یا نویسنده" autocomplete="off" enterkeyhint="search" />
+            <button class="jh-search-go" type="button" id="btn-filter" aria-label="جست‌وجو">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+              <span>جست‌وجو</span>
+            </button>
+          </label>
+        </div>
+      </div>
+    </section>
 
-    <div class="jh-search-bar">
-      <label class="jh-search-wide">
-        <span class="visually-hidden">جست‌وجو</span>
-        <input id="filter-q" type="search" placeholder="نام درس، عنوان جزوه یا نویسنده" />
-      </label>
-      <button class="jh-btn" type="button" id="btn-filter">جست‌وجو</button>
+    <section class="jh-mkt-features" aria-label="چرا جزوه‌سرا">
+      <div class="jh-mkt-row">
+        <article class="jh-mkt-card jh-mkt-card--wide">
+          <div class="jh-mkt-card-copy">
+            <h2>درس‌هات رو خوب بخون، بنویس، پول هم دربیار!!!</h2>
+            <p>جزوه‌سرا این امکان رو به دانشجوها داده که علاوه بر اینکه درس‌شون رو می‌خونن و براش جزوه می‌نویسن، بیان این جزوه‌ها رو برای خودشون رزومه کنن، سرتیفیکت معتبر بگیرن و حتی با فروش جزوه به هم‌ترمی یا ترم‌پایین‌ترهاشون پول به جیب بزنن — اونم کل روند رایگان!!</p>
+          </div>
+          <div class="jh-mkt-card-art">
+            <img src="assets/jozveh-product-fa.jpg?v=5" alt="نمونه صفحه محصول جزوه در جزوه‌سرا — متوسط B، ۹۹٬۰۰۰ تومان" width="960" height="720" loading="lazy" decoding="async" />
+          </div>
+        </article>
+        <article class="jh-mkt-card jh-mkt-card--road">
+          <h2>سفیر بلوک بشو، مثل آب خوردن پول دربیار</h2>
+          <p>دو مدل درآمدی داریم: فروش جزوه، یا همکاری در فروش جزوه به نام <strong>سفیر</strong> — ۱۰ درصد از هر فروش رو مال خودت بکن.</p>
+          <div class="jh-mkt-mini-chart" aria-hidden="true">
+            <div class="jh-mkt-mini-chart-meta">
+              <span><i class="dot-gray"></i> جزوه <b>۵</b></span>
+              <span><i class="dot-teal"></i> سفیر <b>۲۰</b></span>
+              <span><i class="dot-gray"></i> فروش <b>۲۰۰</b></span>
+              <span><i class="dot-pink"></i> درآمد <b>۱۲٬۵۰۰٬۰۰۰</b> تومان</span>
+            </div>
+            <svg viewBox="0 0 280 110" width="280" height="110" focusable="false">
+              <rect x="8" y="48" width="18" height="46" rx="3" fill="#e8e8e4"/>
+              <rect x="36" y="42" width="18" height="52" rx="3" fill="#e8e8e4"/>
+              <rect x="64" y="36" width="18" height="58" rx="3" fill="#e8e8e4"/>
+              <rect x="92" y="40" width="18" height="54" rx="3" fill="#e8e8e4"/>
+              <rect x="120" y="28" width="18" height="66" rx="3" fill="#e8e8e4"/>
+              <rect x="148" y="22" width="18" height="72" rx="3" fill="#e8e8e4"/>
+              <rect x="176" y="16" width="18" height="78" rx="3" fill="#e8e8e4"/>
+              <rect x="204" y="12" width="18" height="82" rx="3" fill="#e8e8e4"/>
+              <rect x="232" y="6" width="18" height="88" rx="3" fill="#e8e8e4"/>
+              <polyline fill="none" stroke="#ff90e8" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" points="17,78 53,70 81,66 109,58 137,48 165,40 193,32 221,22 249,14"/>
+              <circle cx="17" cy="78" r="5" fill="#fff" stroke="#ff90e8" stroke-width="3"/>
+              <circle cx="109" cy="58" r="5" fill="#fff" stroke="#ff90e8" stroke-width="3"/>
+              <circle cx="165" cy="40" r="5" fill="#fff" stroke="#ff90e8" stroke-width="3"/>
+              <circle cx="249" cy="14" r="5" fill="#fff" stroke="#ff90e8" stroke-width="3"/>
+            </svg>
+          </div>
+        </article>
+      </div>
+      <div class="jh-mkt-row">
+        <article class="jh-mkt-card jh-mkt-card--checks">
+          <h2>قابلیت‌های خفن</h2>
+          <ul>
+            <li><span class="jh-check" aria-hidden="true"></span><strong>فروش مخفیانه:</strong> می‌تونی نذاری بفهمن جزوه مال کیه و پول رو کی گرفته</li>
+            <li><span class="jh-check" aria-hidden="true"></span><strong>سرتیفیکت و اعتبار:</strong> گواهی رسمی برای رزومه‌ات؛ جزوه به افتخار تو می‌مونه</li>
+            <li><span class="jh-check" aria-hidden="true"></span><strong>امنیت بالا:</strong> جزوه‌سرا تا حد ممکن جلوی دزدی و بی‌ارزش‌شدن جزوه‌هات رو می‌گیره</li>
+          </ul>
+        </article>
+        <article class="jh-mkt-card jh-mkt-card--wide jh-mkt-card--art-only">
+          <div class="jh-mkt-card-copy">
+            <h2>می‌تونی معروف بشی!!!</h2>
+            <p>شاید توی سرچ گوگل بیای بالا، افتخار همه بشی و کانکشن‌هات هم بره بالا — <em>نابرده رنج، گنج میسر نمی‌شود.</em></p>
+          </div>
+          <div class="jh-mkt-card-art">
+            <img src="assets/jozveh-sell-anywhere-fa.jpg?v=5" alt="شاید تو روی بلوک — جزوه‌سرا" width="960" height="720" loading="lazy" decoding="async" />
+          </div>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <section class="jh-works" aria-labelledby="jh-works-title">
+    <div class="jh-works-inner">
+      <p class="jh-works-kicker">چطور کار می‌کنیم؟</p>
+      <h2 id="jh-works-title">مسیر بی‌راهه رو به جریانی مولد تبدیل کردیم.</h2>
+      <div class="jh-works-grid">
+        <article class="jh-works-card">
+          <div class="jh-works-icon jh-works-icon--pink" aria-hidden="true">
+            <svg viewBox="0 0 48 48" width="28" height="28" fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 22c0-4 3-7 7-7h6c4 0 7 3 7 7"/>
+              <path d="M12 28c2 6 8 10 12 10s10-4 12-10"/>
+              <path d="M18 30l6-4 6 4"/>
+            </svg>
+          </div>
+          <div>
+            <h3>پشتیبانی قدرتمند</h3>
+            <p>تیمی قوی تو همه مراحل همراهته تا بتونی بهترین مسیر رو بری جلو — از ویس و تدریس استاد تا نوشتن، ویراستاری و کسب درآمد.</p>
+          </div>
+        </article>
+        <article class="jh-works-card">
+          <div class="jh-works-icon jh-works-icon--lime" aria-hidden="true">
+            <svg viewBox="0 0 48 48" width="28" height="28" fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M24 8l4 12h12l-10 7 4 12-10-7-10 7 4-12-10-7h12z"/>
+            </svg>
+          </div>
+          <div>
+            <h3>هلو برو تو گلو</h3>
+            <p>هم می‌تونی جزوهٔ دست‌نویس بذاری هم تایپی — ولی خودمونیم‌ها، تایپی یه چیز دیگه‌ست!!</p>
+          </div>
+        </article>
+        <article class="jh-works-card">
+          <div class="jh-works-icon jh-works-icon--lilac" aria-hidden="true">
+            <svg viewBox="0 0 48 48" width="28" height="28" fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 36V18l10-6 10 6v18"/>
+              <path d="M14 36h20"/>
+              <path d="M24 12v24"/>
+            </svg>
+          </div>
+          <div>
+            <h3>تسویه فعال و تقسیم سهم الکترونیک</h3>
+            <p>نیاز نیست زحمت بکشی؛ همه‌چی خودکار برات انجام می‌شه — یه کلیک و بوممممم، همه‌چی رو اوکی می‌کنیم. خواستی بخش <a href="learn.html">آموزش و راهنما</a> یه سری هم بزن.</p>
+          </div>
+        </article>
+      </div>
+      <div class="jh-works-cta">
+        <div class="jh-btn-offset jh-btn-offset--light">
+          <span class="jh-btn-offset-shade" aria-hidden="true"></span>
+          <span class="jh-btn-offset-shade jh-btn-offset-shade--mid" aria-hidden="true"></span>
+          <a class="jh-btn-offset-face" href="learn.html#publish">آموزش و راهنما</a>
+        </div>
+        <a class="jh-works-link" href="#jh-shop">دیدن جزوه‌ها</a>
+      </div>
     </div>
+  </section>
 
-    <div class="jh-filters jh-filters--shop">
-      <label>رشته <select id="filter-major"><option value="">همه رشته‌ها</option></select></label>
-      <label>نوع محتوا
-        <select id="filter-kind">
-          <option value="">همه</option>
-          <option value="typed">تایپی</option>
-          <option value="handwritten">دست‌نویس</option>
-        </select>
-      </label>
-      <label>قیمت
-        <select id="filter-priced">
-          <option value="">همه</option>
-          <option value="free">رایگان</option>
-          <option value="paid">پولی</option>
-        </select>
-      </label>
-      <button class="jh-btn secondary" type="button" id="btn-clear-filters">پاک‌کردن فیلترها</button>
-    </div>
+  <div class="jh-wrap jh-wrap--tail">
+    <section class="jh-subject-cloud" aria-label="درس‌های فروشگاه" id="jh-subject-cloud">
+      <header class="jh-cloud-intro">
+        <h2 class="jh-cloud-kicker">از درس‌های پایه تا تخصصی، جای جزوه‌ات اینجاست.</h2>
+        <p class="jh-cloud-sub">جزوه‌های موردنیازت رو پیدا کن و منابع درسی‌ات رو کنار برنامهٔ مطالعه‌ات داشته باش.</p>
+      </header>
+    </section>
 
-    <div class="jh-results-meta" id="jh-results-meta" hidden></div>
-    <div id="jh-err" class="jh-msg" hidden></div>
-    <div id="jh-list"></div>
+    <section id="jh-shop" class="jh-shop" aria-labelledby="jh-shop-title">
+      <h2 class="jh-mkt-section-label" id="jh-shop-title">جزوه‌های فروشگاه</h2>
+
+      <div class="jh-filter-chips" role="toolbar" aria-label="فیلترها">
+        <label class="jh-chip-select">
+          <span class="jh-chip-select-lab">رشته</span>
+          <select id="filter-major"><option value="">همه</option></select>
+        </label>
+        <label class="jh-chip-select">
+          <span class="jh-chip-select-lab">نوع</span>
+          <select id="filter-kind">
+            <option value="">همه</option>
+            <option value="typed">تایپی</option>
+            <option value="handwritten">دست‌نویس</option>
+          </select>
+        </label>
+        <label class="jh-chip-select">
+          <span class="jh-chip-select-lab">قیمت</span>
+          <select id="filter-priced">
+            <option value="">همه</option>
+            <option value="free">رایگان</option>
+            <option value="paid">پولی</option>
+          </select>
+        </label>
+        <button class="jh-chip-clear" type="button" id="btn-clear-filters" hidden>پاک‌کردن</button>
+      </div>
+
+      <div class="jh-results-meta" id="jh-results-meta" hidden></div>
+      <div id="jh-err" class="jh-msg" hidden></div>
+      <div id="jh-list"></div>
+    </section>
+
+    <section class="jh-story" aria-label="شروع کوچک با جزوه">
+      <div class="jh-story-pair">
+        <article class="jh-story-card">
+          <p class="jh-story-bubble">هرکه را شد همت عالی پدید</p>
+          <div class="jh-story-circle">
+            <img src="assets/jozveh-side-project-desk.jpg" alt="در حال نوشتن جزوه پشت میز" width="420" height="420" loading="lazy" decoding="async" />
+          </div>
+        </article>
+        <article class="jh-story-card">
+          <p class="jh-story-bubble">هرچه جست آن چیز، حالی شد پدید</p>
+          <div class="jh-story-circle">
+            <img src="assets/jozveh-side-project-sales.jpg?v=2" alt="موفق شدم — اولین فروش جزوه" width="420" height="420" loading="lazy" decoding="async" />
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="jh-way" aria-label="مسیر جزوه‌سرا">
+      <div class="jh-way-shell">
+        <svg class="jh-way-orbit" viewBox="0 0 640 360" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+          <ellipse class="jh-way-orbit-ring" cx="320" cy="180" rx="236" ry="124"/>
+          <g class="jh-way-orbit-arrows" fill="#111">
+            <path transform="translate(487 87) rotate(42)" d="M0 -6.5 L13 0 L0 6.5 Z"/>
+            <path transform="translate(487 273) rotate(138)" d="M0 -6.5 L13 0 L0 6.5 Z"/>
+            <path transform="translate(153 273) rotate(222)" d="M0 -6.5 L13 0 L0 6.5 Z"/>
+            <path transform="translate(153 87) rotate(-42)" d="M0 -6.5 L13 0 L0 6.5 Z"/>
+          </g>
+        </svg>
+
+        <ol class="jh-way-steps">
+          <li class="jh-way-step jh-way-step--1"><span>۱</span>شروع به نوشتن</li>
+          <li class="jh-way-step jh-way-step--2"><span>۲</span>انتشار</li>
+          <li class="jh-way-step jh-way-step--3"><span>۳</span>فروش</li>
+          <li class="jh-way-step jh-way-step--4"><span>۴</span>تسویه موفق</li>
+        </ol>
+
+        <div class="jh-way-stage" id="jh-way-stage">
+          <img
+            class="jh-way-mascot"
+            src="assets/mascot-way-study.jpg?v=1"
+            alt="کاراکتر جزوه‌سرا در حال مطالعه"
+            width="280"
+            height="280"
+            decoding="async"
+          />
+        </div>
+      </div>
+      <p class="jh-way-hint">می‌تونی جزوه‌ات رو هم برای میان‌ترم بذاری هم پایان‌ترم — می‌دونیم می‌ترکونی.</p>
+    </section>
+
+    <section class="jh-start-small" aria-label="از کتاب تا جزوه">
+      <article class="jh-start-panel">
+        <div class="jh-start-art">
+          <img src="assets/jozveh-instead-book.jpg?v=3" alt="تایپ جزوه روی لپ‌تاپ" width="480" height="480" loading="lazy" decoding="async" />
+        </div>
+        <p class="jh-story-bubble">دیگران کاشتند و ما خوردیم</p>
+      </article>
+      <article class="jh-start-panel">
+        <div class="jh-start-art">
+          <img src="assets/jozveh-start-pamphlet.jpg" alt="شروع با فروش یک جزوه" width="480" height="480" loading="lazy" decoding="async" />
+        </div>
+        <p class="jh-story-bubble">ما بکاریم و دیگران بخورند</p>
+      </article>
+    </section>
+
+    <figure class="jh-newsale">
+      <img src="assets/jozveh-new-sale.jpg?v=4" alt="فروش جدید — باورم نمی‌شه" width="1600" height="900" loading="lazy" decoding="async" />
+    </figure>
 
     <aside class="jh-author-strip">
       <div>
-        <strong>جزوه آماده داری؟</strong>
-        <span>بدون هزینه اولیه منتشر کن.</span>
+        <strong>تا اینجا اومدی، داری فکر می‌کنی؟؟</strong>
+        <span>بریم برای انتشار جزوه‌ات — قدم‌به‌قدم، مشخص و قوی.</span>
       </div>
-      <a class="jh-btn warm" href="submit.html">انتشار جزوه</a>
+      <div class="jh-btn-offset jh-btn-offset--compact">
+        <span class="jh-btn-offset-shade" aria-hidden="true"></span>
+        <span class="jh-btn-offset-shade jh-btn-offset-shade--mid" aria-hidden="true"></span>
+        <a class="jh-btn-offset-face" href="submit.html">انتشار جزوه</a>
+      </div>
     </aside>
-  </main>
+  </div>
 </body>
 </html>

@@ -75,11 +75,9 @@
         <form class="sc-form" data-sc-form novalidate>
           <div class="sc-row sc-row--name">
             <div class="sc-avatar" aria-hidden="true">
-              <svg viewBox="0 0 48 48" width="44" height="44" fill="none">
-                <circle cx="24" cy="24" r="22" stroke="currentColor" stroke-width="2"/>
-                <circle cx="24" cy="18" r="7" stroke="currentColor" stroke-width="2"/>
-                <path d="M10 38c3.5-7 10-10 14-10s10.5 3 14 10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                <path d="M33 31l3 3 6-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="8" r="3.4"/>
+                <path d="M5.2 19.2c1.6-3.2 4-4.7 6.8-4.7s5.2 1.5 6.8 4.7"/>
               </svg>
             </div>
             <label class="sc-field sc-field--grow">
