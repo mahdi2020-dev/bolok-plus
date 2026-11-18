@@ -8,9 +8,9 @@
   <link rel="icon" href="../assets/bolok-logo.svg?v=59" type="image/svg+xml" />
   <link rel="stylesheet" href="../assets/fonts/vazirmatn-fd.css?v=1" />
   <link rel="stylesheet" href="../styles.css?v=80" />
-  <link rel="stylesheet" href="jomhehsara.css?v=104" />
+  <link rel="stylesheet" href="jomhehsara.css?v=110" />
   <script src="../site-api.js?v=26" defer></script>
-  <script src="jomhehsara.js?v=104" defer></script>
+  <script src="jomhehsara.js?v=110" defer></script>
 </head>
 <body class="jh-body jh-focus-body" data-jh-page="submit">
   <header class="jh-focus-bar">
@@ -31,7 +31,7 @@
         <strong>قوانین رو درست و کامل بخون.</strong>
         با انتشار، تمام قوانین پذیرفته شده‌اند.
       </p>
-      <a class="jh-btn secondary" href="learn.html#publish">شرایط و مقررات</a>
+      <a class="jh-btn secondary" href="learn.html#publish-steps">شرایط و مقررات</a>
     </div>
 
     <div id="jh-case-bar" class="jh-status-bar" hidden></div>
@@ -119,6 +119,10 @@
           <label>نویسنده / نویسندگان جزوه (فرد اصلی در ابتدا نوشته شود) *
             <input id="authors_text" placeholder="نام نویسندهٔ اصلی، سپس بقیه" required />
           </label>
+          <label class="jh-check jh-span-2">
+            <input type="checkbox" id="is_anonymous" />
+            <span>انتشار به‌عنوان ناشناس (نام نویسنده برای خریدار نمایش داده نشود)</span>
+          </label>
         </div>
         <button class="jh-btn" type="button" id="btn-next-1">ذخیره و ادامه</button>
       </div>
@@ -144,7 +148,39 @@
           <textarea id="sources_text" rows="5" required placeholder="هر منبعی که در نوشتن این جزوه از آن استفاده کرده‌ای را شفاف بنویس. اگر از ویس یا تدریس استادی کمک گرفته‌ای، نام استاد را بیاور. رفرنس مشخص (مثل فرهنگ معین) را دقیق ذکر کن. استفاده از جزوهٔ شخص دیگر حتماً باید گفته شود. مقاله، کتاب یا سایت علمی معتبر را هم کامل بنویس: عنوان، نویسنده و در صورت امکان سال یا نشانی."></textarea>
         </label>
 
+        <p class="jh-note jh-raster-note">
+          PDF باید <strong>عکس‌محور</strong> باشد (متن قابل کپی/جستجو نباشد). فایل تایپی با متن زنده در داوری رد می‌شود.
+        </p>
         <div class="jh-upload-slots">
+          <div class="jh-upload-slot" id="slot-cover">
+            <input id="file_cover" class="jh-file-input" type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" />
+            <button type="button" class="jh-drop-idle" data-pick="file_cover">
+              <span class="jh-drop-badge jh-drop-badge--cover">جلد</span>
+              <strong>عکس روی جلد <span class="jh-req">*</span></strong>
+              <span>JPG/PNG/WebP · حداکثر ۸ مگابایت</span>
+            </button>
+            <div class="jh-drop-card" id="cover-card" hidden>
+              <div class="jh-drop-head">
+                <div class="jh-page-preview" id="cover-preview" hidden>
+                  <img id="cover-thumb" alt="پیش‌نمایش جلد" />
+                </div>
+                <div class="jh-drop-copy">
+                  <strong id="cover-name"></strong>
+                  <span class="jh-meta" id="cover-meta">انتخاب نشده</span>
+                </div>
+              </div>
+              <div class="jh-upload-progress" id="cover-progress" hidden>
+                <div class="jh-upload-bar"><i id="cover-bar"></i></div>
+                <span id="cover-pct">۰٪</span>
+              </div>
+              <p class="jh-drop-state" id="cover-state"></p>
+              <div class="jh-drop-actions">
+                <button type="button" class="jh-drop-change" data-pick="file_cover">تغییر فایل</button>
+                <button type="button" class="jh-drop-abort" data-jh-abort-upload>توقف بارگذاری</button>
+              </div>
+            </div>
+            <div id="cover-status" class="jh-upload-status" hidden></div>
+          </div>
           <div class="jh-upload-slot" id="slot-pdf">
             <input id="file_pdf" class="jh-file-input" type="file" accept=".pdf,application/pdf" />
             <button type="button" class="jh-drop-idle" data-pick="file_pdf">
@@ -237,8 +273,8 @@
           <input id="file_consent" class="jh-file-input" type="file" accept=".pdf,application/pdf" />
           <button type="button" class="jh-drop-idle" data-pick="file_consent">
             <span class="jh-drop-badge jh-drop-badge--consent">رضایت</span>
-            <strong>برگه رضایت <span class="jh-req">*</span></strong>
-            <span>PDF · حداکثر ۱۰۰ مگابایت</span>
+            <strong>برگه رضایت (اختیاری)</strong>
+            <span>برای نشان طلایی · PDF · حداکثر ۱۰۰ مگابایت</span>
           </button>
           <div class="jh-drop-card" id="consent-card" hidden>
             <div class="jh-drop-head">
@@ -271,10 +307,10 @@
 
         <section class="jh-price-block is-free" id="jh-price-block">
           <div class="jh-price-head">
-            <strong>قیمت نهایی مد نظر *</strong>
+            <strong>پیشنهاد قیمت *</strong>
             <label class="jh-toggle">
               <input type="checkbox" id="price_free" checked />
-              <span>رایگان منتشر شود</span>
+              <span>رایگان پیشنهاد شود</span>
             </label>
           </div>
           <label class="jh-price-field" id="jh-price-wrap">
@@ -283,7 +319,7 @@
             <input type="hidden" id="price_irt" value="0" />
           </label>
           <p class="jh-price-perpage" id="jh-price-perpage" hidden></p>
-          <p class="jh-price-note" id="jh-price-note">این جزوه بدون پرداخت در اختیار خریدار قرار می‌گیرد.</p>
+          <p class="jh-price-note" id="jh-price-note">قیمت نهایی را تیم داوری بلوک تعیین می‌کند؛ این فقط پیشنهاد شماست.</p>
         </section>
 
         <div class="jh-actions">

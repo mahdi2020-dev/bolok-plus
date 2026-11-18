@@ -154,6 +154,24 @@
   };
 
   let _pdfjsLoading = null;
+  /** CDN cMaps/fonts keep typed Persian CID PDFs readable with vendored pdf.min.js. */
+  const PDFJS_CMAP_URL =
+    "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/";
+  const PDFJS_STANDARD_FONT_URL =
+    "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/standard_fonts/";
+
+  function pdfDocumentOpts(data) {
+    return {
+      data,
+      cMapUrl: PDFJS_CMAP_URL,
+      cMapPacked: true,
+      standardFontDataUrl: PDFJS_STANDARD_FONT_URL,
+      disableAutoFetch: false,
+      disableStream: true,
+      useSystemFonts: false,
+    };
+  }
+
   function loadPdfJs() {
     if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
     if (_pdfjsLoading) return _pdfjsLoading;
@@ -184,14 +202,22 @@
   ) {
     if (!host || !pamphletId) return;
     const bookTotal = Math.max(1, Math.floor(Number(bookPages) || 0) || 1);
-    /** Max 25% of pages, hard cap 4 (server preview also truncates). */
-    const PREVIEW_MAX = Math.max(1, Math.min(4, Math.ceil(bookTotal * 0.25)));
+    /** Tiers: <6→1, 6–10→3, ≥11→5 (server preview_pages matches). */
+    const freePreviewCap = (n) => {
+      const t = Math.max(0, Math.floor(Number(n) || 0));
+      if (t < 6) return 1;
+      if (t <= 10) return 3;
+      return 5;
+    };
+    const PREVIEW_MAX = Math.max(1, Math.min(freePreviewCap(bookTotal), bookTotal));
     const clampPage = (n) =>
       Math.max(1, Math.min(PREVIEW_MAX, Math.floor(Number(n) || 1)));
     host.innerHTML = `
       <div class="jh-flip" data-flip>
         <div class="jh-flip-stage">
-          <canvas class="jh-flip-canvas" hidden></canvas>
+          <div class="jh-flip-sheet" data-flip-sheet>
+            <canvas class="jh-flip-canvas" hidden></canvas>
+          </div>
           <div class="jh-flip-fallback">${fallbackHtml || ""}</div>
           <div class="jh-flip-loading">
             <span class="jh-flip-spinner" aria-hidden="true"></span>
@@ -207,6 +233,10 @@
             <strong>ادامه بعد از خرید</strong>
             <span>پیش‌نمایش رایگان فقط تا صفحه ${toFaDigits(PREVIEW_MAX)} است</span>
           </div>
+          <button type="button" class="jh-flip-zoom-fab" data-flip-zoom-open hidden title="بزرگ‌نمایی">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/><path d="M11 8v6M8 11h6"/></svg>
+            <span>بزرگ‌نمایی</span>
+          </button>
         </div>
         <div class="jh-flip-bar">
           <button type="button" class="jh-flip-btn jh-flip-btn--prev" data-flip-prev aria-label="صفحه قبل" title="صفحه قبل">
@@ -217,6 +247,7 @@
               صفحه <b data-flip-cur>۱</b>
               <span class="jh-flip-pager-sep">از</span>
               <b data-flip-book>${toFaDigits(bookTotal)}</b>
+              <span class="jh-flip-free-hint">· رایگان تا ${toFaDigits(PREVIEW_MAX)}</span>
             </div>
             <div class="jh-flip-track" data-flip-track role="progressbar"
               aria-valuemin="1" aria-valuemax="${PREVIEW_MAX}" aria-valuenow="1"
@@ -232,10 +263,12 @@
         </div>
       </div>`;
     const canvas = host.querySelector(".jh-flip-canvas");
+    const sheet = host.querySelector("[data-flip-sheet]");
     const fallback = host.querySelector(".jh-flip-fallback");
     const loading = host.querySelector(".jh-flip-loading");
     const errBox = host.querySelector(".jh-flip-error");
     const lockBox = host.querySelector("[data-flip-lock]");
+    const zoomFab = host.querySelector("[data-flip-zoom-open]");
     const curEl = host.querySelector("[data-flip-cur]");
     const bookEl = host.querySelector("[data-flip-book]");
     const dotsEl = host.querySelector("[data-flip-dots]");
@@ -250,6 +283,7 @@
     let previewTotal = PREVIEW_MAX;
     let busy = false;
     let lockFlash = null;
+    let zoomOverlay = null;
 
     const paintDots = () => {
       if (!dotsEl) return;
@@ -284,6 +318,7 @@
         nextBtn.title =
           atEnd && moreLocked ? "ادامه بعد از خرید" : "صفحه بعد";
       }
+      if (zoomFab) zoomFab.hidden = !pdf || canvas?.hidden;
       paintDots();
     };
 
@@ -301,7 +336,27 @@
       if (errBox) errBox.hidden = mode !== "error";
       if (fallback) fallback.hidden = mode !== "fallback" && mode !== "error";
       if (canvas) canvas.hidden = mode !== "ready";
+      if (sheet) sheet.hidden = mode !== "ready";
       if (lockBox && mode !== "ready") lockBox.hidden = true;
+      if (zoomFab) zoomFab.hidden = mode !== "ready";
+    };
+
+    const renderPdfPageToCanvas = async (page, targetCanvas, fitW, fitH, minScale = 1) => {
+      const base = page.getViewport({ scale: 1 });
+      const dpr = Math.min(3, window.devicePixelRatio || 1);
+      const fit = Math.min(fitW / base.width, fitH / base.height);
+      const cssScale = Math.max(minScale, fit);
+      const vp = page.getViewport({ scale: cssScale * dpr });
+      const ctx = targetCanvas.getContext("2d", { alpha: false });
+      targetCanvas.width = Math.floor(vp.width);
+      targetCanvas.height = Math.floor(vp.height);
+      targetCanvas.style.width = `${Math.floor(vp.width / dpr)}px`;
+      targetCanvas.style.height = `${Math.floor(vp.height / dpr)}px`;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, targetCanvas.width, targetCanvas.height);
+      await page.render({ canvasContext: ctx, viewport: vp }).promise;
+      return { cssW: Math.floor(vp.width / dpr), cssH: Math.floor(vp.height / dpr) };
     };
 
     const renderPage = async (n) => {
@@ -311,21 +366,13 @@
       setUi();
       try {
         const page = await pdf.getPage(target);
-        const base = page.getViewport({ scale: 1 });
         const stage = host.querySelector(".jh-flip-stage");
         const wrapW = Math.max(
-          240,
-          (stage?.clientWidth || host.clientWidth || 280) - 16
+          260,
+          (stage?.clientWidth || host.clientWidth || 320) - 20
         );
-        const wrapH = Math.max(280, (stage?.clientHeight || 360) - 16);
-        const scale = Math.min(2.6, wrapW / base.width, wrapH / base.height);
-        const vp = page.getViewport({ scale: Math.max(0.8, scale) });
-        const ctx = canvas.getContext("2d", { alpha: false });
-        canvas.width = Math.floor(vp.width);
-        canvas.height = Math.floor(vp.height);
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        await page.render({ canvasContext: ctx, viewport: vp }).promise;
+        const wrapH = Math.max(340, (stage?.clientHeight || 420) - 28);
+        await renderPdfPageToCanvas(page, canvas, wrapW, wrapH, 0.95);
         pageNo = target;
         showState("ready");
       } catch (_) {
@@ -336,13 +383,162 @@
       }
     };
 
+    const closeZoom = () => {
+      if (!zoomOverlay) return;
+      zoomOverlay.remove();
+      zoomOverlay = null;
+      document.body.classList.remove("jh-preview-zoom-open");
+    };
+
+    const openZoom = async () => {
+      if (!pdf) return;
+      closeZoom();
+      document.body.classList.add("jh-preview-zoom-open");
+      zoomOverlay = document.createElement("div");
+      zoomOverlay.className = "jh-preview-zoom";
+      zoomOverlay.innerHTML = `
+        <div class="jh-preview-zoom-panel" role="dialog" aria-modal="true" aria-label="بزرگ‌نمایی پیش‌نمایش">
+          <header class="jh-preview-zoom-head">
+            <strong>پیش‌نمایش · صفحه ${toFaDigits(pageNo)} از ${toFaDigits(previewTotal)} رایگان</strong>
+            <div class="jh-preview-zoom-tools">
+              <button type="button" class="jh-preview-zoom-tool" data-z-out title="کوچک‌تر">−</button>
+              <button type="button" class="jh-preview-zoom-tool" data-z-reset title="اندازه اولیه">۱۰۰٪</button>
+              <button type="button" class="jh-preview-zoom-tool" data-z-in title="بزرگ‌تر">+</button>
+              <button type="button" class="jh-preview-zoom-close" data-z-close aria-label="بستن">×</button>
+            </div>
+          </header>
+          <div class="jh-preview-zoom-stage" data-z-stage>
+            <canvas class="jh-preview-zoom-canvas" data-z-canvas></canvas>
+          </div>
+          <footer class="jh-preview-zoom-foot">
+            <button type="button" class="jh-btn secondary" data-z-prev ${pageNo <= 1 ? "disabled" : ""}>صفحه قبل</button>
+            <span class="jh-preview-zoom-hint">اسکرول / پینچ برای بزرگ‌نمایی · درگ برای جابه‌جایی</span>
+            <button type="button" class="jh-btn secondary" data-z-next ${pageNo >= previewTotal ? "disabled" : ""}>صفحه بعد</button>
+          </footer>
+        </div>`;
+      document.body.appendChild(zoomOverlay);
+      const zCanvas = zoomOverlay.querySelector("[data-z-canvas]");
+      const zStage = zoomOverlay.querySelector("[data-z-stage]");
+      let zPage = pageNo;
+      let zScale = 1;
+      let panX = 0;
+      let panY = 0;
+      let dragging = false;
+      let dragOrigin = null;
+
+      const applyTransform = () => {
+        if (!zCanvas) return;
+        zCanvas.style.transform = `translate(${panX}px, ${panY}px) scale(${zScale})`;
+      };
+
+      const paintZoomPage = async (n) => {
+        const target = clampPage(n);
+        const page = await pdf.getPage(target);
+        const fitW = Math.max(320, (zStage?.clientWidth || window.innerWidth) - 32);
+        const fitH = Math.max(360, (zStage?.clientHeight || window.innerHeight * 0.7) - 24);
+        await renderPdfPageToCanvas(page, zCanvas, fitW, fitH, 1.05);
+        zPage = target;
+        zScale = 1;
+        panX = 0;
+        panY = 0;
+        applyTransform();
+        const title = zoomOverlay.querySelector(".jh-preview-zoom-head strong");
+        if (title)
+          title.textContent = `پیش‌نمایش · صفحه ${toFaDigits(zPage)} از ${toFaDigits(previewTotal)} رایگان`;
+        const prev = zoomOverlay.querySelector("[data-z-prev]");
+        const next = zoomOverlay.querySelector("[data-z-next]");
+        if (prev) prev.disabled = zPage <= 1;
+        if (next) next.disabled = zPage >= previewTotal;
+      };
+
+      zoomOverlay.addEventListener("click", (e) => {
+        if (e.target === zoomOverlay) closeZoom();
+      });
+      zoomOverlay.querySelector("[data-z-close]")?.addEventListener("click", closeZoom);
+      zoomOverlay.querySelector("[data-z-in]")?.addEventListener("click", () => {
+        zScale = Math.min(4, zScale + 0.25);
+        applyTransform();
+      });
+      zoomOverlay.querySelector("[data-z-out]")?.addEventListener("click", () => {
+        zScale = Math.max(1, zScale - 0.25);
+        if (zScale === 1) {
+          panX = 0;
+          panY = 0;
+        }
+        applyTransform();
+      });
+      zoomOverlay.querySelector("[data-z-reset]")?.addEventListener("click", () => {
+        zScale = 1;
+        panX = 0;
+        panY = 0;
+        applyTransform();
+      });
+      zoomOverlay.querySelector("[data-z-prev]")?.addEventListener("click", async () => {
+        if (zPage > 1) {
+          await paintZoomPage(zPage - 1);
+          renderPage(zPage);
+        }
+      });
+      zoomOverlay.querySelector("[data-z-next]")?.addEventListener("click", async () => {
+        if (zPage < previewTotal) {
+          await paintZoomPage(zPage + 1);
+          renderPage(zPage);
+        } else if (bookTotal > previewTotal) {
+          flashLock();
+        }
+      });
+
+      zStage?.addEventListener(
+        "wheel",
+        (e) => {
+          e.preventDefault();
+          const delta = e.deltaY > 0 ? -0.12 : 0.12;
+          zScale = Math.min(4, Math.max(1, zScale + delta));
+          if (zScale === 1) {
+            panX = 0;
+            panY = 0;
+          }
+          applyTransform();
+        },
+        { passive: false }
+      );
+
+      const onPointerDown = (e) => {
+        if (zScale <= 1) return;
+        dragging = true;
+        dragOrigin = { x: e.clientX - panX, y: e.clientY - panY };
+        zStage?.setPointerCapture?.(e.pointerId);
+      };
+      const onPointerMove = (e) => {
+        if (!dragging || !dragOrigin) return;
+        panX = e.clientX - dragOrigin.x;
+        panY = e.clientY - dragOrigin.y;
+        applyTransform();
+      };
+      const onPointerUp = () => {
+        dragging = false;
+        dragOrigin = null;
+      };
+      zStage?.addEventListener("pointerdown", onPointerDown);
+      zStage?.addEventListener("pointermove", onPointerMove);
+      zStage?.addEventListener("pointerup", onPointerUp);
+      zStage?.addEventListener("pointercancel", onPointerUp);
+
+      const onKey = (e) => {
+        if (e.key === "Escape") closeZoom();
+      };
+      window.addEventListener("keydown", onKey, { once: true });
+
+      await paintZoomPage(pageNo);
+    };
+
     const loadPreview = async () => {
       showState("loading");
       pdf = null;
       pageNo = 1;
       previewTotal = PREVIEW_MAX;
       setUi();
-      const LOAD_MS = 12000;
+      const LOAD_MS = 16000;
       let timedOut = false;
       const timer = window.setTimeout(() => {
         timedOut = true;
@@ -368,7 +564,7 @@
         ]);
         if (timedOut) throw new Error("timeout");
         if (!buf || buf.byteLength < 8) throw new Error("empty");
-        pdf = await lib.getDocument({ data: buf }).promise;
+        pdf = await lib.getDocument(pdfDocumentOpts(buf)).promise;
         if (timedOut) throw new Error("timeout");
         previewTotal = Math.min(PREVIEW_MAX, Math.max(1, pdf.numPages || 1));
         setUi();
@@ -394,6 +590,9 @@
       if (bookTotal > previewTotal) flashLock();
     });
     retryBtn?.addEventListener("click", () => loadPreview());
+    zoomFab?.addEventListener("click", () => openZoom());
+    canvas?.addEventListener("click", () => openZoom());
+    canvas?.addEventListener("dblclick", () => openZoom());
 
     host.tabIndex = 0;
     host.addEventListener("keydown", (e) => {
@@ -405,6 +604,10 @@
       if (e.key === "ArrowRight" && pageNo > 1) {
         e.preventDefault();
         renderPage(pageNo - 1);
+      }
+      if ((e.key === "+" || e.key === "=") && pdf) {
+        e.preventDefault();
+        openZoom();
       }
     });
 
@@ -433,6 +636,11 @@
       },
       { passive: true }
     );
+
+    const onResize = () => {
+      if (pdf && !canvas?.hidden) renderPage(pageNo);
+    };
+    window.addEventListener("resize", onResize);
 
     await loadPreview();
   }
@@ -913,6 +1121,14 @@
     const kind = p.content_kind === "handwritten" ? "دست‌نویس" : "تایپی";
     const course = String(p.course_name || "جزوه").trim().slice(0, 28);
     const id = String(p.id || "");
+    const coverUrl = (p.cover_url || "").trim();
+    if (coverUrl) {
+      return `<div class="jh-tall-cover is-page" data-cover-ready="1" aria-hidden="true">
+        <img class="jh-tall-thumb jh-tall-img" src="${S().esc(
+          coverUrl
+        )}" alt="" loading="lazy" />
+      </div>`;
+    }
     const sample = p.sample_url
       ? `<img class="jh-tall-img jh-tall-sample" src="${S().esc(
           p.sample_url
@@ -943,7 +1159,7 @@
       const res = await fetch(url, { headers: { Accept: "application/pdf" } });
       if (!res.ok) throw new Error("preview");
       const buf = await res.arrayBuffer();
-      const pdf = await lib.getDocument({ data: buf }).promise;
+      const pdf = await lib.getDocument(pdfDocumentOpts(buf)).promise;
       return pdf;
     })();
     _previewPdfCache.set(id, pending);
@@ -1014,12 +1230,20 @@
   }
 
   function pamphletCreditLine(p) {
-    const author = (p.authors_text || "").trim();
+    const author = p.is_anonymous
+      ? "ناشناس"
+      : (p.authors_text || "").trim();
     const professor = (p.professor_name || "").trim();
     if (professor && author) return `استاد: ${professor} · نویسنده: ${author}`;
     if (professor) return `استاد: ${professor}`;
     if (author) return `نویسنده: ${author}`;
     return "";
+  }
+
+  function goldenBadgeHtml(p) {
+    return p.golden_badge
+      ? '<span class="jh-badge jh-badge--golden" title="تأییدیه طلایی">طلایی</span>'
+      : "";
   }
 
   function cardHtml(p) {
@@ -1045,7 +1269,7 @@
       credit ? ` · ${S().esc(credit)}` : ""
     }</p>
         <div class="jh-product-foot">
-          ${price}
+          ${goldenBadgeHtml(p)}${price}
           <a class="jh-card-cta" href="item.html?id=${S().esc(p.id)}">${cta}</a>
         </div>
       </div>
@@ -1959,7 +2183,7 @@
             <strong>هنوز جزوه‌ای در فروشگاه منتشر نشده</strong>
             <p>به‌زودی جزوات پایلوت اینجا می‌آید. اگر فایل آماده داری می‌توانی منتشر کنی.</p>
             <div class="jh-actions">
-              <a class="jh-btn secondary" href="learn.html#publish">آموزش و راهنما</a>
+              <a class="jh-btn secondary" href="learn.html#publish-steps">آموزش و راهنما</a>
               <a class="jh-btn warm" href="submit.html">انتشار جزوه</a>
             </div>
           </div>`;
@@ -2066,9 +2290,13 @@
       // فقط خریدار واقعی حق دانلود/مطالعه دارد — نویسنده از پنل خودش مدیریت می‌کند
       const purchased = !!p.purchase;
       const isAuthor = !!p.is_author;
-      const authorName =
-        (p.authors_text || "").trim() || "نویسنده جزوه‌سرا";
+      const authorName = p.is_anonymous
+        ? "ناشناس"
+        : (p.authors_text || "").trim() || "نویسنده جزوه‌سرا";
       const initial = authorInitial(authorName);
+      const goldenChip = p.golden_badge
+        ? '<span class="jh-badge jh-badge--golden">تأییدیه طلایی</span>'
+        : "";
       const kindFa = p.content_kind === "handwritten" ? "دست‌نویس" : "تایپی";
       const covFa =
         ({
@@ -2177,7 +2405,7 @@
           </div>
 
           <div class="jh-gama-info">
-            <h1 class="jh-item-title">${S().esc(p.title)}</h1>
+            <h1 class="jh-item-title">${S().esc(p.title)} ${goldenChip}</h1>
             <div class="jh-author-row">
               <span class="jh-avatar" aria-hidden="true">${S().esc(
                 initial
@@ -2782,33 +3010,23 @@
     const err = $("#jh-err");
     try {
       const meta = await S().api("/api/site/pamphlets/meta");
-      const learn = meta.data?.taxonomy?.learn_curriculum || {};
       const types = meta.data?.taxonomy?.content_type_table || [];
+      let learn = {};
+      try {
+        const local = await fetch("guide/learn-curriculum.json?v=2");
+        if (local.ok) learn = await local.json();
+      } catch (_) {}
+      if (!learn?.sections?.length) {
+        learn = meta.data?.taxonomy?.learn_curriculum || {};
+      }
       const toc = (learn.toc || [])
         .map(
           (t) =>
             `<li><a href="#${S().esc(t.id)}">${S().esc(t.label)}</a></li>`
         )
         .join("");
-      // Only ship images that exist under guide/learn/ (skip stale API paths like mathtype/visio).
-      const LEARN_FIGS = new Set([
-        "guide/learn/nitro-delete-page.webp",
-        "guide/learn/nitro-watermark.webp",
-        "guide/learn/nitro-header.webp",
-        "guide/learn/nitro-edit-text.webp",
-      ]);
-      const fig = (block) => {
-        if (!block.image || !LEARN_FIGS.has(block.image)) return "";
-        return `<figure class="jh-learn-fig">
-          <img src="${S().esc(block.image)}" alt="${S().esc(
-          block.image_alt || ""
-        )}" loading="lazy"
-            onerror="this.closest('figure').classList.add('is-missing'); this.remove();" />
-          <figcaption>${S().esc(
-            block.image_alt || "اسکرین آموزشی — پس از آپلود تصویر نمایش داده می‌شود"
-          )}</figcaption>
-        </figure>`;
-      };
+      // This guide is text-first; skip legacy Word/Nitro screenshot embeds.
+      const fig = () => "";
       const sections = (learn.sections || [])
         .map((sec) => {
           const blocks = (sec.blocks || [])
@@ -2911,7 +3129,7 @@
           <p class="jh-note">${S().esc(learn.intro || "")}</p>
         </header>
         <aside class="jh-learn-toc">
-          <strong>آنچه در این بخش می‌خوانی</strong>
+          <strong>فهرست راهنما</strong>
           <ol>${toc}</ol>
         </aside>
         ${sections}
@@ -3910,7 +4128,7 @@
 
     let step = 1;
     let currentId = new URLSearchParams(location.search).get("id") || "";
-    let uploaded = { pdf: null, docx: null, answer: null, consent: null };
+    let uploaded = { pdf: null, docx: null, answer: null, consent: null, cover: null };
 
     const showStep = (n) => {
       step = n;
@@ -3980,6 +4198,7 @@
         access_mode: "downloadable",
         author_rights_accepted: !!$("#rights")?.checked,
         health_disclaimer_accepted: !!$("#health")?.checked,
+        is_anonymous: !!$("#is_anonymous")?.checked,
       };
     };
 
@@ -4118,7 +4337,7 @@
       try {
         const lib = await loadPdfJs();
         const data = await file.arrayBuffer();
-        const pdf = await lib.getDocument({ data }).promise;
+        const pdf = await lib.getDocument(pdfDocumentOpts(data)).promise;
         if (trackPages) {
           draftPagesCount = Math.max(0, Number(pdf.numPages) || 0);
           syncPriceUi();
@@ -4156,15 +4375,29 @@
       if (ui.state) ui.state.textContent = note || "در حال آماده‌سازی آپلود…";
       const isPdf =
         /pdf/i.test(file.type || "") || /\.pdf$/i.test(file.name || "");
+      const isImg =
+        /^image\//i.test(file.type || "") ||
+        /\.(jpe?g|png|webp)$/i.test(file.name || "");
       const fallback = ui.preview?.querySelector(".jh-doc-fallback");
+      const thumb = ui.preview?.querySelector("img");
       if (ui.canvas) ui.canvas.hidden = !isPdf;
-      if (fallback) fallback.hidden = isPdf;
+      if (fallback) fallback.hidden = isPdf || isImg;
+      if (thumb && isImg) {
+        try {
+          if (ui._objectUrl) URL.revokeObjectURL(ui._objectUrl);
+          ui._objectUrl = URL.createObjectURL(file);
+          thumb.src = ui._objectUrl;
+          if (ui.preview) ui.preview.hidden = false;
+        } catch (_) {}
+      }
       if (ui.preview) {
         if (isPdf) {
           ui.preview.classList.remove("jh-page-preview--doc");
           showPdfPreview(file, ui.canvas, ui.preview, {
             trackPages: ui.bucket === "pdf" || ui.role === "original",
           });
+        } else if (isImg) {
+          ui.preview.classList.remove("jh-page-preview--doc");
         } else if (fallback) {
           ui.preview.hidden = false;
           ui.preview.classList.add("jh-page-preview--doc");
@@ -4272,7 +4505,11 @@
       role: "consent",
       bucket: "consent",
     });
-    [pdfUi, docxUi, answerUi, consentUi].forEach(wireSlot);
+    const coverUi = Object.assign(slotUi("cover", "file_cover"), {
+      role: "cover",
+      bucket: "cover",
+    });
+    [coverUi, pdfUi, docxUi, answerUi, consentUi].forEach(wireSlot);
 
     const MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
 
@@ -4323,7 +4560,7 @@
     const uploadOne = async (file, role, ui, token) => {
       const fd = new FormData();
       fd.append("file", file);
-      fd.append("file_role", role);
+      if (role !== "cover") fd.append("file_role", role);
       ui._halt = true;
       cancelAnimationFrame(ui._raf);
       ui._shown = 0;
@@ -4333,8 +4570,12 @@
       if (ui.progress) ui.progress.hidden = false;
       if (ui.state) ui.state.textContent = "در حال آپلود…";
       paintPct(ui, 0);
+      const endpoint =
+        role === "cover"
+          ? `/api/site/pamphlets/mine/${currentId}/cover`
+          : `/api/site/pamphlets/mine/${currentId}/upload`;
       const req = S().apiFormProgress(
-        `/api/site/pamphlets/mine/${currentId}/upload`,
+        endpoint,
         fd,
         {
           onProgress: ({ percent }) => {
@@ -4480,10 +4721,11 @@
         if (pdfUi.slot?.classList.contains("is-uploading") || pdfUi.slot?.classList.contains("is-err")) {
           /* wait or retry below */
         }
+        await ensureUploaded(coverUi);
+        if (!uploaded.cover) return msg(err, "عکس روی جلد را آپلود کن");
         await ensureUploaded(pdfUi);
         if (!uploaded.pdf) return msg(err, "فایل PDF هنوز آپلود نشده");
         await ensureUploaded(consentUi);
-        if (!uploaded.consent) return msg(err, "برگه رضایت را آپلود کن");
         await ensureUploaded(docxUi);
         await ensureUploaded(answerUi);
         msg(err, "فایل‌ها آماده شد", true);
@@ -4544,17 +4786,38 @@
           refreshCombo($("#coverage"));
           refreshCombo($("#difficulty"));
           if ($("#authors_text")) $("#authors_text").value = p.authors_text || "";
+          if ($("#is_anonymous")) $("#is_anonymous").checked = !!p.is_anonymous;
           if ($("#professor_name"))
             $("#professor_name").value = p.professor_name || "";
           fillTermYearSelects(p.term_year || "");
           if ($("#degree_level")) $("#degree_level").value = p.degree_level || "";
-          const price = Number(p.price_irt || 0);
+          const price = Number(
+            p.proposed_price_irt != null ? p.proposed_price_irt : p.price_irt || 0
+          );
           if (priceHidden) priceHidden.value = String(price);
           if (freeToggle) freeToggle.checked = price <= 0;
           draftPagesCount = Math.max(0, Number(p.pages_count) || 0);
           syncPriceUi();
+          if (p.price_locked) {
+            const block = $("#jh-price-block");
+            if (block) {
+              block.classList.add("is-locked");
+              const note = $("#jh-price-note");
+              if (note)
+                note.textContent =
+                  "قیمت نهایی توسط داوری قفل شده و قابل ویرایش نیست.";
+            }
+            if (priceHidden) priceHidden.disabled = true;
+            if (freeToggle) freeToggle.disabled = true;
+            const disp = $("#price_irt_display");
+            if (disp) disp.disabled = true;
+          }
           syncSummaryCount();
           refreshSuggest();
+          if (p.cover_media_id) {
+            uploaded.cover = { name: "جلد قبلی", size: 0 };
+            markStored(coverUi, "جلد قبلی");
+          }
           if (p.original_media_id) {
             uploaded.pdf = { name: "فایل PDF قبلی", size: p.file_size_bytes || 0 };
             markStored(pdfUi, "فایل PDF قبلی");
@@ -4920,7 +5183,7 @@
               <p>فایل آماده و استاندارد داری؟ ثبت و بررسی انتشار هزینه اولیه ندارد.</p>
               <div class="jh-actions">
                 <a class="jh-btn" href="submit.html">ثبت جزوه جدید</a>
-                <a class="jh-btn secondary" href="learn.html#publish">شرایط و مقررات</a>
+                <a class="jh-btn secondary" href="learn.html#publish-steps">شرایط و مقررات</a>
               </div>
             </div>`;
             return;
@@ -5129,6 +5392,90 @@
         };
 
         renderMine();
+
+        try {
+          const reps = await S().api("/api/site/pamphlets/mine/reports");
+          const list = reps.data || [];
+          if (list.length) {
+            const host = document.createElement("div");
+            host.className = "jh-card jh-author-reports";
+            host.innerHTML = `<h3>گزارش‌های فعال</h3>
+              <p class="jh-note">برای گزارش‌های تأییدشده ۴۸ ساعت فرصت اصلاح فایل یا اعتراض داری.</p>
+              <ul class="jh-report-list">${list
+                .map((r) => {
+                  const open =
+                    r.status === "notified" ||
+                    r.status === "author_fixing" ||
+                    r.status === "author_appealed";
+                  return `<li class="jh-report-row" data-report="${S().esc(r.id)}">
+                    <strong>${S().esc(r.pamphlet_title || "جزوه")}</strong>
+                    <span class="jh-meta">${S().esc(
+                      r.reason_label || r.reason
+                    )} · ${S().esc(r.status)}</span>
+                    ${
+                      r.author_deadline_at
+                        ? `<span class="jh-meta">مهلت: ${S().esc(
+                            String(r.author_deadline_at).slice(0, 16)
+                          )}</span>`
+                        : ""
+                    }
+                    ${
+                      open
+                        ? `<div class="jh-actions">
+                      <label class="jh-btn secondary">اصلاح PDF
+                        <input type="file" accept=".pdf,application/pdf" hidden data-fix-file="${S().esc(
+                          r.id
+                        )}" />
+                      </label>
+                      <button type="button" class="jh-btn secondary" data-appeal="${S().esc(
+                        r.id
+                      )}">اعتراض</button>
+                    </div>`
+                        : ""
+                    }
+                  </li>`;
+                })
+                .join("")}</ul>`;
+            box.appendChild(host);
+            $$("[data-fix-file]", host).forEach((inp) => {
+              inp.addEventListener("change", async () => {
+                const file = inp.files?.[0];
+                if (!file || !inp.dataset.fixFile) return;
+                const fd = new FormData();
+                fd.append("file", file);
+                fd.append("note", "اصلاح پس از گزارش");
+                try {
+                  await S().apiForm(
+                    `/api/site/pamphlets/mine/reports/${inp.dataset.fixFile}/fix`,
+                    fd
+                  );
+                  msg(err, "فایل اصلاح شد", true);
+                  setTimeout(() => location.reload(), 600);
+                } catch (e) {
+                  msg(err, e.message || "آپلود ناموفق");
+                }
+              });
+            });
+            $$("[data-appeal]", host).forEach((btn) => {
+              btn.addEventListener("click", async () => {
+                const note = window.prompt("توضیح اعتراض (اختیاری)") || "";
+                try {
+                  await S().api(
+                    `/api/site/pamphlets/mine/reports/${btn.dataset.appeal}/appeal`,
+                    {
+                      method: "POST",
+                      body: JSON.stringify({ note }),
+                    }
+                  );
+                  msg(err, "اعتراض ثبت شد", true);
+                  setTimeout(() => location.reload(), 600);
+                } catch (e) {
+                  msg(err, e.message || "ثبت اعتراض ناموفق");
+                }
+              });
+            });
+          }
+        } catch (_) {}
       }
       if (tab === "services") {
         const mine = await S().api("/api/site/pamphlets/mine/list");
@@ -5173,7 +5520,7 @@
             </div>
             <div class="jh-help-write-actions">
               <a class="jh-btn" href="submit.html">شروع / ادامه نوشتن</a>
-              <a class="jh-btn secondary" href="learn.html#publish">آموزش و راهنما</a>
+              <a class="jh-btn secondary" href="learn.html#publish-steps">آموزش و راهنما</a>
               <a class="jh-btn secondary" href="account.html?tab=tickets">درخواست کمک از پشتیبانی</a>
             </div>
           </section>`;
@@ -5342,14 +5689,20 @@
               </div>
             </div>
             <p class="jh-note jh-wallet-share-note">از هر فروش: ${toFaDigits(
-              d.author_share_pct || 60
-            )}٪ نویسنده${
+              d.author_share_pct || 40
+            )}٪ نویسنده · ${toFaDigits(
+              d.prize_fund_pct || 10
+            )}٪ صندوق جوایز${
               affEarned > 0 || refCode
                 ? ` · با کد معرف، ${toFaDigits(
-                    d.affiliate_share_pct || 10
-                  )}٪ سهم رابط`
+                    d.affiliate_share_pct || d.ambassador_share_pct || 10
+                  )}٪ سهم سفیر`
                 : ""
             }</p>
+            <p class="jh-note jh-wallet-sla">${S().esc(
+              d.payout_sla_fa ||
+                "واریز به شبا معمولاً بین ۱ تا ۳ روز کاری انجام می‌شود."
+            )}</p>
           </div>
           <div class="jh-card jh-wallet-chart-card">
             <h3>منبع درآمد</h3>
@@ -5454,6 +5807,19 @@
               <button class="jh-btn is-locked" type="button" id="btn-payout" disabled>ثبت درخواست تسویه</button>
             </div>
           </div>
+          <div class="jh-card jh-wallet-closeout">
+            <h3>تسویه نهایی هنگام بستن حساب</h3>
+            <p class="jh-note">اگر حسابت را می‌بندی و موجودی کمتر از حداقل تسویه است، می‌توانی کل موجودی را پس از کسر کارمزد بانکی (${money(
+              d.payout_bank_fee_irt || 5000
+            )}) درخواست کنی.</p>
+            <label class="jh-check">
+              <input type="checkbox" id="closeout_confirm" />
+              <span>تأیید می‌کنم این درخواست برای بستن حساب و تسویه نهایی است</span>
+            </label>
+            <button class="jh-btn secondary" type="button" id="btn-closeout" ${
+              Number(d.wallet_balance_irt || 0) > 0 ? "" : "disabled"
+            }>ثبت تسویه نهایی</button>
+          </div>
           <div class="jh-card jh-wallet-payouts">
             <h3>وضعیت درخواست‌ها</h3>
             <ul class="jh-wallet-payout-list">${payoutRows}</ul>
@@ -5464,6 +5830,27 @@
             msg(err, "کد معرف کپی شد", true);
           } catch (_) {
             msg(err, "کپی نشد؛ دستی کپی کن");
+          }
+        });
+        $("#btn-closeout")?.addEventListener("click", async () => {
+          if (!$("#closeout_confirm")?.checked) {
+            return msg(err, "ابتدا تأیید بستن حساب را بزن");
+          }
+          try {
+            await S().api("/api/site/pamphlets/wallet/payout-closeout", {
+              method: "POST",
+              body: JSON.stringify({
+                confirm: true,
+                iban: ($("#iban_digits")?.value || "").trim()
+                  ? `IR${onlyDigits($("#iban_digits").value)}`
+                  : acc.iban || "",
+                national_id: ($("#national_id")?.value || "").trim() || acc.national_id || "",
+              }),
+            });
+            msg(err, "درخواست تسویه نهایی ثبت شد", true);
+            location.reload();
+          } catch (e) {
+            msg(err, e.message || "ثبت ناموفق");
           }
         });
         bindPayoutForm({
@@ -5811,7 +6198,7 @@
       cachedBytes = bytes;
       setBoot("در حال رسم صفحات…", "چند لحظه صبر کن");
       const lib = await loadPdfJs();
-      pdfDoc = await lib.getDocument({ data: bytes }).promise;
+      pdfDoc = await lib.getDocument(pdfDocumentOpts(bytes)).promise;
       await renderPages();
       msg(err, "آمادهٔ مطالعه", true);
       setTimeout(() => {
