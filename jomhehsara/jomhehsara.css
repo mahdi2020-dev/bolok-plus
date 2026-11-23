@@ -394,23 +394,65 @@ body.jh-nav-open {
   inset: 0;
   pointer-events: none;
   z-index: 1;
+  overflow: hidden;
 }
 
-.jh-mkt-coin {
+.jh-mkt-coin,
+.jh-mkt-float {
   position: absolute;
-  width: clamp(4.5rem, 14vw, 7.5rem);
-  height: auto;
+  display: grid;
+  place-items: center;
+  line-height: 0;
   filter: drop-shadow(3px 3px 0 #000);
 }
 
-.jh-mkt-coin--a { top: 0.4rem; right: 4%; transform: rotate(-12deg); }
-.jh-mkt-coin--b { bottom: 12%; left: 2%; transform: rotate(14deg); width: clamp(3.5rem, 11vw, 5.5rem); }
-.jh-mkt-coin--c { top: 38%; left: 8%; width: clamp(2.8rem, 8vw, 4rem); opacity: 0.85; transform: rotate(-28deg); }
+.jh-mkt-coin {
+  width: clamp(3.6rem, 11vw, 6.25rem);
+}
+
+.jh-mkt-coin svg,
+.jh-mkt-float svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.jh-mkt-coin--a { top: 0.85rem; right: 5%; transform: rotate(-12deg); }
+.jh-mkt-coin--b { bottom: 14%; left: 3%; transform: rotate(14deg); width: clamp(3rem, 9vw, 4.75rem); }
+.jh-mkt-coin--c { top: 42%; left: 7%; width: clamp(2.4rem, 7vw, 3.4rem); opacity: 0.88; transform: rotate(-28deg); }
+
+.jh-mkt-float {
+  width: clamp(2.6rem, 8vw, 3.6rem);
+  opacity: 0.92;
+}
+
+.jh-mkt-float--book {
+  top: 18%;
+  left: 4%;
+  transform: rotate(-18deg);
+}
+
+.jh-mkt-float--pen {
+  top: 12%;
+  right: 14%;
+  width: clamp(2.2rem, 7vw, 3.1rem);
+  transform: rotate(22deg);
+}
 
 @media (max-width: 560px) {
-  .jh-mkt-coin--c { display: none; }
+  .jh-mkt-coin--c,
+  .jh-mkt-float--pen {
+    display: none;
+  }
   .jh-mkt-coin--a,
-  .jh-mkt-coin--b { opacity: 0.72; }
+  .jh-mkt-coin--b,
+  .jh-mkt-float--book {
+    opacity: 0.78;
+  }
+  .jh-mkt-float--book {
+    top: 22%;
+    left: 2%;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -7127,21 +7169,30 @@ body.jh-preview-zoom-open {
   z-index: 12000;
   display: grid;
   place-items: center;
-  padding: 1rem;
-  background: rgba(8, 12, 20, 0.78);
-  backdrop-filter: blur(6px);
+  padding:
+    max(0.65rem, env(safe-area-inset-top, 0px))
+    max(0.65rem, env(safe-area-inset-right, 0px))
+    max(0.65rem, env(safe-area-inset-bottom, 0px))
+    max(0.65rem, env(safe-area-inset-left, 0px));
+  background:
+    radial-gradient(120% 80% at 50% 0%, rgba(255, 144, 232, 0.16), transparent 55%),
+    rgba(8, 12, 20, 0.82);
+  backdrop-filter: blur(8px);
+  box-sizing: border-box;
 }
 
 .jh-preview-zoom-panel {
   width: min(96vw, 56rem);
-  height: min(92vh, 52rem);
+  height: min(calc(100dvh - 1.4rem), 52rem);
+  max-height: calc(100dvh - 1.4rem);
   display: flex;
   flex-direction: column;
-  border-radius: 18px;
+  border-radius: 20px;
   overflow: hidden;
-  background: #0f172a;
+  background: #101828;
   border: 2px solid #000;
   box-shadow: 6px 6px 0 #000;
+  box-sizing: border-box;
 }
 
 .jh-preview-zoom-head,
@@ -7150,29 +7201,54 @@ body.jh-preview-zoom-open {
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  padding: 0.75rem 0.9rem;
-  background: #111827;
+  padding: 0.7rem 0.9rem;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent),
+    #151c2c;
   color: #fff;
   flex-shrink: 0;
 }
 
-.jh-preview-zoom-head strong {
-  font-size: 0.9rem;
+.jh-preview-zoom-head {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.jh-preview-zoom-foot {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: max(0.7rem, env(safe-area-inset-bottom, 0px));
+}
+
+.jh-preview-zoom-title {
+  display: grid;
+  gap: 0.12rem;
+  min-width: 0;
+  text-align: right;
+}
+
+.jh-preview-zoom-eyebrow {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.jh-preview-zoom-head strong,
+.jh-preview-zoom-title strong {
+  font-size: 0.95rem;
   font-weight: 900;
+  line-height: 1.25;
 }
 
 .jh-preview-zoom-tools {
   display: inline-flex;
   gap: 0.35rem;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .jh-preview-zoom-tool,
-.jh-preview-zoom-close {
+.jh-preview-zoom-close,
+.jh-preview-zoom-nav {
   appearance: none;
-  min-width: 2.2rem;
-  height: 2.2rem;
-  padding: 0 0.55rem;
   border: 2px solid #000;
   border-radius: 10px;
   background: #fff;
@@ -7182,50 +7258,96 @@ body.jh-preview-zoom-open {
   box-shadow: 2px 2px 0 #000;
 }
 
+.jh-preview-zoom-tool,
+.jh-preview-zoom-close {
+  min-width: 2.2rem;
+  height: 2.2rem;
+  padding: 0 0.55rem;
+}
+
 .jh-preview-zoom-close {
   background: #ffc900;
   font-size: 1.2rem;
   line-height: 1;
 }
 
+.jh-preview-zoom-tool:hover,
+.jh-preview-zoom-nav:hover:not(:disabled) {
+  background: #ffe8f8;
+}
+
+.jh-preview-zoom-nav {
+  min-height: 2.35rem;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.86rem;
+  flex: 0 0 auto;
+}
+
+.jh-preview-zoom-nav:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
 .jh-preview-zoom-stage {
-  flex: 1;
+  flex: 1 1 auto;
   min-height: 0;
   overflow: hidden;
   display: grid;
   place-items: center;
-  background: #1e293b;
+  padding: 0.85rem;
+  box-sizing: border-box;
+  background:
+    radial-gradient(70% 55% at 50% 40%, rgba(255, 255, 255, 0.06), transparent 70%),
+    #1a2438;
   touch-action: none;
+  cursor: default;
+}
+
+.jh-preview-zoom-stage.is-pannable,
+.jh-preview-zoom-stage.is-zoomed {
   cursor: grab;
 }
 
-.jh-preview-zoom-stage:active {
+.jh-preview-zoom-stage.is-pannable:active,
+.jh-preview-zoom-stage.is-zoomed:active {
   cursor: grabbing;
 }
 
 .jh-preview-zoom-canvas {
   display: block;
   background: #fff;
-  border-radius: 4px;
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.35) inset,
+    0 18px 40px rgba(0, 0, 0, 0.4);
   transform-origin: center center;
   transition: transform 0.08s linear;
   max-width: none;
+  max-height: none;
 }
 
 .jh-preview-zoom-hint {
-  font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.7);
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.62);
   text-align: center;
-}
-
-.jh-preview-zoom-foot .jh-btn {
-  flex: 0 0 auto;
+  padding: 0 0.35rem;
 }
 
 @media (max-width: 720px) {
   .jh-preview-zoom-hint {
     display: none;
+  }
+  .jh-preview-zoom-foot {
+    gap: 0.5rem;
+  }
+  .jh-preview-zoom-nav {
+    flex: 1 1 auto;
+    text-align: center;
   }
   .jh-flip-zoom-fab span {
     display: none;

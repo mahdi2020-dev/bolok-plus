@@ -399,10 +399,13 @@
       zoomOverlay.innerHTML = `
         <div class="jh-preview-zoom-panel" role="dialog" aria-modal="true" aria-label="بزرگ‌نمایی پیش‌نمایش">
           <header class="jh-preview-zoom-head">
-            <strong>پیش‌نمایش · صفحه ${toFaDigits(pageNo)} از ${toFaDigits(previewTotal)} رایگان</strong>
+            <div class="jh-preview-zoom-title">
+              <span class="jh-preview-zoom-eyebrow">پیش‌نمایش رایگان</span>
+              <strong data-z-title>صفحه ${toFaDigits(pageNo)} از ${toFaDigits(previewTotal)}</strong>
+            </div>
             <div class="jh-preview-zoom-tools">
               <button type="button" class="jh-preview-zoom-tool" data-z-out title="کوچک‌تر">−</button>
-              <button type="button" class="jh-preview-zoom-tool" data-z-reset title="اندازه اولیه">۱۰۰٪</button>
+              <button type="button" class="jh-preview-zoom-tool" data-z-reset title="اندازه صفحه" data-z-pct>۱۰۰٪</button>
               <button type="button" class="jh-preview-zoom-tool" data-z-in title="بزرگ‌تر">+</button>
               <button type="button" class="jh-preview-zoom-close" data-z-close aria-label="بستن">×</button>
             </div>
@@ -411,67 +414,137 @@
             <canvas class="jh-preview-zoom-canvas" data-z-canvas></canvas>
           </div>
           <footer class="jh-preview-zoom-foot">
-            <button type="button" class="jh-btn secondary" data-z-prev ${pageNo <= 1 ? "disabled" : ""}>صفحه قبل</button>
-            <span class="jh-preview-zoom-hint">اسکرول / پینچ برای بزرگ‌نمایی · درگ برای جابه‌جایی</span>
-            <button type="button" class="jh-btn secondary" data-z-next ${pageNo >= previewTotal ? "disabled" : ""}>صفحه بعد</button>
+            <button type="button" class="jh-preview-zoom-nav" data-z-prev ${pageNo <= 1 ? "disabled" : ""}>صفحه قبل</button>
+            <span class="jh-preview-zoom-hint">اسکرول برای زوم · درگ برای جابه‌جایی</span>
+            <button type="button" class="jh-preview-zoom-nav" data-z-next ${pageNo >= previewTotal ? "disabled" : ""}>صفحه بعد</button>
           </footer>
         </div>`;
       document.body.appendChild(zoomOverlay);
       const zCanvas = zoomOverlay.querySelector("[data-z-canvas]");
       const zStage = zoomOverlay.querySelector("[data-z-stage]");
+      const zPct = zoomOverlay.querySelector("[data-z-pct]");
       let zPage = pageNo;
       let zScale = 1;
       let panX = 0;
       let panY = 0;
+      let contentW = 0;
+      let contentH = 0;
       let dragging = false;
       let dragOrigin = null;
+      let painting = false;
+
+      const waitFrames = (n = 2) =>
+        new Promise((resolve) => {
+          let left = n;
+          const tick = () => {
+            left -= 1;
+            if (left <= 0) resolve();
+            else requestAnimationFrame(tick);
+          };
+          requestAnimationFrame(tick);
+        });
+
+      const overflows = () => {
+        if (!zStage) return false;
+        return (
+          contentW * zScale > zStage.clientWidth + 2 ||
+          contentH * zScale > zStage.clientHeight + 2
+        );
+      };
+
+      const clampPan = () => {
+        if (!zStage) return;
+        const maxX = Math.max(0, (contentW * zScale - zStage.clientWidth) / 2 + 28);
+        const maxY = Math.max(0, (contentH * zScale - zStage.clientHeight) / 2 + 28);
+        panX = Math.min(maxX, Math.max(-maxX, panX));
+        panY = Math.min(maxY, Math.max(-maxY, panY));
+      };
 
       const applyTransform = () => {
         if (!zCanvas) return;
+        clampPan();
         zCanvas.style.transform = `translate(${panX}px, ${panY}px) scale(${zScale})`;
+        if (zPct) zPct.textContent = `${toFaDigits(Math.round(zScale * 100))}٪`;
+        if (zStage) {
+          zStage.classList.toggle("is-pannable", overflows());
+          zStage.classList.toggle("is-zoomed", zScale > 1.01);
+        }
       };
 
-      const paintZoomPage = async (n) => {
-        const target = clampPage(n);
-        const page = await pdf.getPage(target);
-        const fitW = Math.max(320, (zStage?.clientWidth || window.innerWidth) - 32);
-        const fitH = Math.max(360, (zStage?.clientHeight || window.innerHeight * 0.7) - 24);
-        await renderPdfPageToCanvas(page, zCanvas, fitW, fitH, 1.05);
-        zPage = target;
-        zScale = 1;
-        panX = 0;
-        panY = 0;
-        applyTransform();
-        const title = zoomOverlay.querySelector(".jh-preview-zoom-head strong");
-        if (title)
-          title.textContent = `پیش‌نمایش · صفحه ${toFaDigits(zPage)} از ${toFaDigits(previewTotal)} رایگان`;
-        const prev = zoomOverlay.querySelector("[data-z-prev]");
-        const next = zoomOverlay.querySelector("[data-z-next]");
-        if (prev) prev.disabled = zPage <= 1;
-        if (next) next.disabled = zPage >= previewTotal;
-      };
-
-      zoomOverlay.addEventListener("click", (e) => {
-        if (e.target === zoomOverlay) closeZoom();
-      });
-      zoomOverlay.querySelector("[data-z-close]")?.addEventListener("click", closeZoom);
-      zoomOverlay.querySelector("[data-z-in]")?.addEventListener("click", () => {
-        zScale = Math.min(4, zScale + 0.25);
-        applyTransform();
-      });
-      zoomOverlay.querySelector("[data-z-out]")?.addEventListener("click", () => {
-        zScale = Math.max(1, zScale - 0.25);
-        if (zScale === 1) {
+      const setZoom = (next) => {
+        zScale = Math.min(4, Math.max(1, next));
+        if (zScale <= 1.01) {
+          zScale = 1;
           panX = 0;
           panY = 0;
         }
         applyTransform();
+      };
+
+      const paintZoomPage = async (n) => {
+        if (!zCanvas || !zStage || painting) return;
+        painting = true;
+        try {
+          await waitFrames(2);
+          const target = clampPage(n);
+          const page = await pdf.getPage(target);
+          const fitW = Math.max(180, zStage.clientWidth - 48);
+          const fitH = Math.max(180, zStage.clientHeight - 48);
+          const painted = await renderPdfPageToCanvas(
+            page,
+            zCanvas,
+            fitW,
+            fitH,
+            0.12
+          );
+          contentW = painted.cssW;
+          contentH = painted.cssH;
+          zPage = target;
+          zScale = 1;
+          panX = 0;
+          panY = 0;
+          applyTransform();
+          const title = zoomOverlay.querySelector("[data-z-title]");
+          if (title)
+            title.textContent = `صفحه ${toFaDigits(zPage)} از ${toFaDigits(previewTotal)}`;
+          const prev = zoomOverlay.querySelector("[data-z-prev]");
+          const next = zoomOverlay.querySelector("[data-z-next]");
+          if (prev) prev.disabled = zPage <= 1;
+          if (next) next.disabled = zPage >= previewTotal;
+        } finally {
+          painting = false;
+        }
+      };
+
+      let resizeTimer = 0;
+      const onResize = () => {
+        window.clearTimeout(resizeTimer);
+        resizeTimer = window.setTimeout(() => {
+          paintZoomPage(zPage);
+        }, 120);
+      };
+      const onKey = (e) => {
+        if (e.key === "Escape") teardownZoom();
+      };
+      const teardownZoom = () => {
+        window.removeEventListener("resize", onResize);
+        window.removeEventListener("keydown", onKey);
+        window.clearTimeout(resizeTimer);
+        closeZoom();
+      };
+
+      zoomOverlay.addEventListener("click", (e) => {
+        if (e.target === zoomOverlay) teardownZoom();
+      });
+      zoomOverlay.querySelector("[data-z-close]")?.addEventListener("click", teardownZoom);
+      zoomOverlay.querySelector("[data-z-in]")?.addEventListener("click", () => {
+        setZoom(zScale + 0.25);
+      });
+      zoomOverlay.querySelector("[data-z-out]")?.addEventListener("click", () => {
+        setZoom(zScale - 0.25);
       });
       zoomOverlay.querySelector("[data-z-reset]")?.addEventListener("click", () => {
-        zScale = 1;
-        panX = 0;
-        panY = 0;
-        applyTransform();
+        setZoom(1);
       });
       zoomOverlay.querySelector("[data-z-prev]")?.addEventListener("click", async () => {
         if (zPage > 1) {
@@ -492,19 +565,19 @@
         "wheel",
         (e) => {
           e.preventDefault();
-          const delta = e.deltaY > 0 ? -0.12 : 0.12;
-          zScale = Math.min(4, Math.max(1, zScale + delta));
-          if (zScale === 1) {
-            panX = 0;
-            panY = 0;
+          if (e.shiftKey && overflows()) {
+            panY -= e.deltaY;
+            applyTransform();
+            return;
           }
-          applyTransform();
+          const delta = e.deltaY > 0 ? -0.12 : 0.12;
+          setZoom(zScale + delta);
         },
         { passive: false }
       );
 
       const onPointerDown = (e) => {
-        if (zScale <= 1) return;
+        if (!overflows() && zScale <= 1) return;
         dragging = true;
         dragOrigin = { x: e.clientX - panX, y: e.clientY - panY };
         zStage?.setPointerCapture?.(e.pointerId);
@@ -524,10 +597,8 @@
       zStage?.addEventListener("pointerup", onPointerUp);
       zStage?.addEventListener("pointercancel", onPointerUp);
 
-      const onKey = (e) => {
-        if (e.key === "Escape") closeZoom();
-      };
-      window.addEventListener("keydown", onKey, { once: true });
+      window.addEventListener("keydown", onKey);
+      window.addEventListener("resize", onResize);
 
       await paintZoomPage(pageNo);
     };
@@ -1849,7 +1920,7 @@
           if (i % 2 === 1) {
             const src = stickers[(rowIndex * 3 + i) % stickers.length];
             bits.push(
-              `<span class="jh-cloud-sticker" aria-hidden="true"><img src="assets/${src}?v=2" alt="" width="40" height="40" loading="lazy" decoding="async" /></span>`
+              `<span class="jh-cloud-sticker" aria-hidden="true"><img src="assets/${src}?v=3" alt="" width="40" height="40" loading="lazy" decoding="async" onerror="this.parentElement.hidden=true" /></span>`
             );
           }
         });
