@@ -7,7 +7,7 @@
 | | |
 |---|---|
 | **دامنه** | [bolokapp.ir](https://bolokapp.ir) (`CNAME`) |
-| **API** | `https://iraniplanner.ir` |
+| **API** | `https://iraniplanner.ir` → failover `https://backendpy.liara.run` |
 | **پشتیبانی** | sanjaporg@gmail.com |
 | **فونت** | Vazirmatn FD خودمیزبان (`assets/fonts/vazirmatn-fd/`) — ارقام فارسی |
 | **اینماد** | کد پیگیری `5130850` → باید `https://bolokapp.ir/5130850.txt` باز شود |
@@ -158,12 +158,16 @@ bolok_plus/
 
 | عضو | کار |
 |-----|-----|
-| `API_BASE` | `https://iraniplanner.ir` |
-| `api` / `apiForm` / `apiFormProgress` | fetch JSON / فرم / آپلود با progress |
+| `API_BASE` | پایهٔ فعال (getter) — ابتدا برند، در صورت قطع TLS → برگ لیارا |
+| `BRAND_API` / `LIARA_LEAF_API` | `iraniplanner.ir` / `backendpy.liara.run` |
+| `ensureReachable` / `usingLeafFailover` | پروب `/health` + سوئیچ خودکار مثل اپ/ادمین |
+| `api` / `apiForm` / `apiFormProgress` | fetch JSON / فرم / آپلود با progress + یک‌بار retry بعد از failover |
 | `getSiteSession` / `setSiteSession` | توکن در `localStorage` → `bolok_site_session` |
 | `listVault` / `upsertVaultAccount` / … | تا **۵ حساب** موازی (`bolok_site_account_vault`) |
 | `rememberAuth` | بعد از OTP/پسورد، vault را به‌روز می‌کند |
 | `pdfUrl` / `fetchPdfBlob` / `fetchPdfBytes` | پیش‌نمایش امن PDF |
+
+**اتصال سرور (مثل اپ و ادمین):** اگر دامنهٔ سفارشی `iraniplanner.ir` به‌خاطر TLS/SNI (`TLSV1_UNRECOGNIZED_NAME`) قطع باشد، کلاینت سایت بدون دخالت کاربر به `backendpy.liara.run` می‌رود. نتیجه در `sessionStorage` (`bolok_site_api_base_v1`) کش می‌شود. CSP در `liara_nginx.conf` از قبل هر دو host را در `connect-src` دارد. `comments.js` هم از `BolokSite.api` استفاده می‌کند.
 
 ### کش‌باست (`?v=`)
 
@@ -173,9 +177,9 @@ bolok_plus/
 
 | سطح | نمونه |
 |-----|--------|
-| خانه | `styles.css?v=83` · `app.js?v=81` · `site-api.js?v=22` |
+| خانه | `styles.css?v=83` · `app.js?v=81` · `site-api.js?v=27` |
 | بانک منابع | `styles.css?v=80` · `app.js?v=80` · `resources.js?v=71` |
-| جزوه‌سرا | `jomhehsara.css?v=112` · `jomhehsara.js?v=112` · `site-api.js?v=26` · `lottie-player.js?v=2` |
+| جزوه‌سرا | `jomhehsara.css?v=112` · `jomhehsara.js?v=112` · `site-api.js?v=27` · `lottie-player.js?v=2` |
 
 ---
 
@@ -238,63 +242,208 @@ pwsh ./scripts/sync-resources-sitemap.ps1
 
 ## جزوه‌سرا · `jomhehsara/`
 
-پایلوت فعلی: **پیراپزشکی · علوم پزشکی شهید بهشتی**، با پیام تیزهوشان روی خانهٔ فروشگاه.
+بازارچهٔ انتشار و فروش جزوهٔ دانشجویی روی سایت بلوک. فرانت استاتیک است؛ منطق، پول، داوری و فایل روی **`backendpy`** (`pamphlet_marketplace_api.py` + `pamphlet_taxonomy.py` + `pamphlet_pdf_utils.py`). پنل عملیات: ادمین Flutter → صفحهٔ جزوه‌سرا.
 
-UI جدا: `jomhehsara.css` + `jomhehsara.js` روی همان فونت و `site-api.js`.
+**پایلوت فعلی:** دانشکدهٔ **پیراپزشکی · دانشگاه علوم پزشکی شهید بهشتی**  
+رشته‌ها: علوم آزمایشگاهی · رادیولوژی · رادیوتراپی (درس‌ها و سرفصل‌ها از taxonomy).  
+پیام برند روی خانه: فروشگاه + درآمد دانشجو + **سفیر بلوک**؛ متای SEO همچنان تیزهوشان ششم→هفتم / نهم→دهم را هم هدف می‌گیرد.
+
+UI جدا: `jomhehsara.css` + `jomhehsara.js` (+ Lottie) روی همان Vazirmatn و `site-api.js`. ظاهر نزدیک Gumroad / neo-brutal (صورتی `#FF90E8`، سایهٔ offset، استیکر).
+
+---
+
+### صفحات فرانت
 
 | صفحه | کار |
 |------|-----|
-| `index.html` | فروشگاه · جستجو · فیلتر · ابر درس · روش جزوه‌سرا |
-| `item.html` | خرید جزوه · نظرات · پیش‌نمایش ورق‌خور · گزارش |
-| `read.html` | مطالعه بعد از خرید |
-| `login.html` | ورود OTP / رمز عبور · تکمیل پروفایل |
-| `account.html` | داشبورد نویسنده/خریدار (تب overview و …) |
+| `index.html` | هیرو · کارت‌های ارزش · ابر درس · روش جزوه‌سرا (Lottie) · فروشگاه با فیلتر |
+| `item.html` | محصول: کاور، گرید کیفیت A–D، قیمت، پیش‌نمایش ورق‌خور، خرید، نظرات، گزارش |
+| `read.html` | مطالعهٔ آنلاین PDF بعد از خرید (واترمارک خریدار) |
+| `login.html` | OTP / رمز · تکمیل پروفایل · boot انیمیشنی |
+| `account.html` | داشبورد تک‌صفحه با تب‌ها |
 | `submit.html` | ثبت سه‌مرحله‌ای |
-| `mine.html` | مدیریت جزوه‌های من (ریدایرکت/داشبورد) |
-| `wallet.html` | کیف پول و تسویه |
-| `guide.html` | راهنمای انتشار (متن از API) |
-| `learn.html` | آموزش صفحه‌آرایی (Word / Nitro PDF) |
-| `verify.html` | استعلام گواهی انتشار |
-| `payment.html` | بازگشت پرداخت |
+| `guide.html` | قوانین و فلو انتشار (از `meta.taxonomy.guide` / API) |
+| `learn.html` | آموزش صفحه‌آرایی (curriculum JSON + تصاویر `guide/learn/*.webp`) |
+| `verify.html` | استعلام گواهی با شماره سریال |
+| `payment.html` | بازگشت از زرین‌پال (خرید جزوه یا خدمات آماده‌سازی) |
+| `mine.html` | ریدایرکت → `account.html?tab=mine` |
+| `wallet.html` | ریدایرکت → `account.html?tab=wallet` |
 
-### ثبت جزوه (۳ مرحله)
+**تب‌های `account.html`:** overview · library · mine · services · certs · wallet · tickets · profile
 
-1. **اطلاعات** — رشته، درس، توضیح محتوا، ترم/سال، …
-2. **عنوان و فایل** — PDF اجباری؛ Word و پاسخنامه اختیاری؛ کاور؛ نوار آپلود + پیش‌نمایش صفحهٔ اول
-3. **تعهد و ارسال**
+---
 
-سهم فروش پولی: **نویسنده ۸۰٪ / پلتفرم ۲۰٪**. ثبت برای داوری رایگان است. خرید خدمات آماده‌سازی = تأیید انتشار نیست.
+### اقتصاد و سهم فروش (منبع حقیقت بک‌اند)
 
-متن سیاست/راهنما در بک‌اند (`pamphlet_taxonomy.py`، `pamphlet_marketplace_api.py`). تا `backendpy` دیپلوی نشود، `guide.html` ممکن است متن قدیمی نشان دهد.
+ثبت و ارسال برای داوری **رایگان** است (`publishing_fee_irt: 0`).  
+**قیمت نهایی فروش را تیم داوری بلوک قفل می‌کند** (`price_locked`).
 
-تصاویر آموزش: فقط از `jomhehsara/guide/learn/*.webp` (و در صورت نیاز `.png`).
+از هر فروش پولی:
 
-### احراز هویت سایت
+| سهم | درصد | توضیح |
+|-----|------|--------|
+| نویسنده | **۴۰٪** | به کیف پول `site_accounts.wallet_balance_irt` |
+| پلتفرم بلوک | **۴۰٪** | اگر سفیر معتبر نباشد، سهم سفیر هم به بلوک می‌رود |
+| سفیر بلوک (معرف) | **۱۰٪** | فقط اگر `referred_by_id` نویسنده هنوز معتبر باشد (تا **۳۶۵ روز** از referral) |
+| صندوق جوایز ماهانه | **۱۰٪** | همیشه کسر می‌شود |
 
-- OTP موبایل: `request-otp` → `verify-otp` → اختیاری `set-password`
-- ورود با رمز: `login-password`
-- تکمیل پروفایل: `complete-profile`
-- بازیابی نشست: `restore-session`
-- قفل ورود بعد از تلاش ناموفق **سمت بک‌اند** است
-- چندحسابی: vault تا ۵ توکن در مرورگر
+جزوه با قیمت ۰ → `free_granted` بدون پرداخت.  
+حداقل تسویه عادی: **۲۰۰٬۰۰۰ تومان** · کارمزد بانکی تسویه: **۵٬۰۰۰ تومان** · SLA واریز شبا: معمولاً ۱–۳ روز کاری.  
+بستن حساب: `wallet/payout-closeout` حتی زیر حداقل (بعد از کسر کارمزد در صورت موجودی کافی).
 
-### API جزوه‌سرا (خلاصه)
+> نسخهٔ قدیمی «۸۰٪ نویسنده / ۲۰٪ پلتفرم» **منسوخ** است؛ اعداد واقعی در `AUTHOR_SHARE_PCT` و هم‌خانواده‌اش در API/`meta` است.
 
-**عمومی**
+---
 
-- `GET /api/site/pamphlets/meta`
-- `GET /api/site/pamphlets`
-- `GET /api/site/pamphlets/item/{id}`
-- نظرات · خرید · دانلود · گزارش
+### چرخهٔ وضعیت جزوه
 
-**نویسنده** (هدر `X-Bolok-Site-Session`)
+```text
+draft → pending_review ⇄ needs_revision
+              ↓
+     (اختیاری) pending_payment → in_preparation → awaiting_author_approval
+              ↓
+        ready_to_publish → published
+              ↕
+         suspended / stopped / rejected
+```
 
-- `POST/PATCH /api/site/pamphlets/mine`
-- `POST …/upload` — `file_role`: `original` | `editable` | `answer`
-- `POST …/cover` · attachments · `submit` · `confirm-publish` · `approve-final`
-- کتابخانه · کیف پول · تسویه (`wallet/payout`) · گواهی · سفارش خدمات آماده‌سازی
+| status | برچسب UI | کار بعدی نویسنده |
+|--------|----------|------------------|
+| `draft` | پیش‌نویس | تکمیل، آپلود، ارسال |
+| `pending_review` | بررسی نشده / ویرایش‌شده | منتظر داور |
+| `needs_revision` | پیام‌دار | اصلاح طبق چک‌لیست |
+| `rejected` | حذف‌شده / رد | قابل انتشار نیست |
+| `pending_payment` | ارجاع آماده‌سازی | پرداخت پیش‌فاکتور |
+| `in_preparation` | ارجاع آماده‌سازی | تیم در حال کار |
+| `awaiting_author_approval` | در انتظار تأیید نویسنده | `approve-final` |
+| `ready_to_publish` | تأییدشده | `confirm-publish` |
+| `published` | تأیید شده | در فروشگاه |
+| `suspended` / `stopped` | غیرفعال | پشتیبانی |
 
-**ادمین:** `/api/admin/pamphlets/…`
+قابل ویرایش/آپلود/حذف فقط در وضعیت‌های محدود (`draft` · `pending_review` · `needs_revision` · گاهی `pending_payment`).  
+جزوهٔ منتشرشده را نویسنده خودش حذف نمی‌کند؛ توقف فروش از پشتیبانی/ادمین.
+
+---
+
+### ثبت جزوه (`submit.html` — ۳ مرحله)
+
+1. **اطلاعات** — رشته پایلوت، درس (از `courses_by_major`)، سرفصل‌ها، نوع محتوا (`typed` / `handwritten`)، پوشش (`short`/`midterm`/`final`/`partial`/`full`)، سختی، ترم/سال، توضیح (≥۷۰ نویسه در submit)
+2. **عنوان و فایل** — عنوان (پیشنهاد از `suggest-titles`) · PDF اصلی اجباری · کاور اجباری · Word/پاسخنامه اختیاری · پیوست audio/video/extra · رضایت‌نامه برای نشان طلایی (`consent`)
+3. **تعهد و ارسال** — پذیرش حق نشر + disclaimer سلامت · `POST …/submit`
+
+سقف آپلود فایل جزوه: **۱۰۰MB** · کاور: **۸MB**.  
+نقش فایل آپلود: `original` | `editable` | `answer` | `consent`.
+
+خدمات آماده‌سازی (ویراستاری/قالب) **اختیاری** است و شرط انتشار نیست؛ پرداخت بعد از پیش‌فاکتور ادمین از طریق زرین‌پال.
+
+---
+
+### خریدار: پیش‌نمایش، خرید، مطالعه، گزارش
+
+**پیش‌نمایش رایگان** (`/preview`) فقط برای `published` — سقف صفحات:
+
+| کل صفحات جزوه | صفحات رایگان |
+|---------------|--------------|
+| &lt; ۶ | ۱ |
+| ۶–۱۰ | ۳ |
+| ≥ ۱۱ | ۵ |
+
+**خرید:** زرین‌پال (`live` / `sandbox` اگر مجاز) → callback → اعتبار کیف نویسنده/سفیر.  
+اگر قبلاً خریده باشد → `already_owned`. نویسنده نیاز به خرید ندارد.
+
+**دانلود / مطالعه آنلاین:** برای خریدار PDF با **واترمارک شماره موبایل** (و نام/توکن کپی)؛ نویسنده master خام می‌گیرد. Fail-closed: بدون واترمارک معتبر، فایل تمیز برنمی‌گردد.
+
+**نظرات:** لیست/ثبت روی آیتم.  
+**گزارش** (بعد از خرید): `duplicate` · `copyright` · `scientific` · `typo`.  
+اگر ادمین تأیید کند: استرداد به خریدار + جریمهٔ **۱۰٪ قیمت** از کیف نویسنده + strike؛ بعد از **۲** تخلف معلق. نویسنده ۴۸ ساعت برای اصلاح/اعتراض (`fix` / `appeal`).
+
+---
+
+### کیف پول، سفیر، گواهی، تیکت
+
+- **درآمد:** فروش جزوهٔ خود + سهم سفیری از فروش معرفی‌شده‌ها
+- **تسویه:** شبا ۲۴رقمی معتبر + کد ملی ۱۰رقمی · رسید واریز ادمین
+- **گواهی انتشار:** هنگام publish صادر می‌شود · عمومی: `verify.html` / `GET …/certificates/verify/{serial}` · لیست من: `certificates/me`
+- **نشان طلایی:** رضایت‌نامه روی پرونده + تأیید ادمین (`golden_badge`)
+- **امتیاز کیفیت:** A / B / C / D (توسط داور)
+- **تیکت پشتیبانی:** `tickets` (+ پیام‌ها) برای نویسنده/خریدار و پاسخ ادمین
+
+---
+
+### احراز هویت سایت (مشترک با بقیهٔ سایت)
+
+- OTP: `request-otp` → `verify-otp` → اختیاری `set-password`
+- رمز: `login-password` · پروفایل: `complete-profile` · نشست: `restore-session`
+- هدر: `X-Bolok-Site-Session` · `localStorage` کلید `bolok_site_session`
+- vault تا **۵ حساب** موازی در مرورگر
+- قفل ورود ناموفق سمت بک‌اند
+
+---
+
+### taxonomy پایلوت (خلاصه)
+
+منبع: `backend/pamphlet_taxonomy.py` → داخل `GET /api/site/pamphlets/meta`.
+
+- دانشگاه / دانشکده پیش‌فرض پایلوت
+- `majors` + `courses_by_major` + `topics_by_course`
+- چک‌لیست typed / handwritten · قوانین publish · نکات استاندارد · `learn_curriculum`
+- برچسب‌های داوری: فنی · ویراستاری · علمی
+- disclaimer سلامت (جزوه ≠ پروتکل درمان؛ بدون داده بیمار / سؤال افشاشده)
+
+تصاویر آموزش صفحه‌آرایی: فقط `jomhehsara/guide/learn/*.webp` (+ در صورت نیاز `.png`). قالب نمونه: `guide/template-typed.rtf` · `guide/sample-outline.pdf`.
+
+---
+
+### API سایت (مرجع سریع)
+
+**عمومی / نیمه‌عمومی**
+
+| متد | مسیر |
+|-----|------|
+| GET | `/api/site/pamphlets/meta` |
+| GET | `/api/site/pamphlets` — فیلتر `q, major, course, content_kind, priced, …` |
+| GET | `/api/site/pamphlets/item/{id}` |
+| GET | `/api/site/pamphlets/item/{id}/preview` |
+| GET | `/api/site/pamphlets/item/{id}/comments` |
+| POST | `/api/site/pamphlets/item/{id}/comments` |
+| POST | `/api/site/pamphlets/item/{id}/purchase` |
+| GET | `/api/site/pamphlets/item/{id}/read` · `/download` |
+| POST | `/api/site/pamphlets/item/{id}/report` |
+| GET | `/api/site/pamphlets/suggest-titles` |
+| GET | `/api/site/pamphlets/certificates/verify/{serial}` |
+| GET | `/api/site/pamphlets/payments/purchase/callback` · `…/service/callback` |
+
+**نویسنده (نشست لازم)**
+
+| متد | مسیر |
+|-----|------|
+| GET | `/mine/list` · `/library/me` · `/wallet/me` · `/certificates/me` · `/mine/reports` |
+| POST/PATCH | `/mine` · `/mine/{id}` |
+| POST | `/mine/{id}/upload` · `/cover` · `/attachments` · `/submit` |
+| POST | `/mine/{id}/approve-final` · `/confirm-publish` |
+| DELETE | `/mine/{id}` · `/mine/{id}/attachments/{att}` |
+| POST | `/wallet/payout` · `/wallet/payout-closeout` |
+| POST | `/service-orders/{id}/pay` |
+| GET/POST | `/tickets` (+ messages) · گزارش `fix` / `appeal` |
+
+**ادمین** (`/api/admin/pamphlets/…` — نقش‌های `site_manager` / `support_admin` / `pamphlet_editor`)
+
+overview · list · sales · review (assign / needs_revision / reject / mark_ready / …) · quotes خدمات · upload-master · file · reports · payouts · tickets
+
+---
+
+### فایل‌های کلیدی مونوریپو
+
+| مسیر | نقش |
+|------|-----|
+| `bolok_plus/jomhehsara/*` | UI استاتیک |
+| `backend/pamphlet_marketplace_api.py` | تمام API بازارچه |
+| `backend/pamphlet_taxonomy.py` | پایلوت، قوانین، curriculum |
+| `backend/pamphlet_pdf_utils.py` | شمارش صفحه، preview، واترمارک |
+| `backend/data/learn-curriculum.json` | متن learn سمت سرور |
+| `frontendadmin/.../pamphlet_marketplace_admin_screen.dart` | عملیات داوری/فروش/تسویه |
+
+تا `backendpy` دیپلوی + مایگریشن لیارا نرود، `guide`/`meta`/خرید/کیف ممکن است قدیمی یا قطع باشد.
 
 ---
 

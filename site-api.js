@@ -1,8 +1,109 @@
 (() => {
-  const API_BASE = "https://iraniplanner.ir";
+  /** Brand custom domain (preferred). */
+  const BRAND_API = "https://iraniplanner.ir";
+  /** Same Liara `backendpy` app — used when brand TLS/SNI fails. */
+  const LIARA_LEAF_API = "https://backendpy.liara.run";
+  const API_BASE_STORAGE_KEY = "bolok_site_api_base_v1";
   const SITE_SESSION_KEY = "bolok_site_session";
   const VAULT_KEY = "bolok_site_account_vault";
   const VAULT_MAX = 5;
+  const PROBE_MS = 3500;
+  const FAILOVER_THROTTLE_MS = 8000;
+
+  let apiBase = BRAND_API;
+  let lastFailoverAt = 0;
+  let ensurePromise = null;
+
+  try {
+    const cached = sessionStorage.getItem(API_BASE_STORAGE_KEY);
+    if (cached === BRAND_API || cached === LIARA_LEAF_API) {
+      apiBase = cached;
+    }
+  } catch (_) {}
+
+  function getApiBase() {
+    return apiBase;
+  }
+
+  function setApiBase(url) {
+    if (url !== BRAND_API && url !== LIARA_LEAF_API) return;
+    apiBase = url;
+    try {
+      sessionStorage.setItem(API_BASE_STORAGE_KEY, url);
+    } catch (_) {}
+  }
+
+  function usingLeafFailover() {
+    return apiBase === LIARA_LEAF_API;
+  }
+
+  async function probe(base) {
+    if (!base) return false;
+    const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
+    const timer = setTimeout(() => {
+      try {
+        ctrl?.abort();
+      } catch (_) {}
+    }, PROBE_MS);
+    try {
+      const res = await fetch(`${base}/health`, {
+        method: "GET",
+        headers: { Accept: "application/json" },
+        signal: ctrl?.signal,
+        cache: "no-store",
+        mode: "cors",
+      });
+      if (!res.ok) return false;
+      const text = await res.text();
+      return /healthy|"status"/i.test(text) || text.length > 0;
+    } catch (_) {
+      return false;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  /** Prefer brand host; fall back to Liara leaf when custom-domain TLS is down. */
+  async function ensureReachable() {
+    if (ensurePromise) return ensurePromise;
+    ensurePromise = (async () => {
+      if (await probe(apiBase)) return apiBase;
+      if (apiBase !== BRAND_API && (await probe(BRAND_API))) {
+        setApiBase(BRAND_API);
+        return apiBase;
+      }
+      if (apiBase !== LIARA_LEAF_API && (await probe(LIARA_LEAF_API))) {
+        setApiBase(LIARA_LEAF_API);
+        try {
+          console.info("[Bolok/site] brand host unreachable; failover =>", LIARA_LEAF_API);
+        } catch (_) {}
+        return apiBase;
+      }
+      return apiBase;
+    })().finally(() => {
+      ensurePromise = null;
+    });
+    return ensurePromise;
+  }
+
+  async function failoverAfterFailure() {
+    const now = Date.now();
+    if (now - lastFailoverAt < FAILOVER_THROTTLE_MS) return false;
+    lastFailoverAt = now;
+    const before = apiBase;
+    if (before !== LIARA_LEAF_API && (await probe(LIARA_LEAF_API))) {
+      setApiBase(LIARA_LEAF_API);
+      try {
+        console.info("[Bolok/site] request failed; failover =>", LIARA_LEAF_API);
+      } catch (_) {}
+      return true;
+    }
+    if (before !== BRAND_API && (await probe(BRAND_API))) {
+      setApiBase(BRAND_API);
+      return true;
+    }
+    return false;
+  }
 
   const esc = (s) =>
     String(s ?? "")
@@ -72,8 +173,8 @@
 
   function friendlyNetworkError(err) {
     const raw = String(err?.message || err || "");
-    if (/failed to fetch|networkerror|load failed|network request failed/i.test(raw)) {
-      return "ارتباط با سرور برقرار نشد. بعد از ۱ ساعت دوباره امتحان کنید.";
+    if (/failed to fetch|networkerror|load failed|network request failed|tls|ssl|handshake/i.test(raw)) {
+      return "ارتباط با سرور برقرار نشد. چند لحظه بعد دوباره امتحان کن.";
     }
     if (/abort/i.test(raw)) return "درخواست لغو شد؛ دوباره تلاش کن.";
     return raw || "خطای شبکه";
@@ -93,7 +194,7 @@
     return `HTTP ${status}`;
   }
 
-  async function api(path, opts = {}) {
+  async function rawFetch(path, opts = {}) {
     const headers = {
       Accept: "application/json",
       ...(opts.body ? { "Content-Type": "application/json" } : {}),
@@ -103,14 +204,28 @@
     if (session && !headers["X-Bolok-Site-Session"]) {
       headers["X-Bolok-Site-Session"] = session;
     }
+    return fetch(`${getApiBase()}${path}`, {
+      ...opts,
+      headers,
+    });
+  }
+
+  async function api(path, opts = {}) {
+    await ensureReachable();
     let res;
     try {
-      res = await fetch(`${API_BASE}${path}`, {
-        ...opts,
-        headers,
-      });
+      res = await rawFetch(path, opts);
     } catch (err) {
-      throw new Error(friendlyNetworkError(err));
+      const switched = await failoverAfterFailure();
+      if (switched) {
+        try {
+          res = await rawFetch(path, opts);
+        } catch (err2) {
+          throw new Error(friendlyNetworkError(err2));
+        }
+      } else {
+        throw new Error(friendlyNetworkError(err));
+      }
     }
     let data = null;
     try {
@@ -128,14 +243,12 @@
     return apiFormProgress(path, formData, opts);
   }
 
-  function apiFormProgress(path, formData, opts = {}) {
-    const onProgress =
-      typeof opts.onProgress === "function" ? opts.onProgress : null;
+  function xhrPost(path, formData, opts, onProgress) {
     let settled = false;
     let xhr = null;
     const promise = new Promise((resolve, reject) => {
       xhr = new XMLHttpRequest();
-      xhr.open("POST", `${API_BASE}${path}`, true);
+      xhr.open("POST", `${getApiBase()}${path}`, true);
       xhr.setRequestHeader("Accept", "application/json");
       const session = getSiteSession();
       if (session) xhr.setRequestHeader("X-Bolok-Site-Session", session);
@@ -166,9 +279,7 @@
       };
       xhr.onerror = () =>
         settleReject(
-          new Error(
-            "اتصال آپلود برقرار نشد. اینترنت و بک‌اند لیارا را چک کن."
-          )
+          new Error("اتصال آپلود برقرار نشد. اینترنت را چک کن و دوباره بزن.")
         );
       xhr.onabort = () => {
         const err = new Error("آپلود متوقف شد");
@@ -199,6 +310,35 @@
     return promise;
   }
 
+  function apiFormProgress(path, formData, opts = {}) {
+    const onProgress =
+      typeof opts.onProgress === "function" ? opts.onProgress : null;
+    let abortFn = null;
+    const promise = (async () => {
+      await ensureReachable();
+      try {
+        const first = xhrPost(path, formData, opts, onProgress);
+        abortFn = first.abort;
+        return await first;
+      } catch (err) {
+        if (err?.code === "UPLOAD_ABORTED" || err?.name === "UploadAborted") {
+          throw err;
+        }
+        const switched = await failoverAfterFailure();
+        if (!switched) throw err;
+        const second = xhrPost(path, formData, opts, onProgress);
+        abortFn = second.abort;
+        return await second;
+      }
+    })();
+    promise.abort = () => {
+      try {
+        abortFn?.();
+      } catch (_) {}
+    };
+    return promise;
+  }
+
   function rootPrefix() {
     const meta = document.querySelector('meta[name="bolok-root"]');
     if (meta?.content != null) return meta.content;
@@ -220,17 +360,27 @@
   }
 
   function pdfUrl(path) {
-    return `${API_BASE}${path}`;
+    return `${getApiBase()}${path}`;
   }
 
   async function fetchPdfBlob(path) {
+    await ensureReachable();
     const session = getSiteSession();
-    const res = await fetch(`${API_BASE}${path}`, {
-      headers: {
-        Accept: "application/pdf",
-        ...(session ? { "X-Bolok-Site-Session": session } : {}),
-      },
-    });
+    const doFetch = () =>
+      fetch(`${getApiBase()}${path}`, {
+        headers: {
+          Accept: "application/pdf",
+          ...(session ? { "X-Bolok-Site-Session": session } : {}),
+        },
+      });
+    let res;
+    try {
+      res = await doFetch();
+    } catch (err) {
+      const switched = await failoverAfterFailure();
+      if (!switched) throw new Error(friendlyNetworkError(err));
+      res = await doFetch();
+    }
     if (!res.ok) {
       let msg = `HTTP ${res.status}`;
       try {
@@ -270,8 +420,19 @@
     });
   }
 
+  // Kick off early so first API call often finds a warm base.
+  try {
+    ensureReachable();
+  } catch (_) {}
+
   window.BolokSite = {
-    API_BASE,
+    get API_BASE() {
+      return getApiBase();
+    },
+    BRAND_API,
+    LIARA_LEAF_API,
+    usingLeafFailover,
+    ensureReachable,
     api,
     apiForm,
     apiFormProgress,

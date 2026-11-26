@@ -1,5 +1,4 @@
 (() => {
-  const API_BASE = "https://iraniplanner.ir";
   const DISCLAIMER =
     "(نظرات حاوی توهین، الفاظ رکیک و تبلیغات سایر موسسات تایید نخواهند شد.) نظر خود را بنویسید…";
 
@@ -24,29 +23,45 @@
   };
 
   async function api(path, opts = {}) {
-    const res = await fetch(`${API_BASE}${path}`, {
-      ...opts,
-      headers: {
-        Accept: "application/json",
-        ...(opts.body ? { "Content-Type": "application/json" } : {}),
-        ...(opts.headers || {}),
-      },
-    });
-    let data = null;
-    try {
-      data = await res.json();
-    } catch (_) {
-      data = null;
-    }
-    if (!res.ok) {
-      let msg = data && (data.detail || data.message || data.error);
-      if (Array.isArray(msg)) {
-        msg = msg.map((x) => x?.msg || x).filter(Boolean).join(" · ");
+    const site = window.BolokSite;
+    if (site?.api) return site.api(path, opts);
+    // Fallback if site-api.js not loaded: brand → leaf like site-api.
+    const brands = ["https://iraniplanner.ir", "https://backendpy.liara.run"];
+    let lastErr = null;
+    for (const base of brands) {
+      try {
+        const res = await fetch(`${base}${path}`, {
+          ...opts,
+          headers: {
+            Accept: "application/json",
+            ...(opts.body ? { "Content-Type": "application/json" } : {}),
+            ...(opts.headers || {}),
+          },
+        });
+        let data = null;
+        try {
+          data = await res.json();
+        } catch (_) {
+          data = null;
+        }
+        if (!res.ok) {
+          let msg = data && (data.detail || data.message || data.error);
+          if (Array.isArray(msg)) {
+            msg = msg.map((x) => x?.msg || x).filter(Boolean).join(" · ");
+          }
+          if (!msg || typeof msg !== "string") msg = `خطا (${res.status})`;
+          throw new Error(msg);
+        }
+        return data;
+      } catch (err) {
+        lastErr = err;
+        if (err instanceof TypeError || /failed to fetch|network/i.test(String(err))) {
+          continue;
+        }
+        throw err;
       }
-      if (!msg || typeof msg !== "string") msg = `خطا (${res.status})`;
-      throw new Error(msg);
     }
-    return data;
+    throw lastErr || new Error("ارتباط با سرور برقرار نشد.");
   }
 
   function ensureMount() {
