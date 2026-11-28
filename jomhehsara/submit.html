@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
   <meta charset="UTF-8" />
@@ -8,9 +8,9 @@
   <link rel="icon" href="../assets/bolok-logo.svg?v=59" type="image/svg+xml" />
   <link rel="stylesheet" href="../assets/fonts/vazirmatn-fd.css?v=1" />
   <link rel="stylesheet" href="../styles.css?v=80" />
-  <link rel="stylesheet" href="jomhehsara.css?v=112" />
+  <link rel="stylesheet" href="jomhehsara.css?v=129" />
   <script src="../site-api.js?v=27" defer></script>
-  <script src="jomhehsara.js?v=112" defer></script>
+  <script src="jomhehsara.js?v=129" defer></script>
 </head>
 <body class="jh-body jh-focus-body" data-jh-page="submit">
   <header class="jh-focus-bar">
@@ -119,10 +119,48 @@
           <label>نویسنده / نویسندگان جزوه (فرد اصلی در ابتدا نوشته شود) *
             <input id="authors_text" placeholder="نام نویسندهٔ اصلی، سپس بقیه" required />
           </label>
-          <label class="jh-check jh-span-2">
+          <label class="jh-anon-card jh-span-2" id="jh-anon-card">
             <input type="checkbox" id="is_anonymous" />
-            <span>انتشار به‌عنوان ناشناس (نام نویسنده برای خریدار نمایش داده نشود)</span>
+            <span class="jh-anon-card-face">
+              <span class="jh-anon-card-kicker">حریم نمایش</span>
+              <strong>انتشار به‌عنوان ناشناس</strong>
+              <em>در فروشگاه و صفحهٔ جزوه برای خریدار فقط «ناشناس» دیده می‌شود. نام واقعی‌ات برای داوری و ادمین می‌ماند و فیلد نویسنده همچنان اجباری است.</em>
+              <span class="jh-anon-card-switch" aria-hidden="true"><i></i></span>
+            </span>
           </label>
+
+          <section class="jh-price-block is-free jh-span-2" id="jh-price-block">
+            <div class="jh-price-head">
+              <div>
+                <strong>واحد و قیمت *</strong>
+                <p class="jh-price-sub">جزوه برای درس چند واحدی هستش؟ قیمت از روی واحد انتخابی خودکار می‌آید.</p>
+              </div>
+              <label class="jh-toggle">
+                <input type="checkbox" id="price_free" checked />
+                <span>رایگان پیشنهاد شود</span>
+              </label>
+            </div>
+            <div class="jh-unit-picker" id="jh-unit-picker" hidden>
+              <p class="jh-unit-picker-label">جزوه برای درس چند واحدی هستش؟ (۱ تا ۴)</p>
+              <div class="jh-unit-chips" role="radiogroup" aria-label="تعداد واحد جزوه">
+                <label class="jh-unit-chip"><input type="radio" name="unit_count" value="1" /><span>۱ واحدی</span><em data-tier="1">۹۹٬۰۰۰</em></label>
+                <label class="jh-unit-chip"><input type="radio" name="unit_count" value="2" checked /><span>۲ واحدی</span><em data-tier="2">۱۹۹٬۰۰۰</em></label>
+                <label class="jh-unit-chip"><input type="radio" name="unit_count" value="3" /><span>۳ واحدی</span><em data-tier="3">۲۹۹٬۰۰۰</em></label>
+                <label class="jh-unit-chip"><input type="radio" name="unit_count" value="4" /><span>۴ واحدی</span><em data-tier="4">۳۹۹٬۰۰۰</em></label>
+              </div>
+            </div>
+            <label class="jh-price-field" id="jh-price-wrap">
+              <span class="jh-price-field-label">قیمت خودکار بر اساس واحد</span>
+              <div class="jh-price-field-row">
+                <input id="price_irt_display" type="text" inputmode="numeric" dir="ltr" disabled placeholder="رایگان" autocomplete="off" />
+                <span class="jh-price-suffix">تومان</span>
+              </div>
+              <input type="hidden" id="price_irt" value="0" />
+              <input type="hidden" id="unit_count" value="2" />
+            </label>
+            <p class="jh-price-perpage" id="jh-price-perpage" hidden></p>
+            <p class="jh-price-note" id="jh-price-note">هر پله واحد قیمت ثابت سایت دارد (۹۹ / ۱۹۹ / ۲۹۹ / ۳۹۹ هزار). تیم داوری واحد نهایی را قفل می‌کند.</p>
+          </section>
         </div>
         <button class="jh-btn" type="button" id="btn-next-1">ذخیره و ادامه</button>
       </div>
@@ -304,23 +342,6 @@
           <div id="jh-attach-list"></div>
           <button type="button" class="jh-btn secondary" id="btn-add-attach">+ افزودن فایل اضافه</button>
         </fieldset>
-
-        <section class="jh-price-block is-free" id="jh-price-block">
-          <div class="jh-price-head">
-            <strong>پیشنهاد قیمت *</strong>
-            <label class="jh-toggle">
-              <input type="checkbox" id="price_free" checked />
-              <span>رایگان پیشنهاد شود</span>
-            </label>
-          </div>
-          <label class="jh-price-field" id="jh-price-wrap">
-            <input id="price_irt_display" type="text" inputmode="numeric" dir="ltr" disabled placeholder="رایگان" autocomplete="off" />
-            <span class="jh-price-suffix">تومان</span>
-            <input type="hidden" id="price_irt" value="0" />
-          </label>
-          <p class="jh-price-perpage" id="jh-price-perpage" hidden></p>
-          <p class="jh-price-note" id="jh-price-note">قیمت نهایی را تیم داوری بلوک تعیین می‌کند؛ این فقط پیشنهاد شماست.</p>
-        </section>
 
         <div class="jh-actions">
           <button class="jh-btn secondary" type="button" id="btn-back-2">قبلی</button>

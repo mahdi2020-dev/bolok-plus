@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
   <meta charset="UTF-8" />
@@ -8,9 +8,9 @@
   <link rel="icon" href="../assets/bolok-logo.svg?v=59" type="image/svg+xml" />
   <link rel="stylesheet" href="../assets/fonts/vazirmatn-fd.css?v=1" />
   <link rel="stylesheet" href="../styles.css?v=80" />
-  <link rel="stylesheet" href="jomhehsara.css?v=112" />
+  <link rel="stylesheet" href="jomhehsara.css?v=129" />
   <script src="../site-api.js?v=27" defer></script>
-  <script src="jomhehsara.js?v=112" defer></script>
+  <script src="jomhehsara.js?v=129" defer></script>
 </head>
 <body class="jh-body jh-dash-body" data-jh-page="account">
   <div id="jh-dash-boot" class="jh-boot" role="status" aria-live="polite">
@@ -34,14 +34,19 @@
         <strong>جزوه‌سرا</strong>
         <span>داشبورد بلوک</span>
       </div>
+      <a class="jh-dash-shop" href="account.html?tab=shop" data-tab="shop">
+        <span class="jh-nav-ico" aria-hidden="true">▦</span>
+        <span>فروشگاه جزوه‌سرا</span>
+      </a>
       <nav class="jh-account-nav jh-account-nav--dash" aria-label="داشبورد بلوک">
         <div class="jh-nav-section">
           <p class="jh-nav-group">شروع</p>
           <a href="account.html?tab=overview" data-tab="overview"><span class="jh-nav-ico" aria-hidden="true">◉</span><span class="jh-nav-label">نمای کلی</span></a>
-          <a href="learn.html"><span class="jh-nav-ico" aria-hidden="true">▣</span><span class="jh-nav-label">آموزش و راهنما</span></a>
+          <a href="learn.html"><span class="jh-nav-ico" aria-hidden="true">▣</span><span class="jh-nav-label">آموزش و راهنما و قوانین</span></a>
         </div>
         <div class="jh-nav-section">
           <p class="jh-nav-group">مطالعه</p>
+          <a href="account.html?tab=shop" data-tab="shop"><span class="jh-nav-ico" aria-hidden="true">▦</span><span class="jh-nav-label">فروشگاه</span></a>
           <a href="account.html?tab=library" data-tab="library"><span class="jh-nav-ico" aria-hidden="true">☰</span><span class="jh-nav-label">کتابخانه من</span></a>
         </div>
         <div class="jh-nav-section">
@@ -51,17 +56,16 @@
           <a href="account.html?tab=certs" data-tab="certs"><span class="jh-nav-ico" aria-hidden="true">★</span><span class="jh-nav-label">گواهی‌ها</span></a>
         </div>
         <div class="jh-nav-section">
-          <p class="jh-nav-group">درآمد</p>
-          <a href="account.html?tab=wallet" data-tab="wallet"><span class="jh-nav-ico" aria-hidden="true">◎</span><span class="jh-nav-label">درآمد و تسویه</span></a>
+          <p class="jh-nav-group">مالی</p>
+          <a href="account.html?tab=wallet" data-tab="wallet"><span class="jh-nav-ico" aria-hidden="true">◎</span><span class="jh-nav-label">پنل مالی</span></a>
         </div>
         <div class="jh-nav-section">
           <p class="jh-nav-group">حساب</p>
           <a href="account.html?tab=tickets" data-tab="tickets"><span class="jh-nav-ico" aria-hidden="true">◇</span><span class="jh-nav-label">پشتیبانی</span></a>
-          <a href="account.html?tab=profile" data-tab="profile"><span class="jh-nav-ico" aria-hidden="true">☺</span><span class="jh-nav-label">مشخصات</span></a>
+          <a href="account.html?tab=profile" data-tab="profile"><span class="jh-nav-ico" aria-hidden="true">☺</span><span class="jh-nav-label">پروفایل کاربری</span></a>
         </div>
         <div class="jh-nav-section jh-nav-section--foot">
           <p class="jh-nav-group">سایت</p>
-          <a href="index.html"><span class="jh-nav-ico" aria-hidden="true">▦</span><span class="jh-nav-label">فروشگاه جزوه‌سرا</span></a>
           <a href="../index.html"><span class="jh-nav-ico" aria-hidden="true">⌂</span><span class="jh-nav-label">صفحه اصلی بلوک</span></a>
         </div>
       </nav>
@@ -81,6 +85,7 @@
       <div class="jh-tab-panel" data-tab="overview" id="panel-overview">
         <div class="jh-dash-skel" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
       </div>
+      <div class="jh-tab-panel" data-tab="shop" id="panel-shop"></div>
       <div class="jh-tab-panel" data-tab="library" id="panel-library"></div>
       <div class="jh-tab-panel" data-tab="mine" id="panel-mine"></div>
       <div class="jh-tab-panel" data-tab="services" id="panel-services"></div>

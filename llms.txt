@@ -10,6 +10,7 @@
 
 ## صفحات اصلی
 - [خانه](https://bolokapp.ir/)
+- [جزوه‌سرا](https://bolokapp.ir/jomhehsara/) — پایلوت پیراپزشکی دانشگاه علوم پزشکی شهید بهشتی · جهشی در آموزش
 - [هاب کنکور](https://bolokapp.ir/education/konkour/index.html)
 - [سایر مقالات](https://bolokapp.ir/education/konkour/maghalat.html)
 - [مشاوره کنکور](https://bolokapp.ir/education/konkour/moshavere/index.html)

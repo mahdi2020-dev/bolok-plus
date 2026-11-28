@@ -1,16 +1,16 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="bolok-root" content="../" />
-  <title>ورود | جزوات بلوک</title>
+  <title>ورود به جزوات بلوک</title>
   <link rel="icon" href="../assets/bolok-logo.svg?v=59" type="image/svg+xml" />
   <link rel="stylesheet" href="../assets/fonts/vazirmatn-fd.css?v=1" />
   <link rel="stylesheet" href="../styles.css?v=80" />
-  <link rel="stylesheet" href="jomhehsara.css?v=94" />
+  <link rel="stylesheet" href="jomhehsara.css?v=129" />
   <script src="../site-api.js?v=27" defer></script>
-  <script src="jomhehsara.js?v=94" defer></script>
+  <script src="jomhehsara.js?v=129" defer></script>
 </head>
 <body class="jh-body jh-auth-body" data-jh-page="login">
   <main class="jh-wrap jh-wrap--auth">
@@ -45,26 +45,34 @@
             <input id="password" name="password" type="password" dir="ltr"
               autocomplete="current-password" />
           </label>
-          <button class="jh-btn" type="button" id="btn-login-password">ورود</button>
-          <button class="jh-btn secondary" type="button" id="btn-goto-otp">ورود با پیامک</button>
+          <button class="jh-btn" type="button" id="btn-login-password">ورود با رمز عبور</button>
+          <button class="jh-btn secondary" type="button" id="btn-goto-otp">ثبت نام یا ورود پیامکی</button>
         </section>
         <section id="step-phone" class="jh-form" hidden>
           <label>شماره موبایل
             <input id="phone_otp" name="username" type="tel" dir="ltr" inputmode="numeric"
               placeholder="۰۹xxxxxxxxx" autocomplete="username" />
           </label>
-          <button class="jh-btn" type="button" id="btn-send-otp">دریافت کد ورود</button>
-          <button class="jh-btn secondary" type="button" id="btn-goto-password">بازگشت به ورود با رمز</button>
+          <button class="jh-btn" type="button" id="btn-send-otp">دریافت کد پیامکی</button>
+          <button class="jh-btn secondary" type="button" id="btn-goto-password">بازگشت به ورود با رمز عبور</button>
         </section>
         <section id="step-code" class="jh-form" hidden>
+          <div class="jh-auth-phone-lock" id="code-phone-lock" hidden>
+            <span class="jh-ref-label">شماره موبایل</span>
+            <strong dir="ltr" id="code-phone-display">—</strong>
+          </div>
           <p class="jh-auth-step" id="code-hint">کد ارسال‌شده را وارد کن</p>
           <label>کد ۶ رقمی
             <input id="code" type="text" dir="ltr" inputmode="numeric" maxlength="6" autocomplete="one-time-code" />
           </label>
           <button class="jh-btn" type="button" id="btn-verify-otp">تأیید و ادامه</button>
-          <button class="jh-btn secondary" type="button" id="btn-edit-phone">ویرایش شماره</button>
+          <button class="jh-btn secondary" type="button" id="btn-edit-phone">تغییر شماره قبل از تأیید</button>
         </section>
         <section id="step-set-password" class="jh-form" hidden>
+          <div class="jh-auth-phone-lock" id="setpass-phone-lock" hidden>
+            <span class="jh-ref-label">شماره موبایل</span>
+            <strong dir="ltr" id="setpass-phone-display">—</strong>
+          </div>
           <p class="jh-auth-step">رمز بگذار تا گوگل/مرورگر ذخیره کند</p>
           <label>رمز جدید (حداقل ۸ کاراکتر)
             <input id="new_password" name="new-password" type="password" dir="ltr" autocomplete="new-password" />
@@ -76,6 +84,11 @@
           <button class="jh-btn secondary" type="button" id="btn-skip-password">بعداً</button>
         </section>
         <section id="step-profile" class="jh-form" hidden>
+          <div class="jh-auth-phone-lock" id="profile-phone-lock">
+            <span class="jh-ref-label">شماره موبایل</span>
+            <strong dir="ltr" id="profile-phone-display">—</strong>
+            <em>بعد از ثبت‌نام قابل ویرایش نیست</em>
+          </div>
           <p class="jh-auth-step">برای انتشار جزوه، مشخصاتت را کامل کن</p>
           <label>نام
             <input id="profile_first" autocomplete="given-name" />
@@ -94,8 +107,8 @@
               <option value="رادیوتراپی">رادیوتراپی</option>
             </select>
           </label>
-          <label>کد معرف رابط <span class="jh-optional">(اختیاری)</span>
-            <input id="profile_referral" dir="ltr" autocomplete="off" placeholder="مثلاً a1b2c3d4" />
+          <label>کد معرف / رفرال <span class="jh-optional">(اختیاری)</span>
+            <input id="profile_referral" dir="ltr" autocomplete="off" placeholder="اگر لینک دعوت داشتی اینجا خودکار پر می‌شود" />
           </label>
           <button class="jh-btn" type="button" id="btn-complete-profile">ذخیره و ادامه</button>
         </section>

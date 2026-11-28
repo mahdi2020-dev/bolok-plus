@@ -144,8 +144,30 @@
     return Number(n || 0).toLocaleString("fa-IR") + " تومان";
   }
 
-  /** جزوه‌سرا payments: sandbox until live terminal is ready */
-  const PAY_ENV = "sandbox";
+  const DEFAULT_UNIT_TIERS = { 1: 99000, 2: 199000, 3: 299000, 4: 399000 };
+
+  function unitCountOf(p) {
+    const u = Number(p?.unit_count || 0);
+    if (u >= 1 && u <= 4) return u;
+    return 2;
+  }
+
+  function unitBadgeHtml(p) {
+    const free = Number(p?.price_irt || 0) <= 0;
+    if (free) return "";
+    const u = unitCountOf(p);
+    return `<span class="jh-badge jh-badge--units">${toFaDigits(u)} واحدی</span>`;
+  }
+
+  function tierPriceIrt(units, meta) {
+    const tiers = meta?.unit_pricing?.tier_prices_irt || DEFAULT_UNIT_TIERS;
+    const u = Number(units) || 2;
+    const raw = tiers[u] ?? tiers[String(u)];
+    return Number(raw || DEFAULT_UNIT_TIERS[u] || DEFAULT_UNIT_TIERS[2]);
+  }
+
+  /** جزوه‌سرا — درگاه لایو زرین‌پال (bolokapp.ir) */
+  const PAY_ENV = "live";
   const PAYOUT_STATUS_FA = {
     pending: "در انتظار بررسی",
     approved: "تأیید شده",
@@ -773,6 +795,122 @@
     location.replace(url);
   }
 
+  const REF_STORAGE_KEY = "jh_referral_code";
+
+  function captureReferralFromUrl() {
+    try {
+      const q = new URLSearchParams(location.search);
+      const code = (q.get("ref") || q.get("referral") || "").trim();
+      if (code && code.length >= 4) {
+        localStorage.setItem(REF_STORAGE_KEY, code);
+      }
+    } catch (_) {}
+  }
+
+  function storedReferralCode() {
+    try {
+      return (localStorage.getItem(REF_STORAGE_KEY) || "").trim();
+    } catch (_) {
+      return "";
+    }
+  }
+
+  function clearStoredReferral() {
+    try {
+      localStorage.removeItem(REF_STORAGE_KEY);
+    } catch (_) {}
+  }
+
+  function myReferralSignupUrl(code) {
+    const c = (code || "").trim();
+    if (!c) return "";
+    try {
+      const u = new URL("login.html", location.href);
+      u.searchParams.set("ref", c);
+      return u.toString();
+    } catch (_) {
+      return `login.html?ref=${encodeURIComponent(c)}`;
+    }
+  }
+
+  async function copyText(text) {
+    const t = String(text || "");
+    if (!t) return false;
+    try {
+      await navigator.clipboard.writeText(t);
+      return true;
+    } catch (_) {
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = t;
+        ta.setAttribute("readonly", "");
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        const ok = document.execCommand("copy");
+        ta.remove();
+        return ok;
+      } catch (_) {
+        return false;
+      }
+    }
+  }
+
+  function referralInviteHtml(code, { compact = false } = {}) {
+    const c = (code || "").trim();
+    if (!c) {
+      return `<div class="jh-ref-box">
+        <p class="jh-note">کد معرف هنوز ساخته نشده؛ یک‌بار صفحه را تازه کن.</p>
+      </div>`;
+    }
+    const link = myReferralSignupUrl(c);
+    return `<div class="jh-ref-box${compact ? " jh-ref-box--compact" : ""}">
+      <p class="jh-ref-box-kicker">کد و لینک ثبت‌نام رفرالی تو</p>
+      <p class="jh-note">هر کسی با این لینک ثبت‌نام کند، کد معرفت خودکار اعمال می‌شود و تا یک سال از فروش جزوه‌هایش سهم سفیر می‌گیری.</p>
+      <div class="jh-ref-row">
+        <span class="jh-ref-label">کد معرف</span>
+        <code class="jh-ref-code" dir="ltr">${S().esc(c)}</code>
+        <button type="button" class="jh-btn secondary" data-ref-copy="code">کپی کد</button>
+      </div>
+      <div class="jh-ref-row">
+        <span class="jh-ref-label">لینک ثبت‌نام</span>
+        <input class="jh-ref-link" dir="ltr" readonly value="${S().esc(link)}" />
+        <button type="button" class="jh-btn secondary" data-ref-copy="link">کپی لینک</button>
+      </div>
+      <div class="jh-ref-actions">
+        <button type="button" class="jh-btn" data-ref-share>ارسال لینک</button>
+      </div>
+    </div>`;
+  }
+
+  function bindReferralInvite(root, code, errEl) {
+    const c = (code || "").trim();
+    const link = myReferralSignupUrl(c);
+    root?.querySelectorAll("[data-ref-copy]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const kind = btn.getAttribute("data-ref-copy");
+        const ok = await copyText(kind === "code" ? c : link);
+        msg(errEl, ok ? (kind === "code" ? "کد معرف کپی شد" : "لینک ثبت‌نام کپی شد") : "کپی نشد؛ دستی کپی کن", ok);
+      });
+    });
+    root?.querySelector("[data-ref-share]")?.addEventListener("click", async () => {
+      const text = `با این لینک در جزوه‌سرا ثبت‌نام کن:\n${link}`;
+      try {
+        if (navigator.share) {
+          await navigator.share({
+            title: "دعوت به جزوه‌سرا بلوک",
+            text,
+            url: link,
+          });
+          return;
+        }
+      } catch (_) {}
+      const ok = await copyText(link);
+      msg(errEl, ok ? "لینک کپی شد؛ بفرست برای دوستت" : "اشتراک‌گذاری در دسترس نیست", ok);
+    });
+  }
+
   function showStep(id) {
     ["step-password", "step-phone", "step-code", "step-set-password", "step-profile"].forEach(
       (sid) => {
@@ -794,6 +932,10 @@
           <span>جزوه‌سرا<em>بلوک</em></span>
         </a>
         <div class="jh-topbar-actions">
+          <a class="jh-wallet-chip" href="account.html?tab=wallet" data-jh-wallet hidden aria-label="کیف پول">
+            <span class="jh-wallet-chip-money" data-jh-wallet-money>—</span>
+            <span class="jh-wallet-chip-units" data-jh-wallet-units hidden></span>
+          </a>
           <a class="jh-account-chip" href="login.html" data-nav="login" data-jh-account aria-busy="true">
             <span class="jh-account-avatar" aria-hidden="true">?</span>
             <span class="jh-account-name">…</span>
@@ -805,13 +947,13 @@
       </div>
       <nav class="jh-top-nav" aria-label="جزوات">
         <a href="index.html" data-nav="index">فروشگاه</a>
-        <a href="learn.html" data-nav="learn">آموزش و راهنما</a>
+        <a href="learn.html" data-nav="learn">آموزش و راهنما و قوانین</a>
         <a href="submit.html" data-nav="submit">انتشار</a>
       </nav>
       <div class="jh-nav-backdrop" data-jh-nav-backdrop hidden></div>
       <nav class="jh-nav-panel" id="jh-nav-panel" data-jh-nav-panel aria-hidden="true">
         <a href="index.html" data-nav="index">فروشگاه</a>
-        <a href="learn.html" data-nav="learn">آموزش و راهنما</a>
+        <a href="learn.html" data-nav="learn">آموزش و راهنما و قوانین</a>
         <a href="submit.html" data-nav="submit">انتشار</a>
         <a href="${root}index.html">بازگشت به بلوک</a>
       </nav>`;
@@ -828,6 +970,110 @@
     );
     wireJhNavToggle(bar);
     refreshAccountChip();
+    maybeShowVpnAdvisory();
+  }
+
+  const VPN_HINT_KEY = "jh_vpn_hint_dismissed_day";
+
+  function vpnHintDismissedToday() {
+    try {
+      const day = new Date().toISOString().slice(0, 10);
+      return sessionStorage.getItem(VPN_HINT_KEY) === day;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function dismissVpnHintToday() {
+    try {
+      sessionStorage.setItem(
+        VPN_HINT_KEY,
+        new Date().toISOString().slice(0, 10)
+      );
+    } catch (_) {}
+  }
+
+  function timezoneLooksAbroad() {
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+      if (!tz) return false;
+      return tz !== "Asia/Tehran";
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function paintVpnAdvisoryBanner(message) {
+    if ($("[data-jh-vpn-banner]")) return;
+    const el = document.createElement("aside");
+    el.className = "jh-vpn-banner";
+    el.setAttribute("data-jh-vpn-banner", "1");
+    el.setAttribute("role", "status");
+    el.innerHTML = `
+      <div class="jh-vpn-banner-inner">
+        <span class="jh-vpn-banner-ico" aria-hidden="true">⚠</span>
+        <div class="jh-vpn-banner-copy">
+          <strong>فیلترشکن، VPN یا DNS changer فعال به نظر می‌رسد</strong>
+          <p>${S().esc(
+            message ||
+              "برای استفادهٔ صحیح و کامل، فیلترشکن خود را خاموش بفرمایید."
+          )}</p>
+        </div>
+        <button type="button" class="jh-vpn-banner-x" data-jh-vpn-dismiss aria-label="بستن">×</button>
+      </div>`;
+    const dash = $(".jh-dash-main");
+    const wrap = $(".jh-wrap");
+    if (dash) {
+      const top = dash.querySelector(".jh-dash-top");
+      if (top?.nextSibling) dash.insertBefore(el, top.nextSibling);
+      else dash.prepend(el);
+    } else if (wrap) {
+      wrap.prepend(el);
+    } else {
+      document.body.prepend(el);
+    }
+    el.querySelector("[data-jh-vpn-dismiss]")?.addEventListener("click", () => {
+      dismissVpnHintToday();
+      el.remove();
+    });
+  }
+
+  async function maybeShowVpnAdvisory() {
+    if (vpnHintDismissedToday()) return;
+    let advise = false;
+    let message =
+      "برای استفادهٔ صحیح و کامل باید فیلترشکن، VPN یا DNS changer خود را خاموش بفرمایید.";
+    let apiKnown = false;
+    try {
+      if (window.BolokSite?.api) {
+        const res = await S().api("/api/site/network-advisory");
+        const d = res?.data || {};
+        const signal = String(d.signal || "");
+        const country = String(d.country || "")
+          .trim()
+          .toUpperCase();
+        if (d.message_fa) message = d.message_fa;
+        if (signal === "local" || country === "IR") {
+          // In Iran (edge country) — never warn for wrong OS timezone alone
+          return;
+        }
+        if (d.advise_disable_vpn || signal === "country") {
+          advise = true;
+          apiKnown = true;
+        } else if (signal === "unknown" || !country) {
+          apiKnown = false;
+        } else {
+          apiKnown = true;
+        }
+      }
+    } catch (_) {
+      apiKnown = false;
+    }
+    // TZ is only a weak fallback when country is unknown / API failed
+    if (!advise && !apiKnown && timezoneLooksAbroad()) {
+      advise = true;
+    }
+    if (advise) paintVpnAdvisoryBanner(message);
   }
 
   function wireJhNavToggle(bar) {
@@ -924,6 +1170,35 @@
     return _restorePromise;
   }
 
+  function paintWalletChip(wallet) {
+    const chip = $("[data-jh-wallet]");
+    if (!chip) return;
+    if (!wallet) {
+      chip.hidden = true;
+      return;
+    }
+    const bal = Math.max(0, Math.floor(Number(wallet.wallet_balance_irt) || 0));
+    const units = Math.max(0, Math.floor(Number(wallet.wallet_units) || 0));
+    const buyIrt = purchasableValueIrt(wallet);
+    chip.hidden = false;
+    const moneyEl = chip.querySelector("[data-jh-wallet-money]");
+    const unitsEl = chip.querySelector("[data-jh-wallet-units]");
+    if (moneyEl) moneyEl.textContent = money(bal);
+    if (unitsEl) {
+      if (units > 0) {
+        unitsEl.hidden = false;
+        unitsEl.textContent = `${toFaDigits(units)} واحد · ${money(buyIrt)}`;
+      } else {
+        unitsEl.hidden = true;
+        unitsEl.textContent = "";
+      }
+    }
+    const labelParts = [`موجودی ${money(bal)}`];
+    if (units > 0)
+      labelParts.push(`${toFaDigits(units)} واحد · ${money(buyIrt)}`);
+    chip.setAttribute("aria-label", labelParts.join(" · "));
+  }
+
   function paintAccountChip(me) {
     const chips = $$("[data-jh-account]");
     if (!chips.length) return;
@@ -953,15 +1228,30 @@
         el.classList.add("is-on");
         el.setAttribute("aria-label", full);
         if (el.hasAttribute("data-nav")) el.setAttribute("data-nav", "account");
+        // Soft paint from session; wallet/me refreshes units + income
+        paintWalletChip({
+          wallet_balance_irt: me.wallet_balance_irt,
+          wallet_units: me.wallet_units,
+        });
+        S()
+          .api("/api/site/pamphlets/wallet/me")
+          .then((res) => paintWalletChip(res?.data || null))
+          .catch(() => {});
       } else {
         if (avatar) avatar.textContent = "و";
         if (nameEl) {
           nameEl.textContent = "ورود";
           nameEl.removeAttribute("title");
         }
-        el.href = "login.html";
+        {
+          const stored = storedReferralCode();
+          el.href = stored
+            ? `login.html?ref=${encodeURIComponent(stored)}`
+            : "login.html";
+        }
         el.classList.remove("is-on");
         el.setAttribute("aria-label", "ورود");
+        paintWalletChip(null);
       }
     });
   }
@@ -1340,7 +1630,7 @@
       credit ? ` · ${S().esc(credit)}` : ""
     }</p>
         <div class="jh-product-foot">
-          ${goldenBadgeHtml(p)}${price}
+          ${goldenBadgeHtml(p)}${unitBadgeHtml(p)}${price}
           <a class="jh-card-cta" href="item.html?id=${S().esc(p.id)}">${cta}</a>
         </div>
       </div>
@@ -1397,6 +1687,10 @@
           const major = ($("#profile_major")?.value || "").trim();
           if (!first || !last) return msg(err, "نام و نام خانوادگی لازم است");
           if (!major) return msg(err, "رشته را انتخاب کن");
+          const refVal = ($("#profile_referral")?.value || "").trim();
+          const referralCode =
+            storedReferralCode() ||
+            (/ثبت‌شده|کد معرف قبلاً/.test(refVal) ? "" : refVal);
           const saved = await S().api("/api/site/auth/complete-profile", {
             method: "POST",
             body: JSON.stringify({
@@ -1406,9 +1700,10 @@
                 ($("#profile_uni")?.value || "").trim() ||
                 "دانشگاه علوم پزشکی شهید بهشتی",
               field_of_study: major,
-              referral_code: ($("#profile_referral")?.value || "").trim(),
+              referral_code: referralCode,
             }),
           });
+          if (saved.data?.has_referrer) clearStoredReferral();
           invalidateSessionCache();
           showLoginSuccess(boot, ui, saved.data || {}, dest());
         } catch (e) {
@@ -1417,10 +1712,21 @@
       });
     };
 
+    const paintLockedPhone = (displayId, lockId, rawPhone) => {
+      const p = normalizePhone(rawPhone || phone || "");
+      const el = $(displayId);
+      const lock = $(lockId);
+      if (el && p) el.textContent = toFaDigitChars(p);
+      if (lock) lock.hidden = !p;
+    };
+
     const openProfileStep = (data) => {
       revealUi(boot, ui);
       showStep("step-profile");
       bindProfileStep();
+      const lockedPhone = data?.phone || phone || "";
+      if (lockedPhone) phone = normalizePhone(lockedPhone);
+      paintLockedPhone("#profile-phone-display", "#profile-phone-lock", phone);
       if ($("#profile_first") && data?.first_name)
         $("#profile_first").value = data.first_name;
       if ($("#profile_last") && data?.last_name)
@@ -1429,6 +1735,18 @@
         $("#profile_uni").value = data.university;
       if ($("#profile_major") && data?.field_of_study)
         $("#profile_major").value = data.field_of_study;
+      const refInput = $("#profile_referral");
+      if (refInput) {
+        const fromUrl = storedReferralCode();
+        if (fromUrl && !refInput.value.trim()) refInput.value = fromUrl;
+        if (data?.has_referrer) {
+          refInput.readOnly = true;
+          const name = data.referrer_name || data.referrer?.full_name || "";
+          refInput.value = name
+            ? `ثبت‌شده · سفیر: ${name}`
+            : "کد معرف قبلاً ثبت شده";
+        }
+      }
       msg(err, "برای ادامه، مشخصات پروفایل را کامل کن", true);
     };
 
@@ -1452,8 +1770,15 @@
     const finishAuth = (res) => {
       invalidateSessionCache();
       S().rememberAuth?.(res);
+      const authPhone = res?.data?.phone || phone;
+      if (authPhone) phone = normalizePhone(authPhone);
       if (res.needs_password) {
         revealUi(boot, ui);
+        paintLockedPhone(
+          "#setpass-phone-display",
+          "#setpass-phone-lock",
+          phone
+        );
         showStep("step-set-password");
         msg(err, "برای ورود بعدی بدون پیامک، یک رمز بگذار", true);
         return;
@@ -1555,6 +1880,7 @@
         });
         msg(err, "کد پیامک شد", true);
         showStep("step-code");
+        paintLockedPhone("#code-phone-display", "#code-phone-lock", phone);
         const hint = $("#code-hint");
         if (hint)
           hint.textContent = `کد ارسال‌شده به ${toFaDigitChars(phone)} را وارد کن`;
@@ -1574,6 +1900,12 @@
           body: JSON.stringify({ phone, code }),
         });
         if (!res.ok) return msg(err, res.message || "کد غلط است");
+        paintLockedPhone(
+          "#setpass-phone-display",
+          "#setpass-phone-lock",
+          phone
+        );
+        paintLockedPhone("#profile-phone-display", "#profile-phone-lock", phone);
         finishAuth(res);
       } catch (e) {
         msg(err, e.message || "خطا");
@@ -1754,6 +2086,24 @@
     const err = $("#jh-err");
     const metaEl = $("#jh-results-meta");
     const qInput = $("#filter-q");
+    const heroDash = $("#jh-hero-dash");
+    if (heroDash) {
+      ensureSession()
+        .then((me) => {
+          if (!heroDash.isConnected) return;
+          if (me) {
+            heroDash.href = "account.html?tab=overview";
+            const lab = heroDash.querySelector("span");
+            if (lab) lab.textContent = "ورود به داشبورد";
+          } else {
+            const stored = storedReferralCode();
+            heroDash.href = stored
+              ? `login.html?ref=${encodeURIComponent(stored)}`
+              : "login.html";
+          }
+        })
+        .catch(() => {});
+    }
     const params0 = new URLSearchParams(location.search);
     const urlMajor = (params0.get("major") || "").trim();
     const urlQ = (params0.get("q") || "").trim();
@@ -2254,7 +2604,7 @@
             <strong>هنوز جزوه‌ای در فروشگاه منتشر نشده</strong>
             <p>به‌زودی جزوات پایلوت اینجا می‌آید. اگر فایل آماده داری می‌توانی منتشر کنی.</p>
             <div class="jh-actions">
-              <a class="jh-btn secondary" href="learn.html#publish-steps">آموزش و راهنما</a>
+              <a class="jh-btn secondary" href="learn.html#publish-steps">آموزش و راهنما و قوانین</a>
               <a class="jh-btn warm" href="submit.html">انتشار جزوه</a>
             </div>
           </div>`;
@@ -2331,6 +2681,13 @@
     });
     syncClearBtn();
     await load({ immediate: true });
+    if (location.hash === "#jh-shop") {
+      window.requestAnimationFrame(() => {
+        document
+          .getElementById("jh-shop")
+          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
   }
 
   function formatBytesFa(n) {
@@ -2356,8 +2713,20 @@
       ]);
       const p = res.data;
       const me = await ensureSession();
+      let walletUnits = Number(me?.wallet_units || 0);
+      try {
+        if (me) {
+          const w = await S().api("/api/site/pamphlets/wallet/me");
+          walletUnits = Number(w?.data?.wallet_units || 0);
+          paintWalletChip(w?.data || null);
+        }
+      } catch (_) {}
       const priceNum = Number(p.price_irt || 0);
-      const priceLabel = priceNum <= 0 ? "رایگان" : money(priceNum);
+      const unitsNeed = unitCountOf(p);
+      const priceLabel =
+        priceNum <= 0
+          ? "رایگان"
+          : `${money(priceNum)} · ${toFaDigits(unitsNeed)} واحدی`;
       // فقط خریدار واقعی حق دانلود/مطالعه دارد — نویسنده از پنل خودش مدیریت می‌کند
       const purchased = !!p.purchase;
       const isAuthor = !!p.is_author;
@@ -2465,6 +2834,8 @@
                 <div class="jh-share-apps" id="jh-share-apps">
                   <a class="jh-share-app jh-share-app--tg" id="jh-share-tg" target="_blank" rel="noopener">تلگرام</a>
                   <a class="jh-share-app jh-share-app--wa" id="jh-share-wa" target="_blank" rel="noopener">واتساپ</a>
+                  <a class="jh-share-app jh-share-app--bale" id="jh-share-bale" target="_blank" rel="noopener">بله</a>
+                  <a class="jh-share-app jh-share-app--eitaa" id="jh-share-eitaa" target="_blank" rel="noopener">ایتا</a>
                   <button type="button" class="jh-share-app jh-share-app--sys" id="btn-share-native" hidden>اشتراک دستگاه</button>
                 </div>
               </div>
@@ -2565,16 +2936,23 @@
 
         <section class="jh-comments" id="jh-comments">
           <header>
-            <strong>نظرات کاربران</strong>
-            <span id="jh-comments-count">${toFaDigits(comments.length)} نظر</span>
+            <strong>نظرات خریداران</strong>
+            <span id="jh-comments-count">${toFaDigits(comments.length)} نظر تأییدشده</span>
           </header>
-          <div class="jh-comment-compose">
+          ${
+            purchased || isAuthor
+              ? `<div class="jh-comment-compose">
             <input id="jh-comment-input" type="text" dir="rtl" lang="fa" maxlength="500"
-              placeholder="اولین نفر نظرتو بنویس…" ${me ? "" : "disabled"} />
-            <button type="button" class="jh-comment-send" id="jh-comment-send" ${
-              me ? "" : "disabled"
-            } aria-label="ارسال نظر" title="ارسال">←</button>
+              placeholder="نظرت را بنویس؛ بعد از تأیید نویسنده منتشر می‌شود…" />
+            <button type="button" class="jh-comment-send" id="jh-comment-send" aria-label="ارسال نظر" title="ارسال">←</button>
           </div>
+          <p class="jh-comment-hint">نظرها بلافاصله عمومی نمی‌شوند؛ نویسنده جزوه باید تأیید کند.</p>`
+              : me
+                ? `<p class="jh-comment-gate">بعد از خرید این جزوه می‌توانی نظر بدهی. نظرات تأییدشدهٔ خریداران را پایین ببین.</p>`
+                : `<p class="jh-comment-gate">برای نظر دادن ابتدا <a href="login.html?next=${encodeURIComponent(
+                    `item.html?id=${id}`
+                  )}">وارد شو</a> و جزوه را بخر.</p>`
+          }
           <div id="jh-comments-list" class="jh-comments-list"></div>
         </section>
 
@@ -2653,12 +3031,21 @@
         return `${base || "pamphlet"}.pdf`;
       };
       const setCtaBusy = (busy, label) => {
-        const btn = $("#btn-dl") || $("#btn-buy");
+        const btn =
+          $("#btn-dl") ||
+          (document.activeElement?.id === "btn-buy-units"
+            ? $("#btn-buy-units")
+            : null) ||
+          $("#btn-buy-units") ||
+          $("#btn-buy");
         if (!btn) return;
         btn.disabled = !!busy;
         btn.classList.toggle("is-busy", !!busy);
         const lab = btn.querySelector(".jh-dl-label");
         if (lab && label) lab.textContent = label;
+        $$("#btn-buy, #btn-buy-units").forEach((b) => {
+          if (b !== btn) b.disabled = !!busy;
+        });
       };
       const bumpDownloadStat = () => {
         const el = $("#jh-dl-count");
@@ -2690,23 +3077,58 @@
         $("#btn-dl")?.addEventListener("click", doDownload);
       };
       const renderBuyDock = () => {
-        const buyLabel =
-          priceNum <= 0 ? "دریافت رایگان PDF" : "خرید و دریافت PDF";
-        const testBadge =
-          priceNum > 0
-            ? `<span class="jh-pay-test-badge" title="درگاه آزمایشی زرین‌پال">پرداخت آزمایشی</span>`
-            : "";
+        const canUnits = priceNum > 0 && walletUnits >= unitsNeed;
+        const chargeHref = "account.html?tab=overview&buy=1";
+        if (priceNum <= 0) {
+          buy.innerHTML = `
+            <div class="jh-dock-actions">
+              <button type="button" class="jh-dl-cta" id="btn-buy">
+                <span class="jh-dl-price">${S().esc(priceLabel)}</span>
+                <span class="jh-dl-label">دریافت رایگان PDF</span>
+                <span class="jh-dl-file" dir="ltr"><span class="jh-dl-file-ico">PDF</span><span>${S().esc(
+                  sizeFa
+                )}</span></span>
+              </button>
+            </div>`;
+          $("#btn-buy")?.addEventListener("click", () => doBuy("zarinpal"));
+          return;
+        }
+        if (canUnits) {
+          buy.innerHTML = `
+            <div class="jh-dock-actions">
+              <button type="button" class="jh-dl-cta jh-dl-cta--units" id="btn-buy-units">
+                <span class="jh-dl-price">${toFaDigits(unitsNeed)} واحد</span>
+                <span class="jh-dl-label">خرید با موجودی قابل خرید</span>
+                <span class="jh-dl-file" dir="ltr"><span class="jh-dl-file-ico">کیف</span><span>موجودی ${toFaDigits(
+                  walletUnits
+                )}</span></span>
+              </button>
+              <button type="button" class="jh-btn secondary jh-buy-units" id="btn-buy">
+                خرید نقدی با زرین‌پال
+                <span class="jh-meta">${S().esc(priceLabel)}</span>
+              </button>
+            </div>`;
+          $("#btn-buy-units")?.addEventListener("click", () => doBuy("units"));
+          $("#btn-buy")?.addEventListener("click", () => doBuy("zarinpal"));
+          return;
+        }
         buy.innerHTML = `
           <div class="jh-dock-actions">
             <button type="button" class="jh-dl-cta" id="btn-buy">
-              <span class="jh-dl-price">${S().esc(priceLabel)}${testBadge}</span>
-              <span class="jh-dl-label">${buyLabel}</span>
+              <span class="jh-dl-price">${S().esc(priceLabel)}</span>
+              <span class="jh-dl-label">خرید با زرین‌پال</span>
               <span class="jh-dl-file" dir="ltr"><span class="jh-dl-file-ico">PDF</span><span>${S().esc(
                 sizeFa
               )}</span></span>
             </button>
+            <a class="jh-btn secondary jh-buy-units-link" href="${chargeHref}">
+              موجودی قابل خرید ناکافی
+              <span class="jh-meta">الان ${toFaDigits(
+                walletUnits
+              )} واحد · نیاز به ${toFaDigits(unitsNeed)} · انتقال یا خرید اشتراک</span>
+            </a>
           </div>`;
-        $("#btn-buy")?.addEventListener("click", doBuy);
+        $("#btn-buy")?.addEventListener("click", () => doBuy("zarinpal"));
       };
       const doDownload = async () => {
         setCtaBusy(true, "در حال دانلود…");
@@ -2730,22 +3152,40 @@
           setCtaBusy(false, "دانلود PDF");
         }
       };
-      const doBuy = async () => {
+      const doBuy = async (payWith = "zarinpal") => {
         const sess = await ensureSession();
         if (!sess)
           return (location.href = `login.html?next=${encodeURIComponent(
             `item.html?id=${id}`
           )}`);
+        const withUnits = payWith === "units";
         setCtaBusy(
           true,
-          priceNum <= 0 ? "در حال دریافت…" : "انتقال به درگاه امن…"
+          priceNum <= 0
+            ? "در حال دریافت…"
+            : withUnits
+              ? "در حال کسر واحد…"
+              : "انتقال به درگاه امن…"
         );
         try {
           const pay = await S().api(
             `/api/site/pamphlets/item/${encodeURIComponent(id)}/purchase`,
-            { method: "POST", body: JSON.stringify({ environment: PAY_ENV }) }
+            {
+              method: "POST",
+              body: JSON.stringify({
+                environment: PAY_ENV,
+                pay_with: withUnits ? "units" : "zarinpal",
+              }),
+            }
           );
-          if (pay.data?.already_owned || pay.data?.free) {
+          if (pay.data?.already_owned || pay.data?.free || pay.data?.paid_with_units) {
+            if (pay.data?.wallet_units != null) {
+              walletUnits = Number(pay.data.wallet_units) || 0;
+              paintWalletChip({
+                wallet_balance_irt: sess.wallet_balance_irt,
+                wallet_units: walletUnits,
+              });
+            }
             renderPurchasedDock();
             await doDownload();
             return;
@@ -2756,12 +3196,15 @@
         } catch (e) {
           msg(err, e.message || "خطای خرید");
         } finally {
-          if ($("#btn-buy")) {
-            setCtaBusy(
-              false,
-              priceNum <= 0 ? "دریافت رایگان PDF" : "خرید و دریافت PDF"
-            );
-          }
+          const unitsPrimary = !!$("#btn-buy-units.jh-dl-cta");
+          setCtaBusy(
+            false,
+            priceNum <= 0
+              ? "دریافت رایگان PDF"
+              : unitsPrimary
+                ? "خرید با موجودی قابل خرید"
+                : "خرید با زرین‌پال"
+          );
         }
       };
 
@@ -2809,21 +3252,29 @@
         shareInput.value = shareUrl;
         if (shareNote) {
           shareNote.textContent = preferNativeShare()
-            ? "روی گوشی می‌تونی لینک را کپی کنی یا با اپ‌های زیر بفرستی."
-            : "لینک صفحه روی کامپیوتر — کپی کن یا در تلگرام/واتساپ باز کن.";
+            ? "روی گوشی می‌تونی لینک را کپی کنی یا با تلگرام، واتساپ، بله و ایتا بفرستی."
+            : "لینک صفحه را کپی کن یا در تلگرام، واتساپ، بله و ایتا باز کن.";
         }
         const tg = $("#jh-share-tg");
         const wa = $("#jh-share-wa");
+        const bale = $("#jh-share-bale");
+        const eitaa = $("#jh-share-eitaa");
         const title = p.title || "جزوه جزوه‌سرا";
+        const encUrl = encodeURIComponent(shareUrl);
+        const encText = encodeURIComponent(title);
         if (tg) {
-          tg.href = `https://t.me/share/url?url=${encodeURIComponent(
-            shareUrl
-          )}&text=${encodeURIComponent(title)}`;
+          tg.href = `https://t.me/share/url?url=${encUrl}&text=${encText}`;
         }
         if (wa) {
           wa.href = `https://wa.me/?text=${encodeURIComponent(
             `${title}\n${shareUrl}`
           )}`;
+        }
+        if (bale) {
+          bale.href = `https://ble.ir/share/url?url=${encUrl}&text=${encText}`;
+        }
+        if (eitaa) {
+          eitaa.href = `https://eitaa.com/share/url?url=${encUrl}&text=${encText}`;
         }
         if (shareNativeBtn) {
           shareNativeBtn.hidden = typeof navigator.share !== "function";
@@ -3002,6 +3453,9 @@
       });
 
       const postComment = async () => {
+        if (!(purchased || isAuthor)) {
+          return msg(err, "فقط خریداران این جزوه می‌توانند نظر بدهند");
+        }
         const body = ($("#jh-comment-input")?.value || "").trim();
         if (!body) return;
         if (!(await ensureSession()))
@@ -3015,7 +3469,11 @@
           );
           $("#jh-comment-input").value = "";
           renderComments(r.data || []);
-          msg(err, "نظر ثبت شد", true);
+          msg(
+            err,
+            r.message || "نظر ثبت شد و منتظر تأیید نویسنده است",
+            true
+          );
         } catch (e) {
           msg(err, e.message || "ثبت نظر ناموفق");
         }
@@ -3084,7 +3542,7 @@
       const types = meta.data?.taxonomy?.content_type_table || [];
       let learn = {};
       try {
-        const local = await fetch("guide/learn-curriculum.json?v=2");
+        const local = await fetch("guide/learn-curriculum.json?v=4");
         if (local.ok) learn = await local.json();
       } catch (_) {}
       if (!learn?.sections?.length) {
@@ -3196,7 +3654,7 @@
       box.innerHTML = `
         <header class="jh-shop-head">
           <p class="jh-meta">${S().esc(learn.updated_fa || "")}</p>
-          <h1>${S().esc(learn.title || "آموزش و راهنما")}</h1>
+          <h1>${S().esc(learn.title || "آموزش و راهنما و قوانین")}</h1>
           <p class="jh-note">${S().esc(learn.intro || "")}</p>
         </header>
         <aside class="jh-learn-toc">
@@ -3466,7 +3924,7 @@
     const btn = $("#btn-payout");
     const maxBtn = $("#btn-payout-max");
     const bal = Math.max(0, Math.floor(Number(balance) || 0));
-    const min = Math.max(0, Math.floor(Number(minPayout) || 200000));
+    const min = Math.max(0, Math.floor(Number(minPayout) || 500000));
 
     const amountOk = () => {
       const v = parseAmountInput(amountEl?.value || "");
@@ -3517,7 +3975,7 @@
         amountHint.hidden = true;
         if (v && v < min) {
           amountHint.hidden = false;
-          amountHint.textContent = `حداقل تسویه ${money(min)} است`;
+          amountHint.textContent = `حداقل درآمد قابل تسویه ${money(min)} است`;
           amountHint.classList.add("is-bad");
         } else if (v && v > bal) {
           amountHint.hidden = false;
@@ -3614,7 +4072,7 @@
     });
     maxBtn?.addEventListener("click", () => {
       if (bal < min) {
-        msg(errEl, `موجودی کمتر از حداقل تسویه (${money(min)}) است`);
+        msg(errEl, `موجودی کمتر از حداقل درآمد قابل تسویه (${money(min)}) است`);
         return;
       }
       setAmount(bal);
@@ -4060,15 +4518,28 @@
 
     const freeToggle = $("#price_free");
     const priceHidden = $("#price_irt");
+    const unitHidden = $("#unit_count");
     const priceDisplay = $("#price_irt_display");
     const priceBlock = $("#jh-price-block");
     const priceNote = $("#jh-price-note");
     const pricePerPage = $("#jh-price-perpage");
+    const unitPicker = $("#jh-unit-picker");
+    // Paint tier labels from API when available
+    $$("[data-tier]").forEach((el) => {
+      const u = Number(el.getAttribute("data-tier"));
+      const p = tierPriceIrt(u, meta.data);
+      el.textContent = formatFaMoney(p);
+    });
     let draftPagesCount = 0;
+    const selectedUnits = () => {
+      const checked = $('input[name="unit_count"]:checked');
+      return Number(checked?.value || unitHidden?.value || 2) || 2;
+    };
     const syncPriceUi = () => {
       const free = !!freeToggle?.checked;
       priceBlock?.classList.toggle("is-free", free);
-      if (priceDisplay) priceDisplay.disabled = free;
+      if (unitPicker) unitPicker.hidden = free;
+      if (priceDisplay) priceDisplay.disabled = true;
       if (free) {
         if (priceHidden) priceHidden.value = "0";
         if (priceDisplay) {
@@ -4084,39 +4555,22 @@
           pricePerPage.className = "jh-price-perpage";
         }
       } else if (priceDisplay && priceHidden) {
-        priceDisplay.placeholder = "مثلاً ۱۵٬۰۰۰";
-        const current = Number(priceHidden.value || 0);
-        priceDisplay.value = current > 0 ? formatFaMoney(current) : "";
+        const units = selectedUnits();
+        const current = tierPriceIrt(units, meta.data);
+        if (unitHidden) unitHidden.value = String(units);
+        priceHidden.value = String(current);
+        priceDisplay.value = formatFaMoney(current);
         if (priceNote)
           priceNote.textContent =
-            "مبلغی که برای خرید این جزوه در نظر داری، به تومان بنویس.";
+            `${toFaDigits(units)} واحدی = ${money(current)}. قیمت لیست ثابت است؛ داوری واحد را قفل می‌کند.`;
         if (pricePerPage) {
           if (current > 0 && draftPagesCount > 0) {
             const per = Math.round(current / draftPagesCount);
-            let tone = "قیمت منطقی و رقابتی";
-            let cls = "jh-price-perpage is-ok";
-            if (per > 20000) {
-              tone = "نسبت به تعداد صفحه بالاست — یک صفر اضافه نزده باشی؟";
-              cls = "jh-price-perpage is-warn";
-            } else if (per > 8000) {
-              tone = "نسبتاً گران برای هر صفحه";
-              cls = "jh-price-perpage is-warn";
-            } else if (per < 200) {
-              tone = "خیلی پایین — اگر عمدی نیست، مبلغ را چک کن";
-              cls = "jh-price-perpage is-soft";
-            }
             pricePerPage.hidden = false;
-            pricePerPage.className = cls;
+            pricePerPage.className = "jh-price-perpage is-ok";
             pricePerPage.textContent = `معادل ${formatFaMoney(
               per
-            )} تومان به ازای هر صفحه (${toFaDigits(
-              draftPagesCount
-            )} صفحه) — ${tone}`;
-          } else if (current > 0) {
-            pricePerPage.hidden = false;
-            pricePerPage.className = "jh-price-perpage";
-            pricePerPage.textContent =
-              "بعد از آپلود PDF، قیمت به ازای هر صفحه اینجا دیده می‌شود.";
+            )} تومان به ازای هر صفحه (${toFaDigits(draftPagesCount)} صفحه)`;
           } else {
             pricePerPage.hidden = true;
             pricePerPage.textContent = "";
@@ -4126,13 +4580,9 @@
     };
     freeToggle?.addEventListener("change", () => {
       syncPriceUi();
-      if (!freeToggle.checked) priceDisplay?.focus();
     });
-    priceDisplay?.addEventListener("input", () => {
-      const n = fromFaDigits(priceDisplay.value) || "0";
-      if (priceHidden) priceHidden.value = String(Number(n) || 0);
-      priceDisplay.value = formatFaMoney(priceHidden?.value || 0);
-      syncPriceUi();
+    $$('input[name="unit_count"]').forEach((el) => {
+      el.addEventListener("change", syncPriceUi);
     });
     syncPriceUi();
 
@@ -4266,11 +4716,24 @@
         topics: topicLines,
         wants_services: false,
         price_irt: Number($("#price_irt")?.value || 0),
+        unit_count: Number($("#unit_count")?.value || 2) || 2,
+        is_free: !!$("#price_free")?.checked,
         access_mode: "downloadable",
         author_rights_accepted: !!$("#rights")?.checked,
         health_disclaimer_accepted: !!$("#health")?.checked,
         is_anonymous: !!$("#is_anonymous")?.checked,
       };
+    };
+
+    const validatePricing = (body) => {
+      const free = !!$("#price_free")?.checked;
+      if (!free) {
+        const u = Number(body.unit_count || 0);
+        if (u < 1 || u > 4)
+          throw new Error("تعداد واحد را بین ۱ تا ۴ انتخاب کن");
+        if (!(Number(body.price_irt) > 0))
+          throw new Error("قیمت واحدی نامعتبر است؛ واحد را دوباره انتخاب کن");
+      }
     };
 
     const validateStep1 = (body) => {
@@ -4289,6 +4752,7 @@
       if (!body.term_year) throw new Error("ترم و سال را کامل کن");
       if (!body.professor_name) throw new Error("نام استاد / اساتید را بنویس");
       if (!body.authors_text) throw new Error("نویسنده / نویسندگان جزوه را بنویس");
+      validatePricing(body);
     };
 
     const validateStep2 = (body) => {
@@ -4299,9 +4763,7 @@
         throw new Error("خارج از پوشش را بنویس");
       if (body.sources_text.length < 12)
         throw new Error("رفرنس‌ها را بنویس");
-      const free = !!$("#price_free")?.checked;
-      if (!free && !(Number(body.price_irt) > 0))
-        throw new Error("قیمت را وارد کن یا رایگان را روشن بگذار");
+      validatePricing(body);
     };
 
     const saveMeta = async () => {
@@ -4865,6 +5327,10 @@
           const price = Number(
             p.proposed_price_irt != null ? p.proposed_price_irt : p.price_irt || 0
           );
+          const units = unitCountOf(p);
+          if (unitHidden) unitHidden.value = String(units);
+          const radio = $(`input[name="unit_count"][value="${units}"]`);
+          if (radio) radio.checked = true;
           if (priceHidden) priceHidden.value = String(price);
           if (freeToggle) freeToggle.checked = price <= 0;
           draftPagesCount = Math.max(0, Number(p.pages_count) || 0);
@@ -4876,7 +5342,7 @@
               const note = $("#jh-price-note");
               if (note)
                 note.textContent =
-                  "قیمت نهایی توسط داوری قفل شده و قابل ویرایش نیست.";
+                  "واحد و قیمت نهایی توسط داوری قفل شده و قابل ویرایش نیست.";
             }
             if (priceHidden) priceHidden.disabled = true;
             if (freeToggle) freeToggle.disabled = true;
@@ -4950,6 +5416,535 @@
       }
       location.reload();
     });
+  }
+
+  function purchasePackages(wallet) {
+    const list = wallet?.packages || wallet?.unit_pricing?.packages || [];
+    if (list.length) return list;
+    return defaultUnitCatalog();
+  }
+
+  function defaultUnitCatalog() {
+    return [
+      {
+        sku: "charge_99",
+        units: 2,
+        price_irt: 99000,
+        kind: "topup",
+        title_fa: "شارژ ۹۹٬۰۰۰",
+      },
+      {
+        sku: "charge_199",
+        units: 4,
+        price_irt: 199000,
+        kind: "topup",
+        title_fa: "شارژ ۱۹۹٬۰۰۰",
+      },
+      {
+        sku: "charge_399",
+        units: 8,
+        price_irt: 399000,
+        kind: "topup",
+        title_fa: "شارژ ۳۹۹٬۰۰۰",
+      },
+      {
+        sku: "charge_699",
+        units: 14,
+        price_irt: 699000,
+        kind: "topup",
+        title_fa: "شارژ ۶۹۹٬۰۰۰",
+      },
+      {
+        sku: "charge_999",
+        units: 20,
+        price_irt: 999000,
+        kind: "topup",
+        title_fa: "شارژ ۹۹۹٬۰۰۰",
+      },
+      {
+        sku: "units_6",
+        units: 6,
+        price_irt: 299000,
+        list_price_irt: 600000,
+        discount_pct: 50,
+        badge_fa: "پیشنهاد بلوک",
+        kind: "pack",
+        featured: true,
+        unit_value_irt: 49833,
+        title_fa: "پکیج ۶ واحدی",
+      },
+      {
+        sku: "units_12",
+        units: 12,
+        price_irt: 599000,
+        list_price_irt: 1200000,
+        discount_pct: 50,
+        badge_fa: "پیشنهاد ویژه",
+        kind: "pack",
+        featured: false,
+        unit_value_irt: 49916,
+        title_fa: "پکیج ۱۲ واحدی",
+      },
+    ];
+  }
+
+  function unitTopups(wallet) {
+    const all = purchasePackages(wallet);
+    const tops = all.filter((p) => (p.kind || "pack") === "topup");
+    return tops.length
+      ? tops
+      : defaultUnitCatalog().filter((p) => p.kind === "topup");
+  }
+
+  function unitPacks(wallet) {
+    const all = purchasePackages(wallet);
+    const packs = all.filter((p) => (p.kind || "pack") !== "topup");
+    return packs.length
+      ? packs
+      : defaultUnitCatalog().filter((p) => p.kind === "pack");
+  }
+
+  function packCardHtml(pkg) {
+    const list = Number(pkg.list_price_irt || 0);
+    const price = Number(pkg.price_irt || 0);
+    const disc = Number(pkg.discount_pct || 0);
+    const badge = pkg.badge_fa
+      ? `<span class="jh-pack-badge">${S().esc(pkg.badge_fa)}</span>`
+      : "";
+    const was =
+      list > price
+        ? `<span class="jh-pack-was">${money(list)}</span>`
+        : "";
+    const save =
+      disc > 0
+        ? `<span class="jh-pack-off">${toFaDigits(disc)}٪ تخفیف</span>`
+        : "";
+    const featured = pkg.featured ? " jh-pack-card--featured" : "";
+    return `<button type="button" class="jh-pack-card${featured}" data-unit-sku="${S().esc(
+      pkg.sku
+    )}">
+      ${badge}
+      <strong class="jh-pack-title">${S().esc(pkg.title_fa || "پکیج")}</strong>
+      <span class="jh-pack-units">${toFaDigits(pkg.units)} واحد خرید</span>
+      <span class="jh-pack-price-row">${was}<em class="jh-pack-now">${money(
+      price
+    )}</em></span>
+      ${save}
+      <span class="jh-pack-hint">≈ ${money(
+        pkg.unit_value_irt || Math.floor(price / Math.max(1, pkg.units || 1))
+      )} / واحد</span>
+    </button>`;
+  }
+
+  function topupChipHtml(pkg) {
+    return `<button type="button" class="jh-topup-chip" data-unit-sku="${S().esc(
+      pkg.sku
+    )}">
+      <strong>${money(pkg.price_irt)}</strong>
+      <span>${toFaDigits(pkg.units)} واحد</span>
+    </button>`;
+  }
+
+  async function payUnitSku(sku, btn, errEl) {
+    if (!sku) return;
+    if (btn) btn.disabled = true;
+    try {
+      const pay = await S().api(
+        `/api/site/pamphlets/wallet/units/packages/${encodeURIComponent(
+          sku
+        )}/pay`,
+        {
+          method: "POST",
+          body: JSON.stringify({ environment: PAY_ENV }),
+        }
+      );
+      if (pay.data?.start_pay_url) {
+        location.href = pay.data.start_pay_url;
+        return;
+      }
+      if (pay.data?.dev) {
+        msg(
+          errEl,
+          `شارژ آزمایشی: ${toFaDigits(pay.data.units || 0)} واحد`,
+          true
+        );
+        location.reload();
+        return;
+      }
+      msg(errEl, "پاسخ درگاه نامعتبر");
+    } catch (e) {
+      msg(errEl, e.message || "خطای خرید");
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  function incomeUnitValueOf(wallet) {
+    const n = Number(wallet?.income_unit_value_irt || 0);
+    if (n > 0) return n;
+    const six = purchasePackages(wallet).find((p) => p.sku === "units_6");
+    const fromPkg = Number(six?.unit_value_irt || 0);
+    if (fromPkg > 0) return fromPkg;
+    return Math.floor(299000 / 6);
+  }
+
+  /** ارزش تومانی موجودی قابل خرید (prepaid واقعی یا برآورد از واحد). */
+  function purchasableValueIrt(wallet) {
+    const prepaid = Math.max(
+      0,
+      Math.floor(Number(wallet?.wallet_units_prepaid_irt) || 0)
+    );
+    if (prepaid > 0) return prepaid;
+    const units = Math.max(0, Math.floor(Number(wallet?.wallet_units) || 0));
+    if (units <= 0) return 0;
+    return units * incomeUnitValueOf(wallet);
+  }
+
+  function purchasableUnitsLabel(wallet) {
+    const units = Math.max(0, Math.floor(Number(wallet?.wallet_units) || 0));
+    return `${toFaDigits(units)} واحد`;
+  }
+
+  function openPurchaseBalanceSheet(wallet, onUpdate) {
+    document.getElementById("jh-buybal")?.remove();
+    const unitValue = incomeUnitValueOf(wallet);
+    let pick = 1;
+    const topupHtml = unitTopups(wallet).map(topupChipHtml).join("");
+    const packHtml = unitPacks(wallet).map(packCardHtml).join("");
+    const root = document.createElement("div");
+    root.id = "jh-buybal";
+    root.className = "jh-buybal";
+    root.innerHTML = `
+      <button type="button" class="jh-buybal-backdrop" data-buybal-close aria-label="بستن"></button>
+      <div class="jh-buybal-panel" role="dialog" aria-modal="true" aria-labelledby="jh-buybal-title" tabindex="-1">
+        <div class="jh-buybal-head">
+          <div>
+            <p class="jh-wallet-kicker">موجودی قابل خرید</p>
+            <h3 id="jh-buybal-title">شارژ حساب یا انتقال</h3>
+          </div>
+          <button type="button" class="jh-buybal-x" data-buybal-close aria-label="بستن">×</button>
+        </div>
+        <p class="jh-buybal-now">قابل خرید: <strong data-buybal-units></strong> · قابل تسویه: <strong data-buybal-withdraw></strong></p>
+        <p class="jh-buybal-rules">فقط برای خرید جزوه است. برگشت به درآمد نویسنده، تسویه شبا، یا بازگشت وجه نقدی ندارد.</p>
+        <section class="jh-buybal-sec">
+          <h4>شارژ سریع</h4>
+          <div class="jh-topup-grid">${topupHtml}</div>
+        </section>
+        <section class="jh-buybal-sec">
+          <h4>پکیج اشتراک</h4>
+          <div class="jh-pack-grid">${packHtml}</div>
+        </section>
+        <section class="jh-buybal-sec">
+          <h4>انتقال از موجودی قابل تسویه</h4>
+          <p class="jh-note">یک‌طرفه: هر واحد ${money(
+            unitValue
+          )} · حداکثر: <strong data-buybal-max>۰</strong> واحد</p>
+          <div class="jh-buybal-step">
+            <button type="button" class="jh-btn secondary" data-buybal-step="-1" aria-label="کمتر">−</button>
+            <strong data-buybal-count>۱</strong>
+            <button type="button" class="jh-btn secondary" data-buybal-step="1" aria-label="بیشتر">+</button>
+            <button type="button" class="jh-chip" data-buybal-step="max">حداکثر</button>
+          </div>
+          <p class="jh-buybal-cost" data-buybal-cost></p>
+          <button type="button" class="jh-btn" data-buybal-charge>انتقال به موجودی قابل خرید</button>
+        </section>
+        <div class="jh-buybal-foot">
+          <a class="jh-btn secondary" href="index.html">رفتن به فروشگاه جزوه</a>
+        </div>
+        <p class="jh-buybal-msg" data-buybal-msg hidden></p>
+      </div>`;
+    document.body.appendChild(root);
+
+    const countEl = root.querySelector("[data-buybal-count]");
+    const costEl = root.querySelector("[data-buybal-cost]");
+    const maxEl = root.querySelector("[data-buybal-max]");
+    const unitsNow = root.querySelector("[data-buybal-units]");
+    const withdrawEl = root.querySelector("[data-buybal-withdraw]");
+    const noteEl = root.querySelector("[data-buybal-msg]");
+    const chargeBtn = root.querySelector("[data-buybal-charge]");
+
+    const maxUnits = () =>
+      Math.max(
+        0,
+        Math.floor(Number(wallet.wallet_balance_irt || 0) / unitValue)
+      );
+
+    const say = (text, ok) => {
+      if (!noteEl) return;
+      noteEl.hidden = !text;
+      noteEl.textContent = text || "";
+      noteEl.classList.toggle("is-ok", !!ok);
+    };
+
+    const paint = () => {
+      const max = maxUnits();
+      if (pick < 1) pick = 1;
+      if (max > 0 && pick > max) pick = max;
+      if (countEl) countEl.textContent = toFaDigits(max > 0 ? pick : 0);
+      if (costEl) {
+        costEl.textContent =
+          max > 0
+            ? `انتقال از قابل تسویه: ${money(pick * unitValue)}`
+            : `برای یک واحد حداقل ${money(unitValue)} موجودی قابل تسویه لازم است`;
+      }
+      if (maxEl) maxEl.textContent = toFaDigits(max);
+      if (unitsNow) {
+        unitsNow.textContent = `${purchasableUnitsLabel(wallet)} · ${money(
+          purchasableValueIrt(wallet)
+        )}`;
+      }
+      if (withdrawEl) withdrawEl.textContent = money(wallet.wallet_balance_irt || 0);
+      if (chargeBtn) chargeBtn.disabled = max < 1;
+    };
+
+    const close = () => {
+      document.removeEventListener("keydown", onKey);
+      root.remove();
+    };
+    const onKey = (e) => {
+      if (e.key === "Escape") close();
+    };
+    document.addEventListener("keydown", onKey);
+    root.querySelectorAll("[data-buybal-close]").forEach((el) => {
+      el.addEventListener("click", close);
+    });
+    root.querySelectorAll("[data-buybal-step]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const step = btn.getAttribute("data-buybal-step");
+        const max = maxUnits();
+        if (step === "max") pick = Math.max(1, max);
+        else pick += Number(step) || 0;
+        if (pick < 1) pick = 1;
+        paint();
+      });
+    });
+    root.querySelectorAll("[data-unit-sku]").forEach((btn) => {
+      btn.addEventListener("click", () =>
+        payUnitSku(
+          btn.getAttribute("data-unit-sku"),
+          btn,
+          $("#jh-err") || noteEl
+        )
+      );
+    });
+    chargeBtn?.addEventListener("click", async () => {
+      const max = maxUnits();
+      if (max < 1 || pick < 1) return;
+      chargeBtn.disabled = true;
+      say("", false);
+      try {
+        const res = await S().api(
+          "/api/site/pamphlets/wallet/units/from-income",
+          {
+            method: "POST",
+            body: JSON.stringify({ units: pick }),
+          }
+        );
+        const d = res.data || {};
+        wallet.wallet_balance_irt = Number(d.wallet_balance_irt || 0);
+        wallet.wallet_units = Number(d.wallet_units || 0);
+        wallet.wallet_units_prepaid_irt = Number(
+          d.wallet_units_prepaid_irt || 0
+        );
+        onUpdate?.(wallet);
+        say(
+          `${toFaDigits(d.units || pick)} واحد به موجودی قابل خرید منتقل شد`,
+          true
+        );
+        paint();
+      } catch (e) {
+        say(e.message || "انتقال ناموفق", false);
+        paint();
+      }
+    });
+    paint();
+    root.querySelector(".jh-buybal-panel")?.focus();
+  }
+
+  function bindPurchaseBalanceOpener(btn, wallet, onUpdate) {
+    if (!btn) return;
+    btn.addEventListener("click", () => {
+      openPurchaseBalanceSheet(wallet, onUpdate);
+    });
+  }
+
+  async function mountDashShopCatalog(box, errEl) {
+    if (!box) return;
+    box.innerHTML = `
+      <section class="jh-dash-shop-panel" aria-labelledby="jh-dash-shop-title">
+        <header class="jh-dash-shop-head">
+          <div>
+            <p class="jh-wallet-kicker">خرید جزوه</p>
+            <h2 id="jh-dash-shop-title">جزوه‌های فروشگاه</h2>
+            <p class="jh-note">فقط فهرست قابل خرید — با فیلتر رشته، نوع و قیمت.</p>
+          </div>
+        </header>
+        <div class="jh-dash-shop-search">
+          <label class="jh-search-combo">
+            <span class="visually-hidden">جست‌وجو</span>
+            <input id="dash-filter-q" type="search" placeholder="جست‌وجو نام درس، جزوه یا نویسنده…" autocomplete="off" enterkeyhint="search" />
+          </label>
+        </div>
+        <div class="jh-filter-chips" role="toolbar" aria-label="فیلتر فروشگاه">
+          <label class="jh-chip-select">
+            <span class="jh-chip-select-lab">رشته</span>
+            <select id="dash-filter-major"><option value="">همه</option></select>
+          </label>
+          <label class="jh-chip-select">
+            <span class="jh-chip-select-lab">نوع</span>
+            <select id="dash-filter-kind">
+              <option value="">همه</option>
+              <option value="typed">تایپی</option>
+              <option value="handwritten">دست‌نویس</option>
+            </select>
+          </label>
+          <label class="jh-chip-select">
+            <span class="jh-chip-select-lab">قیمت</span>
+            <select id="dash-filter-priced">
+              <option value="">همه</option>
+              <option value="free">رایگان</option>
+              <option value="paid">پولی</option>
+            </select>
+          </label>
+          <button class="jh-chip-clear" type="button" id="dash-btn-clear" hidden>پاک‌کردن</button>
+        </div>
+        <div class="jh-results-meta" id="dash-results-meta" hidden></div>
+        <div id="dash-shop-list" class="jh-dash-shop-list"></div>
+      </section>`;
+
+    const list = $("#dash-shop-list", box);
+    const metaEl = $("#dash-results-meta", box);
+    const qInput = $("#dash-filter-q", box);
+    const majorSel = $("#dash-filter-major", box);
+    const clearBtn = $("#dash-btn-clear", box);
+    let loadSeq = 0;
+    let debounceTimer = 0;
+
+    try {
+      const meta = await S().api("/api/site/pamphlets/meta");
+      const majors = meta.data?.taxonomy?.majors || [];
+      majors.forEach((m) => {
+        const o = document.createElement("option");
+        o.value = m;
+        o.textContent = m;
+        majorSel?.appendChild(o);
+      });
+    } catch (_) {}
+
+    const readFilters = () => ({
+      q: normSearchQuery(qInput?.value || ""),
+      major: ($("#dash-filter-major", box)?.value || "").trim(),
+      priced: ($("#dash-filter-priced", box)?.value || "").trim(),
+      content_kind: ($("#dash-filter-kind", box)?.value || "").trim(),
+    });
+
+    const hasActive = () => {
+      const f = readFilters();
+      return !!(f.q || f.major || f.priced || f.content_kind);
+    };
+
+    const syncClear = () => {
+      if (clearBtn) clearBtn.hidden = !hasActive();
+    };
+
+    const load = async () => {
+      const f = readFilters();
+      syncClear();
+      const qs = new URLSearchParams({ limit: "60" });
+      if (f.q) qs.set("q", f.q);
+      if (f.major) qs.set("major", f.major);
+      if (f.priced) qs.set("priced", f.priced);
+      if (f.content_kind) qs.set("content_kind", f.content_kind);
+      const seq = ++loadSeq;
+      if (metaEl) {
+        metaEl.hidden = false;
+        metaEl.textContent = "در حال جست‌وجو…";
+      }
+      try {
+        const res = await S().api(`/api/site/pamphlets?${qs}`);
+        if (seq !== loadSeq || !list) return;
+        const items = res.data || [];
+        if (metaEl) {
+          metaEl.textContent = items.length
+            ? `${items.length.toLocaleString("fa-IR")} جزوه`
+            : hasActive()
+              ? "نتیجه‌ای نیست"
+              : "";
+          metaEl.hidden = !metaEl.textContent;
+        }
+        if (items.length) {
+          list.innerHTML = `<div class="jh-grid">${items.map(cardHtml).join("")}</div>`;
+          hydrateCardCovers(list);
+          return;
+        }
+        list.innerHTML = hasActive()
+          ? `<div class="jh-empty"><strong>نتیجه‌ای پیدا نشد</strong><p>فیلترها را ساده‌تر کن.</p></div>`
+          : `<div class="jh-empty"><strong>هنوز جزوه‌ای منتشر نشده</strong><p>به‌زودی اینجا می‌آید.</p></div>`;
+      } catch (e) {
+        if (seq !== loadSeq) return;
+        if (metaEl) metaEl.hidden = true;
+        list.innerHTML = `<div class="jh-empty"><strong>دریافت فهرست ممکن نشد</strong><p>${S().esc(
+          e.message || "خطا"
+        )}</p></div>`;
+        msg(errEl, e.message || "خطا");
+      }
+    };
+
+    const schedule = () => {
+      window.clearTimeout(debounceTimer);
+      debounceTimer = window.setTimeout(load, 280);
+    };
+
+    clearBtn?.addEventListener("click", () => {
+      if (qInput) qInput.value = "";
+      if (majorSel) majorSel.value = "";
+      if ($("#dash-filter-kind", box)) $("#dash-filter-kind", box).value = "";
+      if ($("#dash-filter-priced", box))
+        $("#dash-filter-priced", box).value = "";
+      load();
+    });
+    qInput?.addEventListener("input", schedule);
+    qInput?.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        window.clearTimeout(debounceTimer);
+        load();
+      }
+    });
+    ["dash-filter-major", "dash-filter-kind", "dash-filter-priced"].forEach(
+      (id) => {
+        $(`#${id}`, box)?.addEventListener("change", () => load());
+      }
+    );
+    await load();
+  }
+
+  function syncOverviewPurchaseCards(next) {
+    const balEl = document.querySelector("[data-overview-balance]");
+    const unitsEl = document.querySelector("[data-overview-units]");
+    const irtEl = document.querySelector("[data-overview-units-irt]");
+    const noteEl = document.querySelector("[data-overview-units-note]");
+    if (balEl) balEl.textContent = money(next.wallet_balance_irt || 0);
+    const buyIrt = purchasableValueIrt(next);
+    if (unitsEl) unitsEl.textContent = purchasableUnitsLabel(next);
+    if (irtEl) irtEl.textContent = money(buyIrt);
+    if (noteEl) {
+      noteEl.textContent = "فقط برای خرید جزوه — بدون تسویه شبا";
+    }
+    const walletUnits = document.querySelector("[data-wallet-units]");
+    const walletUnitsIrt = document.querySelector("[data-wallet-units-irt]");
+    const walletBal = document.querySelector("[data-wallet-balance]");
+    if (walletUnits) {
+      walletUnits.textContent = toFaDigits(next.wallet_units || 0);
+    }
+    if (walletUnitsIrt) {
+      walletUnitsIrt.textContent = money(buyIrt);
+    }
+    if (walletBal) {
+      walletBal.textContent = money(next.wallet_balance_irt || 0);
+      walletBal.classList.add("jh-money-settle");
+    }
+    paintWalletChip(next);
   }
 
   async function initAccount() {
@@ -5041,8 +6036,14 @@
         );
         const publishedMine = mineList.filter((p) => p.status === "published")
           .length;
-        const bal = Number(wallet.data?.wallet_balance_irt || 0);
-        const earned = Number(wallet.data?.earned_irt || 0);
+        const wlt = wallet.data || {};
+        const bal = Number(wlt.wallet_balance_irt || 0);
+        const earned = Number(wlt.earned_irt || 0);
+        const buyUnits = Math.max(0, Math.floor(Number(wlt.wallet_units) || 0));
+        const buyPrepaid = Math.max(
+          0,
+          Math.floor(Number(wlt.wallet_units_prepaid_irt) || 0)
+        );
         const recentMine = mineList
           .slice()
           .sort(
@@ -5051,8 +6052,76 @@
               new Date(a.updated_at || a.created_at || 0).getTime()
           )
           .slice(0, 3);
+        const recentLib = libItems
+          .slice()
+          .sort(
+            (a, b) =>
+              new Date(
+                b.purchased_at || b.updated_at || b.created_at || 0
+              ).getTime() -
+              new Date(
+                a.purchased_at || a.updated_at || a.created_at || 0
+              ).getTime()
+          )
+          .slice(0, 3);
+        const statusTodayHtml = () => {
+          const mineRows = recentMine.length
+            ? `<ul class="jh-dash-recent">${recentMine
+                .map(
+                  (p) => `<li>
+                    <a href="account.html?tab=mine">
+                      <strong>${S().esc(p.title || "بدون عنوان")}</strong>
+                      <span class="jh-dash-st">${S().esc(
+                        STATUS_FA[p.status] || p.status || ""
+                      )}</span>
+                    </a>
+                  </li>`
+                )
+                .join("")}</ul>`
+            : `<p class="jh-dash-empty-line">هنوز جزوه‌ای نفرستادی. <a href="submit.html">انتشار جزوه</a></p>`;
+          const libRows = recentLib.length
+            ? `<ul class="jh-dash-recent">${recentLib
+                .map((p) => {
+                  const free =
+                    Number(p.price_irt || 0) <= 0 ||
+                    p.purchase_status === "free_granted";
+                  return `<li>
+                    <a href="item.html?id=${S().esc(p.id || "")}">
+                      <strong>${S().esc(p.title || "جزوه")}</strong>
+                      <span class="jh-dash-st">${
+                        free ? "رایگان" : "خریداری‌شده"
+                      }</span>
+                    </a>
+                  </li>`;
+                })
+                .join("")}</ul>`
+            : `<p class="jh-dash-empty-line">کتابخانه خالی است. <a href="account.html?tab=shop">برو فروشگاه</a></p>`;
+          return `<div class="jh-dash-next jh-dash-next--today">
+            <div class="jh-dash-next-copy">
+              <p class="jh-dash-next-eyebrow">وضعیت امروز</p>
+              <h3>آخرین جزوه‌ها</h3>
+              <p class="jh-note">کتابخانه و پرونده‌های خودت را یک‌جا ببین.</p>
+            </div>
+            <div class="jh-dash-today-grid">
+              <section class="jh-dash-today-col">
+                <header>
+                  <strong>کتابخانه من</strong>
+                  <a href="account.html?tab=library">همه</a>
+                </header>
+                ${libRows}
+              </section>
+              <section class="jh-dash-today-col">
+                <header>
+                  <strong>جزوه‌های من</strong>
+                  <a href="account.html?tab=mine">همه</a>
+                </header>
+                ${mineRows}
+              </section>
+            </div>
+          </div>`;
+        };
         $("#panel-overview").innerHTML = `
-          <div class="jh-dash-cards jh-dash-cards--3">
+          <div class="jh-dash-cards jh-dash-cards--4">
             <a class="jh-dash-card jh-dash-card--lib" href="account.html?tab=library">
               <div class="jh-dash-card-top">
                 <span class="jh-dash-card-ico" aria-hidden="true">☰</span>
@@ -5093,14 +6162,34 @@
                 <span class="jh-dash-card-kicker">موجودی قابل تسویه</span>
               </div>
               <div class="jh-dash-card-body">
-                <strong>${money(bal)}</strong>
-                <em>${
+                <strong class="jh-money-settle" data-overview-balance>${money(
+                  bal
+                )}</strong>
+                <em class="jh-money-earned-line">${
                   earned > 0
-                    ? `کل درآمد فروش تا امروز: ${money(earned)}`
+                    ? `کل درآمد فروش تا امروز: <span class="jh-money-earned">${money(
+                        earned
+                      )}</span>`
                     : "هنوز درآمد فروشی ثبت نشده"
                 }</em>
               </div>
               <span class="jh-dash-card-cta">جزئیات درآمد <span aria-hidden="true">←</span></span>
+            </a>
+            <a class="jh-dash-card jh-dash-card--buy" href="account.html?tab=shop" id="btn-buy-balance">
+              <div class="jh-dash-card-top">
+                <span class="jh-dash-card-ico" aria-hidden="true">＋</span>
+                <span class="jh-dash-card-kicker">موجودی قابل خرید</span>
+              </div>
+              <div class="jh-dash-card-body">
+                <strong data-overview-units>${toFaDigits(buyUnits)} واحد</strong>
+                <span class="jh-dash-buy-irt" data-overview-units-irt>${money(
+                  buyPrepaid > 0
+                    ? buyPrepaid
+                    : purchasableValueIrt(wlt)
+                )}</span>
+                <em data-overview-units-note>فقط برای خرید جزوه — بدون تسویه شبا</em>
+              </div>
+              <span class="jh-dash-card-cta">برو به فروشگاه <span aria-hidden="true">←</span></span>
             </a>
           </div>
           ${
@@ -5119,36 +6208,29 @@
                   </div>
                   <a class="jh-btn" href="account.html?tab=mine">مشاهده پرونده</a>
                 </div>`
-              : `<div class="jh-dash-next jh-dash-next--idle">
-                  <div class="jh-dash-next-copy">
-                    <p class="jh-dash-next-eyebrow">وضعیت امروز</p>
-                    <h3>پرونده معلقی نداری</h3>
-                    <p class="jh-note">${
-                      recentMine.length
-                        ? "آخرین جزوه‌هایت را ببین یا از فروشگاه منبع تازه بگیر."
-                        : "اولین جزوه‌ات را بنویس یا از فروشگاه جزوه ذخیره کن."
-                    }</p>
-                  </div>
-                  ${
-                    recentMine.length
-                      ? `<ul class="jh-dash-recent">
-                          ${recentMine
-                            .map(
-                              (p) => `<li>
-                              <a href="account.html?tab=mine">
-                                <strong>${S().esc(p.title || "بدون عنوان")}</strong>
-                                <span>${S().esc(
-                                  STATUS_FA[p.status] || p.status || ""
-                                )}</span>
-                              </a>
-                            </li>`
-                            )
-                            .join("")}
-                        </ul>`
-                      : `<a class="jh-dash-next-link" href="account.html?tab=services">راهنمای کمک جزوه‌نویسی ←</a>`
-                  }
-                </div>`
-          }`;
+              : ""
+          }
+          <div class="jh-card jh-overview-ref" id="jh-overview-ref">
+            <header class="jh-overview-ref-head">
+              <div>
+                <p class="jh-wallet-kicker">سفیر بلوک</p>
+                <h3>کد رفرال و لینک ثبت‌نام من</h3>
+              </div>
+            </header>
+            ${referralInviteHtml(me.referral_code || wlt.account?.referral_code || "")}
+          </div>
+          ${statusTodayHtml()}`;
+        bindReferralInvite(
+          $("#jh-overview-ref"),
+          me.referral_code || wlt.account?.referral_code || "",
+          err
+        );
+        if (new URLSearchParams(location.search).get("buy") === "1") {
+          openPurchaseBalanceSheet(wlt, syncOverviewPurchaseCards);
+        }
+      }
+      if (tab === "shop") {
+        await mountDashShopCatalog($("#panel-shop"), err);
       }
       if (tab === "library") {
         const res = await S().api("/api/site/pamphlets/library/me");
@@ -5159,7 +6241,7 @@
           : `<div class="jh-empty">
               <strong>هنوز جزوه‌ای به کتابخانه‌ات اضافه نکردی</strong>
               <p>جزوه‌های خریداری‌شده و جزوه‌های رایگانی که ذخیره می‌کنی، اینجا نمایش داده می‌شوند.</p>
-              <div class="jh-actions"><a class="jh-btn" href="index.html">پیدا کردن جزوه</a></div>
+              <div class="jh-actions"><a class="jh-btn" href="account.html?tab=shop">پیدا کردن جزوه</a></div>
             </div>`;
         if (items.length) hydrateCardCovers(box);
       }
@@ -5269,7 +6351,13 @@
                 <td>${toFaDigits(i + 1)}</td>
                 <td dir="ltr">${toFaDigits(p.content_code || "—")}</td>
                 <td class="jh-mine-title">
-                  <strong class="jh-mine-title-main">${S().esc(p.title || "بدون عنوان")}</strong>
+                  <strong class="jh-mine-title-main">${S().esc(p.title || "بدون عنوان")}${
+                    Number(p.pending_comments_count || 0) > 0
+                      ? `<span class="jh-mine-cmt-badge">${toFaDigits(
+                          p.pending_comments_count
+                        )} نظر جدید</span>`
+                      : ""
+                  }</strong>
                   ${
                     p.review_note
                       ? `<span class="jh-mine-sub">${S().esc(p.review_note)}</span>`
@@ -5336,7 +6424,18 @@
                   `<tr><td colspan="8" class="jh-meta">موردی با این فیلتر نیست</td></tr>`
                 }</tbody>
               </table>
-            </div>`;
+            </div>
+            <section class="jh-mine-comments" id="jh-mine-comments">
+              <header class="jh-mine-comments-head">
+                <div>
+                  <h3>نظرات جزوه‌های منتشرشده</h3>
+                  <p class="jh-note">فقط خریداران می‌توانند نظر بدهند. نظرات تا تأیید تو منتشر نمی‌شوند؛ می‌توانی تأیید، رد، حذف یا به ادمین گزارش کنی.</p>
+                </div>
+              </header>
+              <div id="jh-mine-comments-list" class="jh-mine-comments-list">
+                <p class="jh-meta">در حال بارگذاری نظرات…</p>
+              </div>
+            </section>`;
 
           $("#mine-q")?.addEventListener("input", (e) => {
             q = e.target.value || "";
@@ -5359,6 +6458,183 @@
             });
           });
           bindMineActions();
+          loadMineComments();
+        };
+
+        const statusFaCmt = {
+          pending: "در انتظار",
+          approved: "تأییدشده",
+          rejected: "ردشده",
+        };
+
+        const loadMineComments = async () => {
+          const host = $("#jh-mine-comments-list");
+          if (!host) return;
+          const published = items.filter((p) => p.status === "published");
+          if (!published.length) {
+            host.innerHTML =
+              `<p class="jh-note">هنوز جزوهٔ منتشرشده‌ای نداری؛ بعد از انتشار، نظرات خریداران اینجا می‌آید.</p>`;
+            return;
+          }
+          host.innerHTML = `<p class="jh-meta">در حال بارگذاری نظرات…</p>`;
+          const packs = await Promise.all(
+            published.map(async (p) => {
+              try {
+                const r = await S().api(
+                  `/api/site/pamphlets/mine/${encodeURIComponent(p.id)}/comments`
+                );
+                return { pamphlet: p, pack: r.data || {} };
+              } catch (_) {
+                return {
+                  pamphlet: p,
+                  pack: {
+                    counts: { pending: 0, approved: 0, rejected: 0 },
+                    comments: [],
+                  },
+                };
+              }
+            })
+          );
+          if (!host.isConnected) return;
+          host.innerHTML = packs
+            .map(({ pamphlet: p, pack }) => {
+              const counts = pack.counts || {};
+              const comments = pack.comments || [];
+              const pending = Number(counts.pending || 0);
+              const listHtml = comments.length
+                ? comments
+                    .map((c) => {
+                      const st = c.status || "pending";
+                      const reported =
+                        (c.report_status || "") === "reported";
+                      return `<article class="jh-mine-cmt jh-mine-cmt--${S().esc(
+                        st
+                      )}${reported ? " is-reported" : ""}" data-cmt-id="${S().esc(
+                        c.id
+                      )}">
+                  <header>
+                    <strong>${S().esc(c.author_name || "خریدار")}</strong>
+                    <span class="jh-mine-cmt-st">${S().esc(
+                      statusFaCmt[st] || st
+                    )}</span>
+                  </header>
+                  <p dir="rtl">${S().esc(c.body || "")}</p>
+                  <div class="jh-mine-cmt-actions">
+                    ${
+                      st === "pending"
+                        ? `<button type="button" class="jh-chip jh-chip--ok" data-cmt-act="approve" data-pid="${S().esc(
+                            p.id
+                          )}" data-cid="${S().esc(c.id)}">تأیید</button>
+                    <button type="button" class="jh-chip jh-chip--bad" data-cmt-act="reject" data-pid="${S().esc(
+                      p.id
+                    )}" data-cid="${S().esc(c.id)}">رد</button>`
+                        : ""
+                    }
+                    <button type="button" class="jh-chip jh-chip--bad" data-cmt-act="delete" data-pid="${S().esc(
+                      p.id
+                    )}" data-cid="${S().esc(c.id)}">حذف</button>
+                    ${
+                      reported
+                        ? `<span class="jh-meta">گزارش‌شده به ادمین</span>`
+                        : `<button type="button" class="jh-chip" data-cmt-act="report" data-pid="${S().esc(
+                            p.id
+                          )}" data-cid="${S().esc(c.id)}">گزارش به ادمین</button>`
+                    }
+                  </div>
+                </article>`;
+                    })
+                    .join("")
+                : `<p class="jh-note">هنوز نظری برای این جزوه ثبت نشده.</p>`;
+              return `<div class="jh-card jh-mine-cmt-card" data-mine-pid="${S().esc(
+                p.id
+              )}">
+                <header class="jh-mine-cmt-card-head">
+                  <div>
+                    <strong>${S().esc(p.title || "جزوه")}</strong>
+                    <p class="jh-meta">در انتظار ${toFaDigits(
+                      pending
+                    )} · تأیید ${toFaDigits(
+                      counts.approved || 0
+                    )} · رد ${toFaDigits(counts.rejected || 0)}</p>
+                  </div>
+                  <a class="jh-btn secondary" href="item.html?id=${S().esc(
+                    p.id
+                  )}">صفحهٔ جزوه</a>
+                </header>
+                <div class="jh-mine-cmt-list">${listHtml}</div>
+              </div>`;
+            })
+            .join("");
+
+          $$("[data-cmt-act]", host).forEach((btn) => {
+            btn.addEventListener("click", async () => {
+              const act = btn.getAttribute("data-cmt-act");
+              const pid = btn.getAttribute("data-pid");
+              const cid = btn.getAttribute("data-cid");
+              if (!act || !pid || !cid) return;
+              try {
+                if (act === "report") {
+                  const reason = window.prompt(
+                    "دلیل گزارش این نظر به ادمین چیست؟",
+                    "محتوای نامناسب یا توهین‌آمیز"
+                  );
+                  if (!reason || reason.trim().length < 2) return;
+                  await S().api(
+                    `/api/site/pamphlets/mine/${encodeURIComponent(
+                      pid
+                    )}/comments/${encodeURIComponent(cid)}/report`,
+                    {
+                      method: "POST",
+                      body: JSON.stringify({ reason: reason.trim() }),
+                    }
+                  );
+                  msg(err, "گزارش برای ادمین ثبت شد", true);
+                } else if (act === "delete") {
+                  if (!confirm("این نظر برای همیشه حذف شود؟")) return;
+                  const card = btn.closest(".jh-mine-cmt");
+                  const wasPending = card?.classList.contains(
+                    "jh-mine-cmt--pending"
+                  );
+                  await S().api(
+                    `/api/site/pamphlets/mine/${encodeURIComponent(
+                      pid
+                    )}/comments/${encodeURIComponent(cid)}`,
+                    { method: "DELETE", body: "{}" }
+                  );
+                  msg(err, "نظر حذف شد", true);
+                  const item = items.find((x) => String(x.id) === String(pid));
+                  if (item && wasPending) {
+                    item.pending_comments_count = Math.max(
+                      0,
+                      Number(item.pending_comments_count || 0) - 1
+                    );
+                  }
+                } else {
+                  await S().api(
+                    `/api/site/pamphlets/mine/${encodeURIComponent(
+                      pid
+                    )}/comments/${encodeURIComponent(cid)}/${act}`,
+                    { method: "POST", body: "{}" }
+                  );
+                  msg(
+                    err,
+                    act === "approve" ? "نظر تأیید و منتشر شد" : "نظر رد شد",
+                    true
+                  );
+                  const item = items.find((x) => String(x.id) === String(pid));
+                  if (item && (act === "approve" || act === "reject")) {
+                    item.pending_comments_count = Math.max(
+                      0,
+                      Number(item.pending_comments_count || 0) - 1
+                    );
+                  }
+                }
+                await loadMineComments();
+              } catch (e) {
+                msg(err, e.message || "عملیات ناموفق");
+              }
+            });
+          });
         };
 
         const bindMineActions = () => {
@@ -5581,7 +6857,7 @@
               <article class="jh-help-card">
                 <span class="jh-help-card-num" aria-hidden="true">۲</span>
                 <h3>استاندارد انتشار</h3>
-                <p>فونت خوانا، صفحه‌بندی تمیز و منبع مشخص؛ جزئیات را در آموزش و راهنما ببین.</p>
+                <p>فونت خوانا، صفحه‌بندی تمیز و منبع مشخص؛ جزئیات را در آموزش و راهنما و قوانین ببین.</p>
               </article>
               <article class="jh-help-card">
                 <span class="jh-help-card-num" aria-hidden="true">۳</span>
@@ -5591,7 +6867,7 @@
             </div>
             <div class="jh-help-write-actions">
               <a class="jh-btn" href="submit.html">شروع / ادامه نوشتن</a>
-              <a class="jh-btn secondary" href="learn.html#publish-steps">آموزش و راهنما</a>
+              <a class="jh-btn secondary" href="learn.html#publish-steps">آموزش و راهنما و قوانین</a>
               <a class="jh-btn secondary" href="account.html?tab=tickets">درخواست کمک از پشتیبانی</a>
             </div>
           </section>`;
@@ -5732,67 +7008,125 @@
               })
               .join("")
           : `<li class="jh-note">هنوز درخواست تسویه‌ای ثبت نشده.</li>`;
+        const topups = unitTopups(d);
+        const packs = unitPacks(d);
         $("#panel-wallet").innerHTML = `
-          <div class="jh-card jh-wallet-card">
-            <p class="jh-wallet-kicker">درآمد و تسویه</p>
+          <div class="jh-card jh-finance-hero">
+            <p class="jh-wallet-kicker">پنل مالی</p>
+            <h3>موجودی قابل خرید</h3>
+            <a class="jh-finance-buy-link" href="account.html?tab=shop" aria-label="برو به فروشگاه جزوه‌ها">
+              <p class="jh-finance-buy-bal" data-wallet-units-line>
+                <strong data-wallet-units>${toFaDigits(d.wallet_units || 0)}</strong>
+                <span>واحد</span>
+                <em class="jh-finance-buy-irt" data-wallet-units-irt>${money(
+                  purchasableValueIrt(d)
+                )}</em>
+              </p>
+              <span class="jh-finance-buy-go">برو به فروشگاه ←</span>
+            </a>
+            <p class="jh-note">فقط برای خرید جزوه · تسویه شبا و نقد کردن ندارد</p>
+            <div class="jh-actions jh-finance-hero-actions">
+              <a class="jh-btn" href="account.html?tab=shop">خرید جزوه از فروشگاه</a>
+              <button type="button" class="jh-btn secondary" id="btn-wallet-buy-open">انتقال از درآمد</button>
+            </div>
+          </div>
+          <div class="jh-card jh-finance-charge" id="jh-unit-packages">
+            <header class="jh-finance-sec-head">
+              <div>
+                <h3>شارژ حساب</h3>
+                <p class="jh-note">مبلغ را انتخاب کن یا پکیج اشتراک بگیر — با زرین‌پال.</p>
+              </div>
+            </header>
+            <h4 class="jh-finance-sub">شارژ سریع</h4>
+            <div class="jh-topup-grid">${topups.map(topupChipHtml).join("")}</div>
+            <h4 class="jh-finance-sub">پکیج اشتراک</h4>
+            <div class="jh-pack-grid">${packs.map(packCardHtml).join("")}</div>
+          </div>
+          <div class="jh-card jh-wallet-card jh-finance-settle">
+            <p class="jh-wallet-kicker">درآمد نویسنده</p>
             <h3>موجودی قابل تسویه</h3>
-            <p class="jh-wallet-balance">${money(d.wallet_balance_irt)}</p>
+            <p class="jh-wallet-balance jh-money-settle" data-wallet-balance>${money(
+              d.wallet_balance_irt
+            )}</p>
             <div class="jh-wallet-stats" role="list">
               <div class="jh-wallet-stat" role="listitem">
-                <span class="jh-wallet-stat-label">فروش تأییدشده</span>
+                <span class="jh-wallet-stat-label">فروش</span>
                 <strong class="jh-wallet-stat-value">${toFaDigits(
                   d.sales_count || 0
                 )}</strong>
               </div>
-              <div class="jh-wallet-stat" role="listitem">
-                <span class="jh-wallet-stat-label">درآمد فروش</span>
-                <strong class="jh-wallet-stat-value">${money(salesEarned)}</strong>
+              <div class="jh-wallet-stat jh-wallet-stat--earn" role="listitem">
+                <span class="jh-wallet-stat-label">درآمد فروش کلی</span>
+                <strong class="jh-wallet-stat-value jh-money-earned-lg">${money(
+                  salesEarned
+                )}</strong>
               </div>
               <div class="jh-wallet-stat" role="listitem">
-                <span class="jh-wallet-stat-label">درآمد معرف</span>
-                <strong class="jh-wallet-stat-value">${money(affEarned)}</strong>
+                <span class="jh-wallet-stat-label">درآمد از راه سفید بودن</span>
+                <strong class="jh-wallet-stat-value jh-money-earned">${money(
+                  affEarned
+                )}</strong>
               </div>
               <div class="jh-wallet-stat" role="listitem">
-                <span class="jh-wallet-stat-label">حداقل تسویه</span>
+                <span class="jh-wallet-stat-label">حداقل درآمد قابل تسویه</span>
                 <strong class="jh-wallet-stat-value">${money(
-                  d.min_payout_irt
+                  d.min_payout_irt || 500000
                 )}</strong>
               </div>
             </div>
             <p class="jh-note jh-wallet-share-note">از هر فروش: ${toFaDigits(
               d.author_share_pct || 40
-            )}٪ نویسنده · ${toFaDigits(
+            )}٪ نویسنده · ${toFaDigits(40)}٪ سایت · ${toFaDigits(
+              d.ambassador_share_pct || d.affiliate_share_pct || 10
+            )}٪ سفیر · ${toFaDigits(
               d.prize_fund_pct || 10
-            )}٪ صندوق جوایز${
-              affEarned > 0 || refCode
-                ? ` · با کد معرف، ${toFaDigits(
-                    d.affiliate_share_pct || d.ambassador_share_pct || 10
-                  )}٪ سهم سفیر`
-                : ""
-            }</p>
+            )}٪ هدیه/جوایز.</p>
             <p class="jh-note jh-wallet-sla">${S().esc(
               d.payout_sla_fa ||
                 "واریز به شبا معمولاً بین ۱ تا ۳ روز کاری انجام می‌شود."
             )}</p>
           </div>
           <div class="jh-card jh-wallet-chart-card">
-            <h3>منبع درآمد</h3>
-            <p class="jh-note">سهم فروش جزوه در برابر درآمد معرف (رفرال).</p>
-            <div class="jh-wallet-donut" style="--sales:${salesPct};--ref:${refPct}">
-              <div class="jh-wallet-donut-ring" aria-hidden="true"></div>
-              <div class="jh-wallet-donut-center">
-                <strong>${money(salesEarned + affEarned)}</strong>
-                <span>کل درآمد</span>
+            <header class="jh-income-head">
+              <div>
+                <p class="jh-wallet-kicker">تحلیل</p>
+                <h3>منبع درآمد</h3>
               </div>
+              <span class="jh-income-total-chip" dir="ltr">${money(
+                salesEarned + affEarned
+              )}</span>
+            </header>
+            <p class="jh-note">سهم فروش جزوه در برابر درآمد از راه سفید بودن.</p>
+            <div class="jh-income-viz">
+              <div class="jh-wallet-donut" style="--sales:${salesPct};--ref:${refPct}" role="img" aria-label="نمودار دایره‌ای منبع درآمد">
+                <div class="jh-wallet-donut-glow" aria-hidden="true"></div>
+                <div class="jh-wallet-donut-ring" aria-hidden="true"></div>
+                <div class="jh-wallet-donut-center">
+                  <strong>${money(salesEarned + affEarned)}</strong>
+                  <span>کل درآمد</span>
+                </div>
+              </div>
+              <ul class="jh-wallet-legend jh-wallet-legend--cards">
+                <li class="jh-income-leg jh-income-leg--sales">
+                  <div class="jh-income-leg-top">
+                    <i class="jh-dot jh-dot--sales" aria-hidden="true"></i>
+                    <span>درآمد فروش کلی</span>
+                    <em>${toFaDigits(salesPct)}٪</em>
+                  </div>
+                  <strong>${money(salesEarned)}</strong>
+                  <div class="jh-income-meter" aria-hidden="true"><i style="width:${salesPct}%"></i></div>
+                </li>
+                <li class="jh-income-leg jh-income-leg--ref">
+                  <div class="jh-income-leg-top">
+                    <i class="jh-dot jh-dot--ref" aria-hidden="true"></i>
+                    <span>درآمد از راه سفید بودن</span>
+                    <em>${toFaDigits(refPct)}٪</em>
+                  </div>
+                  <strong>${money(affEarned)}</strong>
+                  <div class="jh-income-meter" aria-hidden="true"><i style="width:${refPct}%"></i></div>
+                </li>
+              </ul>
             </div>
-            <ul class="jh-wallet-legend">
-              <li><i class="jh-dot jh-dot--sales"></i>فروش جزوه · ${money(
-                salesEarned
-              )} · ${toFaDigits(salesPct)}٪</li>
-              <li><i class="jh-dot jh-dot--ref"></i>کد معرف · ${money(
-                affEarned
-              )} · ${toFaDigits(refPct)}٪</li>
-            </ul>
           </div>
           <div class="jh-card jh-wallet-bars-card">
             <h3>درآمد به تفکیک جزوه</h3>
@@ -5816,7 +7150,12 @@
           </div>`
               : ""
           }
-          <div class="jh-card jh-wallet-payout-form">
+          <div class="jh-card jh-wallet-payout-form${
+            Number(d.wallet_balance_irt || 0) <
+            Number(d.min_payout_irt || 500000)
+              ? " is-gated"
+              : ""
+          }">
             <header class="jh-payout-head">
               <div>
                 <h3>درخواست تسویه</h3>
@@ -5826,13 +7165,42 @@
               </div>
             </header>
             ${
-              acc.iban || acc.national_id
-                ? `<button type="button" class="jh-payout-saved" data-iban="${S().esc(
-                    acc.iban || ""
-                  )}" data-nid="${S().esc(acc.national_id || "")}">
+              Number(d.wallet_balance_irt || 0) <
+              Number(d.min_payout_irt || 500000)
+                ? (() => {
+                    const minNeed = Number(d.min_payout_irt || 500000);
+                    const balNow = Math.max(
+                      0,
+                      Number(d.wallet_balance_irt || 0)
+                    );
+                    const pctGate = Math.min(
+                      100,
+                      Math.round((balNow / Math.max(1, minNeed)) * 100)
+                    );
+                    const remain = Math.max(0, minNeed - balNow);
+                    return `<div class="jh-payout-gate" role="status">
+              <div class="jh-payout-gate-icon" aria-hidden="true"></div>
+              <strong>هنوز به حداقل درآمد قابل تسویه نرسیدی</strong>
+              <p>برای باز شدن فرم شبا و کد ملی، موجودی قابل تسویه باید حداقل <b>${money(
+                minNeed
+              )}</b> باشد. الان <b>${money(remain)}</b> مانده.</p>
+              <div class="jh-payout-gate-meter" aria-hidden="true">
+                <i style="width:${pctGate}%"></i>
+              </div>
+              <span class="jh-payout-gate-meta">${toFaDigits(
+                pctGate
+              )}٪ تا آستانه · ${money(balNow)} از ${money(minNeed)}</span>
+            </div>`;
+                  })()
+                : `${
+                    acc.iban || acc.national_id
+                      ? `<button type="button" class="jh-payout-saved" data-iban="${S().esc(
+                          acc.iban || ""
+                        )}" data-nid="${S().esc(acc.national_id || "")}">
               <span class="jh-payout-saved-kicker">حساب ذخیره‌شده</span>
               <strong dir="ltr">${S().esc(
-                formatIbanDigits(normalizeIban(acc.iban || "")) || "شبا ثبت‌شده"
+                formatIbanDigits(normalizeIban(acc.iban || "")) ||
+                  "شبا ثبت‌شده"
               )}</strong>
               <span>${
                 acc.national_id
@@ -5840,14 +7208,14 @@
                   : "کد ملی ذخیره‌شده نیست"
               }</span>
             </button>`
-                : ""
-            }
+                      : ""
+                  }
             <div class="jh-form jh-payout-fields jh-payout-fields--compact">
               <label class="jh-payout-amount-label">مبلغ (تومان)
                 <div class="jh-payout-amount-row">
                   <input id="payout_amount" class="jh-input-ltr-right" type="text" inputmode="numeric"
                     autocomplete="off" dir="ltr" placeholder="${toFaDigits(
-                      (d.min_payout_irt || 200000).toLocaleString("en-US")
+                      (d.min_payout_irt || 500000).toLocaleString("en-US")
                     )}" />
                   <button type="button" class="jh-chip" id="btn-payout-max">حداکثر برداشت</button>
                 </div>
@@ -5876,11 +7244,12 @@
               </label>
               <p class="jh-payout-warn">شماره شبا باید متعلق به همان کد ملی باشد؛ در غیر این صورت پایا/ساتنا برگشت می‌خورد.</p>
               <button class="jh-btn is-locked" type="button" id="btn-payout" disabled>ثبت درخواست تسویه</button>
-            </div>
+            </div>`
+            }
           </div>
           <div class="jh-card jh-wallet-closeout">
             <h3>تسویه نهایی هنگام بستن حساب</h3>
-            <p class="jh-note">اگر حسابت را می‌بندی و موجودی کمتر از حداقل تسویه است، می‌توانی کل موجودی را پس از کسر کارمزد بانکی (${money(
+            <p class="jh-note">اگر حسابت را می‌بندی و موجودی کمتر از حداقل درآمد قابل تسویه است، می‌توانی کل موجودی را پس از کسر کارمزد بانکی (${money(
               d.payout_bank_fee_irt || 5000
             )}) درخواست کنی.</p>
             <label class="jh-check">
@@ -5895,6 +7264,20 @@
             <h3>وضعیت درخواست‌ها</h3>
             <ul class="jh-wallet-payout-list">${payoutRows}</ul>
           </div>`;
+        paintWalletChip(d);
+        bindPurchaseBalanceOpener(
+          $("#btn-wallet-buy-open"),
+          d,
+          syncOverviewPurchaseCards
+        );
+        if (new URLSearchParams(location.search).get("buy") === "1") {
+          openPurchaseBalanceSheet(d, syncOverviewPurchaseCards);
+        }
+        $$("#panel-wallet [data-unit-sku]").forEach((btn) => {
+          btn.addEventListener("click", () =>
+            payUnitSku(btn.getAttribute("data-unit-sku"), btn, err)
+          );
+        });
         $("#btn-copy-ref")?.addEventListener("click", async () => {
           try {
             await navigator.clipboard.writeText(refCode);
@@ -5924,13 +7307,18 @@
             msg(err, e.message || "ثبت ناموفق");
           }
         });
-        bindPayoutForm({
-          balance: d.wallet_balance_irt,
-          minPayout: d.min_payout_irt || 200000,
-          savedIban: acc.iban || "",
-          savedNationalId: acc.national_id || "",
-          errEl: err,
-        });
+        if (
+          Number(d.wallet_balance_irt || 0) >=
+          Number(d.min_payout_irt || 500000)
+        ) {
+          bindPayoutForm({
+            balance: d.wallet_balance_irt,
+            minPayout: d.min_payout_irt || 500000,
+            savedIban: acc.iban || "",
+            savedNationalId: acc.national_id || "",
+            errEl: err,
+          });
+        }
       }
       if (tab === "certs") {
         const res = await S().api("/api/site/pamphlets/certificates/me");
@@ -6004,14 +7392,16 @@
           .join("");
         box.innerHTML = `
           <div class="jh-card">
-            <h3>مشخصات ثبت‌نام</h3>
+            <h3>پروفایل کاربری</h3>
             <p class="jh-note">این اطلاعات برای انتشار جزوه و تسویه استفاده می‌شود.</p>
             <div class="jh-form" style="margin-top:1rem">
-              <label>موبایل
-                <input id="pf_phone" dir="ltr" value="${S().esc(
-                  me.phone || ""
-                )}" readonly />
-              </label>
+              <div class="jh-profile-phone-locked" aria-label="شماره موبایل قفل‌شده">
+                <span class="jh-ref-label">موبایل</span>
+                <strong dir="ltr" id="pf_phone">${S().esc(
+                  toFaDigitChars(me.phone || "") || "—"
+                )}</strong>
+                <em>شماره بعد از ثبت‌نام قابل ویرایش نیست</em>
+              </div>
               <label>نام <input id="pf_first" value="${S().esc(
                 me.first_name || ""
               )}" /></label>
@@ -6031,20 +7421,32 @@
               </label>
               ${
                 me.has_referrer
-                  ? `<p class="jh-note">کد معرف قبلاً ثبت شده و قابل تغییر نیست.</p>`
+                  ? `<div class="jh-ref-ambassador">
+                      <span class="jh-ref-label">سفیر بلوک شما</span>
+                      <strong>${S().esc(
+                        me.referrer_name ||
+                          me.referrer?.full_name ||
+                          "سفیر ثبت‌شده"
+                      )}</strong>
+                      <p class="jh-note">کد معرف قبلاً ثبت شده و تا یک سال روی حساب می‌ماند؛ قابل تغییر نیست.</p>
+                    </div>`
                   : `<label>کد معرف رابط <span class="jh-optional">(اختیاری، یک‌بار)</span>
-                <input id="pf_referral" dir="ltr" autocomplete="off" placeholder="کد معرف" />
+                <input id="pf_referral" dir="ltr" autocomplete="off" placeholder="کد معرف" value="${S().esc(
+                  storedReferralCode()
+                )}" />
               </label>`
-              }
-              ${
-                me.referral_code
-                  ? `<p class="jh-note">کد معرف شما برای معرفی دیگران: <code dir="ltr">${S().esc(
-                      me.referral_code
-                    )}</code></p>`
-                  : ""
               }
               <button class="jh-btn" type="button" id="btn-save-profile">ذخیره مشخصات</button>
             </div>
+          </div>
+          <div class="jh-card jh-overview-ref" id="jh-profile-ref" style="margin-top:1rem">
+            <header class="jh-overview-ref-head">
+              <div>
+                <p class="jh-wallet-kicker">دعوت دوستان</p>
+                <h3>کد و لینک ثبت‌نام رفرالی من</h3>
+              </div>
+            </header>
+            ${referralInviteHtml(me.referral_code || "")}
           </div>
           <div class="jh-card" style="margin-top:1rem">
             <h3>${me.has_password ? "تغییر رمز" : "تنظیم رمز ورود"}</h3>
@@ -6062,9 +7464,11 @@
           <div class="jh-actions" style="margin-top:1rem">
             <button class="jh-btn secondary" type="button" id="btn-logout-profile">خروج از این حساب</button>
           </div>`;
+        bindReferralInvite($("#jh-profile-ref"), me.referral_code || "", err);
         $("#btn-save-profile")?.addEventListener("click", async () => {
           try {
-            await S().api("/api/site/auth/complete-profile", {
+            const refVal = ($("#pf_referral")?.value || "").trim();
+            const saved = await S().api("/api/site/auth/complete-profile", {
               method: "POST",
               body: JSON.stringify({
                 first_name: ($("#pf_first")?.value || "").trim(),
@@ -6073,9 +7477,10 @@
                   ($("#pf_uni")?.value || "").trim() ||
                   "دانشگاه علوم پزشکی شهید بهشتی",
                 field_of_study: ($("#pf_major")?.value || "").trim(),
-                referral_code: ($("#pf_referral")?.value || "").trim(),
+                referral_code: refVal || storedReferralCode(),
               }),
             });
+            if (saved.data?.has_referrer) clearStoredReferral();
             msg(err, "ذخیره شد", true);
             setTimeout(() => location.reload(), 500);
           } catch (e) {
@@ -6332,33 +7737,102 @@
   async function initPayment() {
     injectChrome("account");
     const q = new URLSearchParams(location.search);
-    const ok = q.get("ok") === "1";
-    const kind = q.get("kind") || "";
-    const pamphlet = q.get("pamphlet") || "";
+    let kind = q.get("kind") || "";
+    let pamphlet = q.get("pamphlet") || "";
+    const authority =
+      (q.get("Authority") || q.get("authority") || "").trim();
+    const zpStatus = (q.get("Status") || q.get("status") || "OK").trim();
+    let ok = q.get("ok") === "1";
+
+    // بازگشت مستقیم زرین‌پال روی bolokapp.ir → تأیید سمت API
+    if (authority && !q.has("ok")) {
+      $("#jh-pay").innerHTML = `
+        <article class="jh-pay-result">
+          <p class="jh-pay-result-eyebrow">در حال تأیید پرداخت…</p>
+          <h1 class="jh-pay-result-title">لطفاً صبر کن</h1>
+          <p class="jh-pay-result-sub">نتیجه را از زرین‌پال می‌گیریم.</p>
+        </article>`;
+      const confirmPath =
+        kind === "units"
+          ? "/api/site/pamphlets/payments/units/confirm"
+          : kind === "service"
+            ? "/api/site/pamphlets/payments/service/confirm"
+            : "/api/site/pamphlets/payments/purchase/confirm";
+      if (!kind) kind = "purchase";
+      try {
+        const res = await S().api(confirmPath, {
+          method: "POST",
+          body: JSON.stringify({ authority, status: zpStatus }),
+        });
+        ok = !!res?.ok;
+        if (res?.data?.pamphlet_id) pamphlet = String(res.data.pamphlet_id);
+        const next = new URL(location.href);
+        next.searchParams.delete("Authority");
+        next.searchParams.delete("authority");
+        next.searchParams.delete("Status");
+        next.searchParams.delete("status");
+        next.searchParams.set("ok", ok ? "1" : "0");
+        next.searchParams.set("kind", kind || "purchase");
+        if (pamphlet) next.searchParams.set("pamphlet", pamphlet);
+        history.replaceState({}, "", next.toString());
+      } catch (e) {
+        ok = false;
+        $("#jh-pay").innerHTML = `
+          <article class="jh-pay-result jh-pay-result--err">
+            <p class="jh-pay-result-eyebrow">نتیجه پرداخت</p>
+            <h1 class="jh-pay-result-title">تأیید ناموفق بود</h1>
+            <p class="jh-pay-result-sub">${S().esc(
+              e.message || "اگر مبلغ کم شده، چند دقیقه دیگر وضعیت را چک کن."
+            )}</p>
+            <div class="jh-pay-result-actions">
+              <a class="jh-btn jh-pay-result-cta" href="account.html">بازگشت به حساب</a>
+            </div>
+          </article>`;
+        return;
+      }
+    }
+
     const isService = kind === "service";
+    const isUnits = kind === "units";
     const continueHref =
       ok && kind === "purchase" && pamphlet
         ? `read.html?id=${encodeURIComponent(pamphlet)}`
-        : ok
-          ? "account.html?tab=mine"
-          : "account.html";
+        : ok && isUnits
+          ? "account.html?tab=wallet"
+          : ok
+            ? "account.html?tab=mine"
+            : "account.html";
     const title = ok
       ? isService
         ? "پرداخت خدمات موفق بود"
-        : "خرید با موفقیت انجام شد"
+        : isUnits
+          ? "شارژ واحد موفق بود"
+          : "خرید با موفقیت انجام شد"
       : isService
         ? "پرداخت خدمات انجام نشد"
-        : "خرید انجام نشد";
+        : isUnits
+          ? "شارژ واحد انجام نشد"
+          : "خرید انجام نشد";
     const sub = ok
       ? isService
         ? "مبلغ پیش‌فاکتور تأیید شد. می‌توانی پروندهٔ جزوه را در حسابت دنبال کنی."
-        : "جزوه به کتابخانهٔ تو اضافه شد. همین حالا مطالعه یا دانلود کن."
+        : isUnits
+          ? "واحدها به کیف پولت اضافه شد. می‌توانی جزوه بخری یا موجودی را در بالای صفحه ببینی."
+          : "جزوه به کتابخانهٔ تو اضافه شد. همین حالا مطالعه یا دانلود کن."
       : "اگر مبلغی از حسابت کم شده، تا چند دقیقه دیگر وضعیت را دوباره چک کن یا با پشتیبانی در تماس باش.";
     const cta = ok
       ? kind === "purchase" && pamphlet
         ? "شروع مطالعه"
-        : "رفتن به حساب من"
+        : isUnits
+          ? "رفتن به کیف پول"
+          : "رفتن به حساب من"
       : "بازگشت به حساب";
+    if (ok && isUnits) {
+      try {
+        const w = await S().api("/api/site/pamphlets/wallet/me");
+        paintWalletChip(w?.data || null);
+      } catch (_) {}
+    }
     $("#jh-pay").innerHTML = `
       <article class="jh-pay-result ${ok ? "jh-pay-result--ok" : "jh-pay-result--err"}">
         <div class="jh-pay-result-glow" aria-hidden="true"></div>
@@ -6393,6 +7867,8 @@
     await waitForSite();
     return fn();
   }
+
+  captureReferralFromUrl();
 
   const page = document.body?.dataset?.jhPage || "";
   const map = {

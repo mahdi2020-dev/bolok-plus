@@ -179,7 +179,7 @@ bolok_plus/
 |-----|--------|
 | خانه | `styles.css?v=83` · `app.js?v=81` · `site-api.js?v=27` |
 | بانک منابع | `styles.css?v=80` · `app.js?v=80` · `resources.js?v=71` |
-| جزوه‌سرا | `jomhehsara.css?v=112` · `jomhehsara.js?v=112` · `site-api.js?v=27` · `lottie-player.js?v=2` |
+| جزوه‌سرا | `jomhehsara.css?v=129` · `jomhehsara.js?v=129` · `site-api.js?v=27` · `lottie-player.js?v=2` |
 
 ---
 
@@ -246,7 +246,8 @@ pwsh ./scripts/sync-resources-sitemap.ps1
 
 **پایلوت فعلی:** دانشکدهٔ **پیراپزشکی · دانشگاه علوم پزشکی شهید بهشتی**  
 رشته‌ها: علوم آزمایشگاهی · رادیولوژی · رادیوتراپی (درس‌ها و سرفصل‌ها از taxonomy).  
-پیام برند روی خانه: فروشگاه + درآمد دانشجو + **سفیر بلوک**؛ متای SEO همچنان تیزهوشان ششم→هفتم / نهم→دهم را هم هدف می‌گیرد.
+پیام برند روی خانه و **پیش‌نمایش اشتراک (Telegram/OG):** «دانشگاه علوم پزشکی شهید بهشتی · جهشی در آموزش» — نه متن تیزهوشان.  
+فروشگاه + درآمد دانشجو + **سفیر بلوک**.
 
 UI جدا: `jomhehsara.css` + `jomhehsara.js` (+ Lottie) روی همان Vazirmatn و `site-api.js`. ظاهر نزدیک Gumroad / neo-brutal (صورتی `#FF90E8`، سایهٔ offset، استیکر).
 
@@ -256,14 +257,14 @@ UI جدا: `jomhehsara.css` + `jomhehsara.js` (+ Lottie) روی همان Vazirma
 
 | صفحه | کار |
 |------|-----|
-| `index.html` | هیرو · کارت‌های ارزش · ابر درس · روش جزوه‌سرا (Lottie) · فروشگاه با فیلتر |
+| `index.html` | هیرو · کارت‌های ارزش · ابر درس · روش جزوه‌سرا (Lottie) · فروشگاه با فیلتر · OG/title بهشتی («جهشی در آموزش») |
 | `item.html` | محصول: کاور، گرید کیفیت A–D، قیمت، پیش‌نمایش ورق‌خور، خرید، نظرات، گزارش |
 | `read.html` | مطالعهٔ آنلاین PDF بعد از خرید (واترمارک خریدار) |
 | `login.html` | OTP / رمز · تکمیل پروفایل · boot انیمیشنی |
 | `account.html` | داشبورد تک‌صفحه با تب‌ها |
 | `submit.html` | ثبت سه‌مرحله‌ای |
-| `guide.html` | قوانین و فلو انتشار (از `meta.taxonomy.guide` / API) |
-| `learn.html` | آموزش صفحه‌آرایی (curriculum JSON + تصاویر `guide/learn/*.webp`) |
+| `guide.html` | ریدایرکت → `learn.html` |
+| `learn.html` | آموزش و راهنما و قوانین (curriculum JSON + تصاویر `guide/learn/*.webp`) |
 | `verify.html` | استعلام گواهی با شماره سریال |
 | `payment.html` | بازگشت از زرین‌پال (خرید جزوه یا خدمات آماده‌سازی) |
 | `mine.html` | ریدایرکت → `account.html?tab=mine` |
@@ -273,25 +274,62 @@ UI جدا: `jomhehsara.css` + `jomhehsara.js` (+ Lottie) روی همان Vazirma
 
 ---
 
-### اقتصاد و سهم فروش (منبع حقیقت بک‌اند)
+### اقتصاد واحدی، پکیج و سهم فروش (منبع حقیقت بک‌اند)
 
 ثبت و ارسال برای داوری **رایگان** است (`publishing_fee_irt: 0`).  
-**قیمت نهایی فروش را تیم داوری بلوک قفل می‌کند** (`price_locked`).
+**واحد نهایی (و در نتیجه قیمت لیست) را تیم داوری بلوک قفل می‌کند** (`price_locked` + `unit_count`).
 
-از هر فروش پولی:
+#### جدول قیمت جزوه (لیست)
+
+| واحد (`unit_count`) | قیمت لیست (`price_irt`) |
+|---------------------|-------------------------|
+| ۱ | ۹۹٬۰۰۰ تومان |
+| ۲ (پیش‌فرض دیتابیس) | ۱۹۹٬۰۰۰ تومان |
+| ۳ | ۲۹۹٬۰۰۰ تومان |
+| ۴ | ۳۹۹٬۰۰۰ تومان |
+| رایگان | `price_irt = 0` (واحد همچنان ۱–۴ برای اندازه، بدون پرداخت) |
+
+ثابت‌ها: `UNIT_TIER_PRICES_IRT` در [`backend/pamphlet_marketplace_api.py`](../backend/pamphlet_marketplace_api.py) · در `GET /api/site/pamphlets/meta` → `unit_pricing`.
+
+#### پکیج واحد (شارژ کیف خریدار)
+
+| SKU | واحد | قیمت | ارزش تقریبی هر واحد |
+|-----|------|------|---------------------|
+| `charge_99` | ۲ | ۹۹٬۰۰۰ | شارژ سریع |
+| `charge_199` | ۴ | ۱۹۹٬۰۰۰ | شارژ سریع |
+| `charge_399` | ۸ | ۳۹۹٬۰۰۰ | شارژ سریع |
+| `charge_699` | ۱۴ | ۶۹۹٬۰۰۰ | شارژ سریع |
+| `charge_999` | ۲۰ | ۹۹۹٬۰۰۰ | شارژ سریع |
+| `units_6` | ۶ | ۲۹۹٬۰۰۰ (لیست ۶۰۰٬۰۰۰ · ۵۰٪ · پیشنهاد بلوک) | ≈ **۴۹٬۸۳۳** |
+| `units_12` | ۱۲ | ۵۹۹٬۰۰۰ (لیست ۱٬۲۰۰٬۰۰۰ · ۵۰٪) | ≈ **۴۹٬۹۱۶** |
+
+خرید پکیج: `POST /api/site/pamphlets/wallet/units/packages/{sku}/pay` → زرین‌پال → callback  
+`/api/site/pamphlets/payments/units/callback` → `wallet_units` + `wallet_units_prepaid_irt`.
+
+#### دو مسیر خرید جزوه
+
+| مسیر | چگونه | پایهٔ پخش ۴۰/۱۰/۴۰/۱۰ |
+|------|--------|-------------------------|
+| **نقدی زرین‌پال** | `pay_with=zarinpal` (پیش‌فرض) | کل `price_irt` لیست (مثلاً ۲ واحدی = ۱۹۹٬۰۰۰) |
+| **با واحد پکیج** | `pay_with=units` | `unit_count × (prepaid // wallet_units)` ≈ **۵۰ هزار × واحد** (مثلاً ۲ واحدی ≈ **۱۰۰٬۰۰۰**) |
+
+مثال پکیج: خریدار ۶ واحد با ۲۹۹٬۰۰۰ می‌خرد؛ جزوهٔ ۲ واحدی را با واحد می‌پردازد → پایهٔ تسویه ≈۱۰۰ هزار → نویسنده ۴۰٪ · سایت ۴۰٪ · سفیر ۱۰٪ · هدیه/جوایز ۱۰٪ از همان پایه.
+
+#### سهم فروش (همیشه)
 
 | سهم | درصد | توضیح |
 |-----|------|--------|
-| نویسنده | **۴۰٪** | به کیف پول `site_accounts.wallet_balance_irt` |
-| پلتفرم بلوک | **۴۰٪** | اگر سفیر معتبر نباشد، سهم سفیر هم به بلوک می‌رود |
-| سفیر بلوک (معرف) | **۱۰٪** | فقط اگر `referred_by_id` نویسنده هنوز معتبر باشد (تا **۳۶۵ روز** از referral) |
-| صندوق جوایز ماهانه | **۱۰٪** | همیشه کسر می‌شود |
+| نویسنده / فروشنده | **۴۰٪** | به `site_accounts.wallet_balance_irt` |
+| پلتفرم بلوک (سایت) | **۴۰٪** | اگر سفیر معتبر نباشد، سهم سفیر هم به بلوک می‌رود |
+| سفیر بلوک (معرف) | **۱۰٪** | فقط اگر `referred_by_id` نویسنده هنوز معتبر باشد (تا **۳۶۵ روز**) |
+| هدیه / صندوق جوایز | **۱۰٪** | همیشه کسر؛ ledger `pamphlet_prize_fund_ledger` |
 
-جزوه با قیمت ۰ → `free_granted` بدون پرداخت.  
-حداقل تسویه عادی: **۲۰۰٬۰۰۰ تومان** · کارمزد بانکی تسویه: **۵٬۰۰۰ تومان** · SLA واریز شبا: معمولاً ۱–۳ روز کاری.  
-بستن حساب: `wallet/payout-closeout` حتی زیر حداقل (بعد از کسر کارمزد در صورت موجودی کافی).
+جزوه رایگان → `free_granted` بدون پرداخت.  
+حداقل درآمد قابل تسویه: **۵۰۰٬۰۰۰ تومان** · کارمزد بانکی تسویه: **۵٬۰۰۰ تومان** · SLA شبا: معمولاً ۱–۳ روز کاری.  
+بستن حساب: `wallet/payout-closeout` حتی زیر حداقل.
 
-> نسخهٔ قدیمی «۸۰٪ نویسنده / ۲۰٪ پلتفرم» **منسوخ** است؛ اعداد واقعی در `AUTHOR_SHARE_PCT` و هم‌خانواده‌اش در API/`meta` است.
+> نسخهٔ قدیمی «۸۰٪ نویسنده / ۲۰٪ پلتفرم» و قیمت آزاد تومانی **منسوخ** است.  
+> پرمیوم اپ بلوک (VIP مایکت) از این مدل جداست؛ «پکیج واحد» جزوه‌سرا است.
 
 ---
 
@@ -325,16 +363,29 @@ draft → pending_review ⇄ needs_revision
 
 ---
 
-### ثبت جزوه (`submit.html` — ۳ مرحله)
+### ثبت و انتشار جزوه (`submit.html` — راهنمای نویسنده)
 
-1. **اطلاعات** — رشته پایلوت، درس (از `courses_by_major`)، سرفصل‌ها، نوع محتوا (`typed` / `handwritten`)، پوشش (`short`/`midterm`/`final`/`partial`/`full`)، سختی، ترم/سال، توضیح (≥۷۰ نویسه در submit)
-2. **عنوان و فایل** — عنوان (پیشنهاد از `suggest-titles`) · PDF اصلی اجباری · کاور اجباری · Word/پاسخنامه اختیاری · پیوست audio/video/extra · رضایت‌نامه برای نشان طلایی (`consent`)
+#### سه مرحله
+
+1. **اطلاعات** — رشته پایلوت، درس (از `courses_by_major`)، سرفصل‌ها، نوع محتوا (`typed` / `handwritten`)، پوشش (`short`/`midterm`/`final`/`partial`/`full`)، سختی، ترم/سال، توضیح محتویات
+2. **عنوان و فایل** — عنوان (پیشنهاد از `suggest-titles`) · PDF اصلی اجباری · کاور اجباری · Word/پاسخنامه اختیاری · پیوست · رضایت‌نامه برای نشان طلایی (`consent`) · **واحد ۱–۴ یا رایگان** (قیمت از جدول لیست؛ نه تومان آزاد)
 3. **تعهد و ارسال** — پذیرش حق نشر + disclaimer سلامت · `POST …/submit`
 
 سقف آپلود فایل جزوه: **۱۰۰MB** · کاور: **۸MB**.  
 نقش فایل آپلود: `original` | `editable` | `answer` | `consent`.
 
-خدمات آماده‌سازی (ویراستاری/قالب) **اختیاری** است و شرط انتشار نیست؛ پرداخت بعد از پیش‌فاکتور ادمین از طریق زرین‌پال.
+#### شیوهٔ انتشار (خلاصه)
+
+```text
+پیش‌نویس → ارسال بررسی → (اختیاری اصلاح) → داوری قفل واحد
+        → آماده انتشار → تأیید نویسنده → منتشر در فروشگاه
+```
+
+- ارسال برای داوری **رایگان** است؛ هزینهٔ اولیه ندارد.
+- واحد پیشنهادی نویسنده را داور می‌تواند عوض کند و قفل کند.
+- خدمات آماده‌سازی (ویراستاری/قالب) **اختیاری** است؛ پرداخت پیش‌فاکتور با زرین‌پال.
+- آموزش و راهنما و قوانین: `learn.html` (curriculum + قوانین مالی/موجودی قابل خرید). `guide.html` به همان صفحه ریدایرکت می‌شود.
+- گواهی انتشار پس از publish · استعلام عمومی: `verify.html`.
 
 ---
 
@@ -348,30 +399,74 @@ draft → pending_review ⇄ needs_revision
 | ۶–۱۰ | ۳ |
 | ≥ ۱۱ | ۵ |
 
-**خرید:** زرین‌پال (`live` / `sandbox` اگر مجاز) → callback → اعتبار کیف نویسنده/سفیر.  
-اگر قبلاً خریده باشد → `already_owned`. نویسنده نیاز به خرید ندارد.
+**خرید جزوه** (`POST …/item/{id}/purchase`):
 
-**دانلود / مطالعه آنلاین:** برای خریدار PDF با **واترمارک شماره موبایل** (و نام/توکن کپی)؛ نویسنده master خام می‌گیرد. Fail-closed: بدون واترمارک معتبر، فایل تمیز برنمی‌گردد.
+1. **زرین‌پال** — `pay_with=zarinpal` · مبلغ = قیمت لیست واحدی · callback `…/payments/purchase/callback` · صفحهٔ نتیجه `payment.html?kind=purchase`
+2. **واحد کیف** — `pay_with=units` · کسر `unit_count` از `wallet_units` · تسویه از پایهٔ پکیج (~۵۰هزار/واحد) · بدون درگاه
 
-**نظرات:** لیست/ثبت روی آیتم.  
-**گزارش** (بعد از خرید): `duplicate` · `copyright` · `scientific` · `typo`.  
-اگر ادمین تأیید کند: استرداد به خریدار + جریمهٔ **۱۰٪ قیمت** از کیف نویسنده + strike؛ بعد از **۲** تخلف معلق. نویسنده ۴۸ ساعت برای اصلاح/اعتراض (`fix` / `appeal`).
+اگر قبلاً خریده باشد → `already_owned`. نویسنده نیاز به خرید ندارد.  
+UI آیتم: دکمهٔ زرین‌پال + در صورت موجودی کافی «پرداخت با N واحد»؛ وگرنه لینک شارژ پکیج.
+
+**دانلود / مطالعه آنلاین:** PDF با **واترمارک موبایل**؛ fail-closed بدون واترمارک تمیز.
+
+**نظرات خریداران:** فقط با خرید تأییدشده (یا `free_granted`) · درج با `pending` · انتشار عمومی پس از تأیید نویسنده · رد یا گزارش به ادمین از «جزوه‌های من».  
+**گزارش تخلف جزوه** (`duplicate` / `copyright` / `scientific` / `typo`) · در صورت تأیید ادمین: استرداد + جریمهٔ ۱۰٪ + strike (۲ تخلف → معلق).
 
 ---
 
-### کیف پول، سفیر، گواهی، تیکت
+### کیف پول بالا، پکیج، سفیر، گواهی، تیکت
 
-- **درآمد:** فروش جزوهٔ خود + سهم سفیری از فروش معرفی‌شده‌ها
-- **تسویه:** شبا ۲۴رقمی معتبر + کد ملی ۱۰رقمی · رسید واریز ادمین
-- **گواهی انتشار:** هنگام publish صادر می‌شود · عمومی: `verify.html` / `GET …/certificates/verify/{serial}` · لیست من: `certificates/me`
-- **نشان طلایی:** رضایت‌نامه روی پرونده + تأیید ادمین (`golden_badge`)
-- **امتیاز کیفیت:** A / B / C / D (توسط داور)
-- **تیکت پشتیبانی:** `tickets` (+ پیام‌ها) برای نویسنده/خریدار و پاسخ ادمین
+- **چیپ بالای همهٔ صفحات جزوه‌سرا:** موجودی تومان (درآمد قابل تسویه) + در صورت وجود، **تعداد واحد خرید** → لینک `account.html?tab=wallet`
+- **هشدار VPN/DNS:** فقط وقتی API کشور غیر ایران را بشناسد، یا وقتی کشور نامشخص است و timezone غیر `Asia/Tehran` باشد. اگر API کشور را `IR`/`local` بگوید حتی با TZ اشتباه بنر **نمی‌آید** (قابل بستن تا پایان روز نشست)
+- **نمای کلی · وضعیت امروز:** دو ستون «کتابخانه من» و «جزوه‌های من» با آخرین آیتم‌ها و وضعیت؛ دیگر متن «پرونده معلقی نداری» نیست
+- **رفرال / سفیر:** در نمای کلی و مشخصات، **کد معرف + لینک ثبت‌نام** (`login.html?ref=CODE`) با کپی/ارسال. بازدید با `?ref=` یا `?referral=` کد را ذخیره می‌کند و هنگام تکمیل پروفایل خودکار اعمال می‌شود. سهم سفیر تا **۳۶۵ روز** از `referred_at` روی فروش جزوهٔ دعوت‌شده می‌ماند. در مشخصات، نام و نام‌خانوادگی سفیر برای دعوت‌شده نمایش داده می‌شود.
+- **موجودی قابل خرید:** همیشه **واحد + معادل تومان**؛ کلیک → `account.html?tab=shop` (فروشگاه داخل داشبورد). شارژ/انتقال از دکمهٔ جدا یا `?buy=1`.
+- **نمای کلی / درآمد:** کارت شارژ با `?buy=1` ورقهٔ انتقال/اشتراک را باز می‌کند:
+  - **انتقال یک‌طرفه** از موجودی قابل تسویه → موجودی قابل خرید (`POST …/wallet/units/from-income`، `{ "units": 1..48 }`، نرخ `299000 // 6` = ۴۹٬۸۳۳ تومان/واحد)
+  - **خرید اشتراک** — پکیج ۶ / ۱۲ با زرین‌پال (`POST …/wallet/units/packages/{sku}/pay`)
+  - **قانون:** موجودی قابل خرید برگشت به درآمد نویسنده، تسویه شبا، یا نقد کردن ندارد؛ فقط مصرف در خرید جزوه (`pay_with=units`)
+- **صفحهٔ جزوه:** اگر واحد کافی باشد CTA اصلی «خرید با موجودی قابل خرید» است؛ وگرنه لینک انتقال/اشتراک به `account.html?tab=overview&buy=1`
+- **تب پنل مالی** (`account.html?tab=wallet`): از بالا به پایین
+  1. **موجودی قابل خرید** (واحد)
+  2. **شارژ حساب** — مبالغ سریع `۹۹٬۰۰۰ / ۱۹۹٬۰۰۰ / ۳۹۹٬۰۰۰ / ۶۹۹٬۰۰۰ / ۹۹۹٬۰۰۰` + پکیج ۶ و ۱۲
+  3. **موجودی قابل تسویه** + نمودار درآمد + درخواست تسویه شبا (فقط از `wallet_balance_irt`)
+- **نمودار منبع درآمد:** دونات دو‌رنگ (فروش / راه سفید) + کارت‌های درصد و نوار پیشرفت کنار هم
+- **قفل درخواست تسویه:** تا وقتی `wallet_balance_irt` به حداقل **۵۰۰٬۰۰۰ تومان** نرسیده، فرم شبا/کدملی/مبلغ باز نمی‌شود؛ به‌جایش نوار پیشرفت تا آستانه نشان داده می‌شود
+- **ورود (`login.html`):** عنوان «ورود به جزوات بلوک» · CTA «ورود با رمز عبور» + «ثبت نام یا ورود پیامکی» · بعد از تأیید OTP موبایل بالا و قفل · «بازگشت به فروشگاه» حفظ شده
+- **پروفایل کاربری:** به‌جای «مشخصات» · موبایل طوسی قفل‌شده با توضیح «قابل ویرایش نیست»
+- **فروشگاه عمومی (`index.html`):** برای مهمان؛ CTA هیرو «ورود به داشبورد»
+- **داشبورد فروشگاه:** تب `account.html?tab=shop` با فیلتر و لیست جزوه داخل داشبورد (لینک زرد زیر برند)
+- **انتشار:** واحد ۱–۴ و قیمت خودکار در **مرحلهٔ ۱**؛ کارت ناشناس
+- **صفحهٔ جزوه:** پیش‌نمایش PDF مدرن‌تر · اشتراک تلگرام/واتساپ/**بله**/**ایتا**
+- **نظرات:** خریدارمحور · `pending` تا تأیید نویسنده · رد / **حذف توسط صاحب جزوه** (pending و تأییدشده) / گزارش ادمین · عمومی فقط `approved` · مایگریشن `137`
+- **عودت گزارش تخلف:** خرید با واحد → بازگردانی `wallet_units` (نه تومان قابل تسویه)؛ خرید زرین‌پال → اعتبار به `wallet_balance_irt`
+- **درآمد نویسنده:** فروش جزوه + سهم سفیری
+- **تسویه:** شبا ۲۴رقمی + کد ملی ۱۰رقمی · رسید ادمین · حداقل **۵۰۰٬۰۰۰** تومان
+- **گواهی انتشار:** هنگام publish · `verify.html`
+- **نشان طلایی / کیفیت A–D / تیکت پشتیبانی** مانند قبل
+
+---
+
+### زرین‌پال (جزوه‌سرا وب)
+
+| مورد | مقدار / مسیر |
+|------|----------------|
+| فعال‌سازی | `ZARINPAL_ENABLED=true` + `ZARINPAL_MERCHANT_ID` روی لیارا |
+| مرچنت لایو | `f540415c-70af-4aca-be65-b0884d4d6b09` · دامنهٔ درگاه **bolokapp.ir** |
+| سندباکس | خاموش (`ZARINPAL_ALLOW_SANDBOX=false`) |
+| خرید جزوه | بازگشت به `https://bolokapp.ir/jomhehsara/payment.html?kind=purchase` → `POST …/payments/purchase/confirm` |
+| پکیج واحد | `…/payment.html?kind=units` → `POST …/payments/units/confirm` |
+| خدمات آماده‌سازی | `…/payment.html?kind=service` → `POST …/payments/service/confirm` |
+| دامنهٔ کالبک | **باید `bolokapp.ir` باشد** (همان دامنهٔ ثبت‌شده در پنل زرین‌پال) |
+
+فرانت: `PAY_ENV = "live"`. اگر درگاه در پنل زرین‌پال «رد شده / غیرفعال» باشد، تا فعال‌سازی ترمینال تراکنش لایو ساخته نمی‌شود.
 
 ---
 
 ### احراز هویت سایت (مشترک با بقیهٔ سایت)
 
+- صفحهٔ ورود: عنوان «ورود به جزوات بلوک» · مسیر رمز («ورود با رمز عبور») و مسیر پیامک («ثبت نام یا ورود پیامکی») · بازگشت به فروشگاه
+- بعد از تأیید OTP، شماره موبایل در مراحل رمز و پروفایل فقط نمایش قفل‌شده است (غیرقابل ویرایش)
 - OTP: `request-otp` → `verify-otp` → اختیاری `set-password`
 - رمز: `login-password` · پروفایل: `complete-profile` · نشست: `restore-session`
 - هدر: `X-Bolok-Site-Session` · `localStorage` کلید `bolok_site_session`
@@ -404,24 +499,32 @@ draft → pending_review ⇄ needs_revision
 | GET | `/api/site/pamphlets` — فیلتر `q, major, course, content_kind, priced, …` |
 | GET | `/api/site/pamphlets/item/{id}` |
 | GET | `/api/site/pamphlets/item/{id}/preview` |
-| GET | `/api/site/pamphlets/item/{id}/comments` |
-| POST | `/api/site/pamphlets/item/{id}/comments` |
-| POST | `/api/site/pamphlets/item/{id}/purchase` |
+| GET | `/api/site/pamphlets/item/{id}/comments` — فقط `approved` |
+| POST | `/api/site/pamphlets/item/{id}/comments` — فقط خریدار؛ وضعیت اولیه `pending` |
+| GET | `/api/site/pamphlets/mine/{id}/comments` — صف تأیید نویسنده |
+| POST | `/api/site/pamphlets/mine/{id}/comments/{cid}/approve` · `/reject` · `/report` |
+| DELETE | `/api/site/pamphlets/mine/{id}/comments/{cid}` — حذف توسط نویسنده (هر وضعیت) |
+| GET | `/api/admin/pamphlets/comments?report_status=reported` |
+| POST | `/api/admin/pamphlets/comments/{id}` — `resolve` / `force_hide` / `restore` |
+| POST | `/api/site/pamphlets/item/{id}/purchase` — body: `{ environment, pay_with: zarinpal\|units }` |
 | GET | `/api/site/pamphlets/item/{id}/read` · `/download` |
 | POST | `/api/site/pamphlets/item/{id}/report` |
 | GET | `/api/site/pamphlets/suggest-titles` |
 | GET | `/api/site/pamphlets/certificates/verify/{serial}` |
-| GET | `/api/site/pamphlets/payments/purchase/callback` · `…/service/callback` |
+| GET | `/api/site/pamphlets/payments/purchase/callback` · `…/units/callback` · `…/service/callback` |
 
-**نویسنده (نشست لازم)**
+**نویسنده / کیف (نشست لازم)**
 
 | متد | مسیر |
 |-----|------|
+| GET | `/api/site/network-advisory` — هشدار نرم VPN/کشور (بدون بلاک) |
 | GET | `/mine/list` · `/library/me` · `/wallet/me` · `/certificates/me` · `/mine/reports` |
-| POST/PATCH | `/mine` · `/mine/{id}` |
+| POST/PATCH | `/mine` · `/mine/{id}` — فیلدهای `unit_count` · `is_free` · `price_irt` مشتق |
 | POST | `/mine/{id}/upload` · `/cover` · `/attachments` · `/submit` |
 | POST | `/mine/{id}/approve-final` · `/confirm-publish` |
 | DELETE | `/mine/{id}` · `/mine/{id}/attachments/{att}` |
+| POST | `/wallet/units/packages/{sku}/pay` — `charge_99`…`charge_999` · `units_6` · `units_12` |
+| POST | `/wallet/units/from-income` — `{ "units": 1..48 }` انتقال یک‌طرفه از درآمد قابل تسویه به واحد خرید (برگشت/تسویه واحد ندارد) |
 | POST | `/wallet/payout` · `/wallet/payout-closeout` |
 | POST | `/service-orders/{id}/pay` |
 | GET/POST | `/tickets` (+ messages) · گزارش `fix` / `appeal` |
@@ -436,14 +539,22 @@ overview · list · sales · review (assign / needs_revision / reject / mark_rea
 
 | مسیر | نقش |
 |------|-----|
-| `bolok_plus/jomhehsara/*` | UI استاتیک |
-| `backend/pamphlet_marketplace_api.py` | تمام API بازارچه |
+| `bolok_plus/jomhehsara/*` | UI استاتیک (قیمت واحدی، پکیج، چیپ کیف) |
+| `backend/pamphlet_marketplace_api.py` | تمام API بازارچه + واحد/پکیج |
+| `backend/migrations/136_pamphlet_unit_credits.sql` | `unit_count` · `wallet_units` · `pamphlet_unit_orders` · backfill ۲ واحد |
 | `backend/pamphlet_taxonomy.py` | پایلوت، قوانین، curriculum |
 | `backend/pamphlet_pdf_utils.py` | شمارش صفحه، preview، واترمارک |
 | `backend/data/learn-curriculum.json` | متن learn سمت سرور |
-| `frontendadmin/.../pamphlet_marketplace_admin_screen.dart` | عملیات داوری/فروش/تسویه |
+| `frontendadmin/.../pamphlet_marketplace_admin_screen.dart` | داوری با انتخاب واحد ۱–۴ |
 
-تا `backendpy` دیپلوی + مایگریشن لیارا نرود، `guide`/`meta`/خرید/کیف ممکن است قدیمی یا قطع باشد.
+#### چک‌لیست دیپلوی (دستی توسط شما)
+
+1. مایگریشن لیارا: `136_pamphlet_unit_credits.sql` + **`137_pamphlet_comment_moderation.sql`**
+2. دیپلوی `backendpy` + استاتیک `bolok_plus` / jomhehsara + آپدیت ادمین (تب نظرات جزوه‌سرا)
+3. تأیید env زرین‌پال و دامنهٔ کالبک
+4. تست: خرید نقدی یک جزوهٔ ۲ واحدی · خرید پکیج ۶ · خرید همان جزوه با واحد · ثبت نظر خریدار → تأیید نویسنده → نمایش عمومی · گزارش نظر به ادمین
+
+تا `backendpy` دیپلوی + مایگریشن لیارا نرود، `meta`/خرید واحد/کیف/نظرات ممکن است قدیمی یا قطع باشد.
 
 ---
 
